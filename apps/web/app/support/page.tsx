@@ -13,11 +13,11 @@ import { FormField } from '@/components/ui/form-field';
 import { Alert } from '@/components/ui/alert';
 
 const SupportSchema = z.object({
-  category: z.string().min(1, 'Please select a support category'),
-  contactName: z.string().min(2, 'Contact name must be at least 2 characters'),
-  contactEmail: z.string().email('Please enter a valid email address'),
-  subject: z.string().min(3, 'Subject must be at least 3 characters'),
-  message: z.string().min(10, 'Message details must be at least 10 characters'),
+  category: z.string().min(1, 'Support category is required'),
+  contactName: z.string().min(2, 'Contact name is required'),
+  contactEmail: z.string().email('Valid email address is required'),
+  subject: z.string().min(3, 'Subject is required'),
+  message: z.string().min(10, 'Message details are required'),
 });
 
 type SupportFormData = z.infer<typeof SupportSchema>;
@@ -116,7 +116,7 @@ export default function Fnd11SupportPage() {
           </div>
         ) : (
           <div className="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
               <FormField label="Support Category" required error={errors.category?.message} htmlFor="category">
                 <select
                   id="category"

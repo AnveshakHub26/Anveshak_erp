@@ -6,10 +6,7 @@ import {
   Sparkles,
   Layers,
   Users,
-  ShieldCheck,
   Building2,
-  FolderGit2,
-  TrendingUp,
   GraduationCap,
   Lightbulb,
   ArrowRight,
@@ -22,6 +19,10 @@ import {
   Compass,
   Cpu,
   FileCode2,
+  ShieldCheck,
+  Activity,
+  BarChart3,
+  Check,
 } from 'lucide-react';
 
 export default function Fnd01LandingPage() {
@@ -150,42 +151,42 @@ export default function Fnd01LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#151c2e] text-[#f8fafc] flex flex-col font-sans selection:bg-[#d49b38] selection:text-[#151c2e]">
-      {/* 1. HEADER */}
-      <header className="sticky top-0 z-50 border-b border-[#d49b38]/20 bg-[#151c2e]/90 backdrop-blur-md">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col font-sans selection:bg-[#d49b38] selection:text-[#151c2e]">
+      {/* 1. HEADER (Midnight Navy Header) */}
+      <header className="sticky top-0 z-50 border-b border-[#182238] bg-[#151c2e] text-white shadow-md">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Brand Logo & Name */}
           <Link
             href="/"
             className="flex items-center space-x-3 focus:outline-none focus:ring-2 focus:ring-[#d49b38] rounded-lg p-1 transition-opacity hover:opacity-95"
           >
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#d49b38] to-[#c48b28] font-bold text-[#151c2e] text-lg shadow-md shadow-[#d49b38]/10">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#d49b38] to-[#c48b28] font-bold text-[#151c2e] text-base shadow-sm">
               AH
             </div>
             <div className="flex flex-col">
-              <span className="text-xl font-bold tracking-tight text-white flex items-center">
+              <span className="text-lg font-bold tracking-tight text-white flex items-center">
                 Anveshak Hub
-                <span className="ml-2 rounded-full border border-[#d49b38]/30 bg-[#d49b38]/10 px-2 py-0.5 text-[10px] font-semibold text-[#d49b38]">
+                <span className="ml-2 rounded-full border border-[#d49b38]/40 bg-[#d49b38]/10 px-2 py-0.5 text-[10px] font-semibold text-[#d49b38] uppercase">
                   Enterprise
                 </span>
               </span>
-              <span className="text-[11px] font-medium text-[#94a3b8] tracking-wide">
+              <span className="text-[10px] font-medium text-[#94a3b8] tracking-wide">
                 Bridging Innovation, Enterprise & Academia
               </span>
             </div>
           </Link>
 
           {/* Desktop Navigation CTAs */}
-          <div className="hidden items-center space-x-4 md:flex">
+          <div className="hidden items-center space-x-3 md:flex">
             <Link
               href="/register"
-              className="rounded-lg border border-[#d49b38]/40 bg-[#182238]/60 px-4 py-2 text-sm font-medium text-[#e2e8f0] hover:border-[#d49b38] hover:bg-[#182238] focus:outline-none focus:ring-2 focus:ring-[#d49b38] transition-all"
+              className="rounded-lg border border-[#d49b38]/40 bg-[#182238] px-4 py-2 text-xs font-semibold text-white hover:border-[#d49b38] transition-all"
             >
               Register Organization
             </Link>
             <Link
               href="/login"
-              className="rounded-lg bg-gradient-to-r from-[#d49b38] to-[#c48b28] px-5 py-2 text-sm font-semibold text-[#151c2e] hover:shadow-lg hover:shadow-[#d49b38]/20 focus:outline-none focus:ring-2 focus:ring-[#d49b38] transition-all"
+              className="rounded-lg bg-gradient-to-r from-[#d49b38] to-[#c48b28] px-5 py-2 text-xs font-bold text-[#151c2e] hover:opacity-95 shadow-sm transition-all"
             >
               Login
             </Link>
@@ -205,17 +206,17 @@ export default function Fnd01LandingPage() {
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="border-b border-[#d49b38]/20 bg-[#182238] px-4 py-4 md:hidden space-y-3">
+          <div className="border-b border-[#182238] bg-[#182238] px-4 py-4 md:hidden space-y-3">
             <Link
               href="/login"
-              className="block w-full rounded-lg bg-[#d49b38] py-2.5 text-center text-sm font-semibold text-[#151c2e]"
+              className="block w-full rounded-lg bg-gradient-to-r from-[#d49b38] to-[#c48b28] py-2.5 text-center text-xs font-bold text-[#151c2e]"
               onClick={() => setMobileMenuOpen(false)}
             >
               Login
             </Link>
             <Link
               href="/register"
-              className="block w-full rounded-lg border border-[#d49b38]/40 bg-[#151c2e] py-2.5 text-center text-sm font-medium text-white"
+              className="block w-full rounded-lg border border-[#d49b38]/40 bg-[#151c2e] py-2.5 text-center text-xs font-semibold text-white"
               onClick={() => setMobileMenuOpen(false)}
             >
               Register Organization
@@ -226,87 +227,153 @@ export default function Fnd01LandingPage() {
 
       {/* MAIN CONTENT AREA */}
       <main className="flex-1">
-        {/* 2. HERO SECTION */}
-        <section className="relative overflow-hidden border-b border-[#d49b38]/15 bg-gradient-to-b from-[#151c2e] via-[#182238] to-[#151c2e] py-16 md:py-24">
-          {/* Subtle Ambient Glow Effect */}
-          <div className="pointer-events-none absolute -top-24 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-[#d49b38]/10 blur-3xl"></div>
+        {/* 2. TWO-COLUMN PRODUCT HERO SECTION */}
+        <section className="border-b border-[#E2E8F0] bg-white py-12 md:py-16">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+              {/* Left Column: Product Positioning & CTAs */}
+              <div className="lg:col-span-7 space-y-6">
+                {/* RaaS Badge */}
+                <div className="inline-flex items-center space-x-2 rounded-full border border-[#d49b38]/30 bg-[#F5E8D0]/40 px-3.5 py-1 text-xs font-semibold text-[#8B5E14]">
+                  <Sparkles className="h-3.5 w-3.5 text-[#d49b38]" />
+                  <span>Research as a Service (RaaS) & Enterprise Platform</span>
+                </div>
 
-          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-4xl text-center">
-              {/* Badge */}
-              <div className="mb-6 inline-flex items-center space-x-2 rounded-full border border-[#d49b38]/30 bg-[#d49b38]/10 px-4 py-1.5 text-xs font-semibold text-[#d49b38]">
-                <Sparkles className="h-3.5 w-3.5 text-[#d49b38]" />
-                <span>Research as a Service (RaaS) & Enterprise Platform</span>
+                {/* Main Headline */}
+                <h1 className="text-3xl font-extrabold tracking-tight text-[#0F172A] sm:text-4xl md:text-5xl leading-tight">
+                  Bridging Innovation, <br className="hidden sm:inline" />
+                  <span className="text-[#d49b38]">Enterprise & Academia</span>
+                </h1>
+
+                {/* Subtitle */}
+                <p className="text-sm sm:text-base text-[#64748B] leading-relaxed max-w-2xl">
+                  Transforming how organizations leverage intellectual property and academic research to solve critical industry challenges and drive commercial success.
+                </p>
+
+                {/* E2E Compatibility Badge */}
+                <div className="inline-block rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-1 text-xs font-semibold text-[#475569]">
+                  Integrated Enterprise Management Platform
+                </div>
+
+                {/* CTA Action Buttons */}
+                <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                  <Link
+                    href="/login"
+                    className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#d49b38] to-[#c48b28] px-6 py-3 text-xs font-bold text-[#151c2e] shadow-sm hover:opacity-95 transition-all"
+                  >
+                    Login to Platform <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="inline-flex items-center justify-center rounded-xl border border-[#E2E8F0] bg-white px-6 py-3 text-xs font-semibold text-[#0F172A] hover:bg-[#F8FAFC] hover:border-[#d49b38] transition-all"
+                  >
+                    Register Organization
+                  </Link>
+                </div>
               </div>
 
-              {/* Main Headline */}
-              <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl leading-tight">
-                Bridging Innovation, <br className="hidden sm:inline" />
-                <span className="bg-gradient-to-r from-[#f5c768] via-[#d49b38] to-[#c48b28] bg-clip-text text-transparent">
-                  Enterprise & Academia
-                </span>
-              </h1>
+              {/* Right Column: Real Enterprise Product Preview Mockup */}
+              <div className="lg:col-span-5">
+                <div className="rounded-2xl border border-[#E2E8F0] bg-[#151c2e] p-5 shadow-2xl text-white space-y-4">
+                  {/* Top Mockup Title Bar */}
+                  <div className="flex items-center justify-between border-b border-[#182238] pb-3">
+                    <div className="flex items-center space-x-2">
+                      <div className="h-3 w-3 rounded-full bg-red-500/80" />
+                      <div className="h-3 w-3 rounded-full bg-yellow-500/80" />
+                      <div className="h-3 w-3 rounded-full bg-green-500/80" />
+                    </div>
+                    <span className="text-[11px] font-mono text-[#94a3b8]">AnveshakHub v3.0</span>
+                  </div>
 
-              {/* Subtitle */}
-              <p className="mx-auto mt-6 max-w-2xl text-base text-[#94a3b8] sm:text-lg leading-relaxed">
-                Transforming how organizations leverage intellectual property and academic research to solve critical industry challenges and drive commercial success.
-              </p>
+                  {/* Dashboard Preview Header */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-bold text-white">Innovation Operating System</div>
+                      <div className="text-[10px] text-[#94a3b8]">Active Platform Verticals</div>
+                    </div>
+                    <span className="rounded-full bg-[#d49b38] px-2 py-0.5 text-[10px] font-bold text-[#151c2e]">
+                      LIVE SYSTEM
+                    </span>
+                  </div>
 
-              {/* Integrated System Badge for E2E Test Compatibility */}
-              <div className="mt-4 inline-block rounded-md border border-white/10 bg-white/5 px-3 py-1 text-xs text-[#cbd5e1]">
-                Integrated Enterprise Management Platform
-              </div>
+                  {/* Metrics Cards Grid */}
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <div className="rounded-xl border border-[#182238] bg-[#182238]/80 p-3">
+                      <div className="text-[10px] text-[#94a3b8] flex items-center justify-between">
+                        <span>Service Verticals</span>
+                        <BarChart3 className="h-3.5 w-3.5 text-[#d49b38]" />
+                      </div>
+                      <div className="text-lg font-bold text-white mt-1">6 Active</div>
+                      <div className="text-[9px] text-[#d49b38]">BV-01 to BV-06</div>
+                    </div>
+                    <div className="rounded-xl border border-[#182238] bg-[#182238]/80 p-3">
+                      <div className="text-[10px] text-[#94a3b8] flex items-center justify-between">
+                        <span>TRL Framework</span>
+                        <Activity className="h-3.5 w-3.5 text-[#d49b38]" />
+                      </div>
+                      <div className="text-lg font-bold text-white mt-1">TRL 1 - 9</div>
+                      <div className="text-[9px] text-emerald-400">Validated Pipeline</div>
+                    </div>
+                  </div>
 
-              {/* CTA Buttons */}
-              <div className="mt-8 flex flex-col items-center justify-center space-y-3 sm:flex-row sm:space-y-0 sm:space-x-4">
-                <Link
-                  href="/login"
-                  className="inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#d49b38] to-[#c48b28] px-7 py-3.5 text-sm font-semibold text-[#151c2e] shadow-lg shadow-[#d49b38]/15 hover:shadow-xl hover:shadow-[#d49b38]/25 focus:outline-none focus:ring-2 focus:ring-[#d49b38] transition-all sm:w-auto"
-                >
-                  Login to Platform <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-                <Link
-                  href="/register"
-                  className="inline-flex w-full items-center justify-center rounded-xl border border-[#d49b38]/40 bg-[#182238]/80 px-7 py-3.5 text-sm font-medium text-white hover:border-[#d49b38] hover:bg-[#182238] focus:outline-none focus:ring-2 focus:ring-[#d49b38] transition-all sm:w-auto"
-                >
-                  Register Organization
-                </Link>
+                  {/* Operational Status Box */}
+                  <div className="rounded-xl border border-[#182238] bg-[#182238]/50 p-3 space-y-2 text-xs">
+                    <div className="flex items-center justify-between text-[11px] font-semibold text-white">
+                      <span>Enterprise Security & Audit</span>
+                      <ShieldCheck className="h-4 w-4 text-[#d49b38]" />
+                    </div>
+                    <div className="space-y-1 text-[10px] text-[#94a3b8]">
+                      <div className="flex items-center space-x-1.5">
+                        <Check className="h-3 w-3 text-[#d49b38]" />
+                        <span>Single Unified ADMIN Authorization Model</span>
+                      </div>
+                      <div className="flex items-center space-x-1.5">
+                        <Check className="h-3 w-3 text-[#d49b38]" />
+                        <span>Private S3 Object Storage & Virus Scanning</span>
+                      </div>
+                      <div className="flex items-center space-x-1.5">
+                        <Check className="h-3 w-3 text-[#d49b38]" />
+                        <span>Argon2id Encrypted Session Authentication</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
         {/* 3. PEOPLE, PROCESS, PRODUCT PILLARS */}
-        <section className="py-16 md:py-20 bg-[#151c2e] border-b border-[#d49b38]/15">
+        <section className="py-12 md:py-16 bg-[#F8FAFC] border-b border-[#E2E8F0]">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="mb-12 text-center">
-              <h2 className="text-2xl font-bold text-white sm:text-3xl">
+            <div className="mb-10 text-center">
+              <h2 className="text-2xl font-bold text-[#0F172A] sm:text-3xl">
                 How Anveshak Bridges the Innovation Gap
               </h2>
-              <p className="mt-3 text-sm text-[#94a3b8] max-w-2xl mx-auto">
+              <p className="mt-2 text-xs sm:text-sm text-[#64748B] max-w-2xl mx-auto">
                 Integrating research talent, robust methodologies, and a sharp focus on intellectual property to deliver market-ready solutions.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
               {pillars.map((pillar) => {
                 const IconComp = pillar.icon;
                 return (
                   <div
                     key={pillar.title}
-                    className="group relative flex flex-col justify-between rounded-2xl border border-[#d49b38]/20 bg-[#182238]/60 p-8 transition-all hover:border-[#d49b38]/50 hover:bg-[#182238]"
+                    className="flex flex-col justify-between rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm hover:border-[#d49b38] transition-all"
                   >
                     <div>
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#d49b38]/10 text-[#d49b38] border border-[#d49b38]/20">
-                          <IconComp className="h-6 w-6" />
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#d49b38] to-[#c48b28] text-[#151c2e] font-bold">
+                          <IconComp className="h-5 w-5" />
                         </div>
-                        <span className="rounded-full border border-[#d49b38]/30 bg-[#d49b38]/10 px-3 py-1 text-xs font-semibold text-[#d49b38]">
+                        <span className="rounded-full border border-[#E2E8F0] bg-[#F1F5F9] px-2.5 py-0.5 text-[10px] font-semibold uppercase text-[#475569]">
                           {pillar.badge}
                         </span>
                       </div>
-                      <h3 className="text-xl font-bold text-white mb-3">{pillar.title}</h3>
-                      <p className="text-sm text-[#94a3b8] leading-relaxed">{pillar.description}</p>
+                      <h3 className="text-lg font-bold text-[#0F172A] mb-2">{pillar.title}</h3>
+                      <p className="text-xs text-[#64748B] leading-relaxed">{pillar.description}</p>
                     </div>
                   </div>
                 );
@@ -316,31 +383,31 @@ export default function Fnd01LandingPage() {
         </section>
 
         {/* 4. CORE SERVICE OFFERINGS (RESEARCH AS A SERVICE) */}
-        <section className="py-16 md:py-24 bg-[#182238]/40 border-b border-[#d49b38]/15">
+        <section className="py-12 md:py-16 bg-white border-b border-[#E2E8F0]">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="mb-10 flex flex-col justify-between md:flex-row md:items-end border-b border-[#d49b38]/15 pb-6">
+            <div className="mb-8 flex flex-col justify-between md:flex-row md:items-end border-b border-[#E2E8F0] pb-5">
               <div>
-                <div className="inline-flex items-center space-x-2 text-xs font-semibold text-[#d49b38] uppercase tracking-wider mb-2">
+                <div className="inline-flex items-center space-x-2 text-xs font-semibold text-[#d49b38] uppercase tracking-wider mb-1">
                   <Lightbulb className="h-4 w-4" />
                   <span>Research as a Service (RaaS)</span>
                 </div>
-                <h2 className="text-2xl font-bold text-white sm:text-3xl">
+                <h2 className="text-2xl font-bold text-[#0F172A] sm:text-3xl">
                   Official Service Verticals
                 </h2>
-                <p className="mt-2 text-sm text-[#94a3b8]">
+                <p className="mt-1 text-xs text-[#64748B]">
                   Six specialized corporate service classification dimensions.
                 </p>
               </div>
 
               {/* Search Filter */}
-              <div className="relative mt-4 md:mt-0 w-full md:w-80">
-                <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#94a3b8]" />
+              <div className="relative mt-4 md:mt-0 w-full md:w-72">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#94a3b8]" />
                 <input
                   type="text"
                   value={selectedBvSearch}
                   onChange={(e) => setSelectedBvSearch(e.target.value)}
                   placeholder="Search service verticals..."
-                  className="w-full rounded-xl border border-[#d49b38]/20 bg-[#151c2e] pl-10 pr-4 py-2.5 text-sm text-white placeholder-[#64748b] focus:border-[#d49b38] focus:outline-none transition-colors"
+                  className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] pl-9 pr-3 py-1.5 text-xs text-[#0F172A] placeholder-[#94a3b8] focus:border-[#d49b38] focus:outline-none focus:ring-1 focus:ring-[#d49b38]"
                 />
               </div>
             </div>
@@ -348,7 +415,7 @@ export default function Fnd01LandingPage() {
             {/* Verticals Grid */}
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {filteredBvs.length === 0 ? (
-                <div className="col-span-full rounded-xl border border-[#d49b38]/20 bg-[#182238] p-8 text-center text-sm text-[#94a3b8]">
+                <div className="col-span-full rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-8 text-center text-xs text-[#64748B]">
                   No service verticals match &quot;{selectedBvSearch}&quot;.
                 </div>
               ) : (
@@ -357,24 +424,24 @@ export default function Fnd01LandingPage() {
                   return (
                     <div
                       key={bv.code}
-                      className="group flex flex-col justify-between rounded-xl border border-[#d49b38]/20 bg-[#182238] p-6 transition-all hover:border-[#d49b38]/60 hover:shadow-lg hover:shadow-[#d49b38]/5"
+                      className="group flex flex-col justify-between rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm hover:border-[#d49b38] transition-all"
                     >
                       <div>
                         <div className="flex items-center justify-between mb-4">
-                          <span className="rounded-lg border border-[#d49b38]/30 bg-[#d49b38]/10 px-2.5 py-1 text-xs font-bold text-[#d49b38]">
+                          <span className="rounded-full bg-[#151c2e] px-2.5 py-0.5 text-[10px] font-bold text-white uppercase">
                             {bv.code}
                           </span>
-                          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#151c2e] text-[#d49b38]">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F8FAFC] text-[#d49b38] border border-[#E2E8F0]">
                             <IconComponent className="h-4 w-4" />
                           </div>
                         </div>
-                        <h3 className="text-lg font-bold text-white group-hover:text-[#f5c768] transition-colors">
+                        <h3 className="text-base font-bold text-[#0F172A] group-hover:text-[#d49b38] transition-colors">
                           {bv.name}
                         </h3>
-                        <p className="mt-2 text-xs font-semibold text-[#d49b38]/80">{bv.tag}</p>
-                        <p className="mt-3 text-sm text-[#94a3b8] leading-relaxed">{bv.description}</p>
+                        <p className="mt-1 text-[11px] font-semibold text-[#8B5E14]">{bv.tag}</p>
+                        <p className="mt-2 text-xs text-[#64748B] leading-relaxed">{bv.description}</p>
                       </div>
-                      <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs text-[#64748b]">
+                      <div className="mt-5 pt-3 border-t border-[#E2E8F0] flex items-center justify-between text-[11px] text-[#64748B]">
                         <span>Canonical Vertical</span>
                         <CheckCircle2 className="h-4 w-4 text-[#d49b38]" />
                       </div>
@@ -387,13 +454,13 @@ export default function Fnd01LandingPage() {
         </section>
 
         {/* 5. TRL FRAMEWORK SECTION */}
-        <section className="py-16 md:py-24 bg-[#151c2e] border-b border-[#d49b38]/15">
+        <section className="py-12 md:py-16 bg-[#F8FAFC] border-b border-[#E2E8F0]">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="mb-12 text-center">
-              <h2 className="text-2xl font-bold text-white sm:text-3xl">
+            <div className="mb-10 text-center">
+              <h2 className="text-2xl font-bold text-[#0F172A] sm:text-3xl">
                 The Technology Readiness Level (TRL) Journey
               </h2>
-              <p className="mt-3 text-sm text-[#94a3b8] max-w-2xl mx-auto">
+              <p className="mt-2 text-xs sm:text-sm text-[#64748B] max-w-2xl mx-auto">
                 Categorizing innovation from fundamental research to operational deployment through three distinct phases: Ignite, Innovate, and Inspire.
               </p>
             </div>
@@ -402,21 +469,21 @@ export default function Fnd01LandingPage() {
               {trlPhases.map((phase) => (
                 <div
                   key={phase.phase}
-                  className="rounded-2xl border border-[#d49b38]/20 bg-[#182238]/80 p-8 flex flex-col justify-between"
+                  className="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <span className="text-xs font-bold uppercase tracking-wider text-[#d49b38]">
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#8B5E14]">
                         {phase.phase}
                       </span>
-                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-white">
+                      <span className="rounded-full border border-[#E2E8F0] bg-[#F1F5F9] px-2.5 py-0.5 text-[10px] font-semibold text-[#0F172A]">
                         {phase.levels}
                       </span>
                     </div>
-                    <h3 className="text-lg font-bold text-white mb-4">{phase.title}</h3>
-                    <ul className="space-y-3">
+                    <h3 className="text-base font-bold text-[#0F172A] mb-3">{phase.title}</h3>
+                    <ul className="space-y-2">
                       {phase.items.map((item, i) => (
-                        <li key={i} className="flex items-start text-xs text-[#94a3b8]">
+                        <li key={i} className="flex items-start text-xs text-[#64748B]">
                           <CheckCircle2 className="mr-2 h-4 w-4 shrink-0 text-[#d49b38] mt-0.5" />
                           <span>{item}</span>
                         </li>
@@ -430,25 +497,25 @@ export default function Fnd01LandingPage() {
         </section>
 
         {/* 6. CALL TO ACTION BANNER */}
-        <section className="py-16 md:py-20 bg-gradient-to-r from-[#151c2e] via-[#182238] to-[#151c2e]">
-          <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center">
-            <div className="rounded-3xl border border-[#d49b38]/30 bg-[#182238]/90 p-8 sm:p-12 shadow-2xl">
-              <h2 className="text-2xl font-bold text-white sm:text-4xl">
+        <section className="py-12 md:py-16 bg-white">
+          <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
+            <div className="rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-8 sm:p-10 shadow-sm">
+              <h2 className="text-2xl font-bold text-[#0F172A] sm:text-3xl">
                 Ready to Shape India&apos;s Innovation Future?
               </h2>
-              <p className="mt-4 text-sm text-[#94a3b8] sm:text-base max-w-2xl mx-auto">
+              <p className="mt-2 text-xs sm:text-sm text-[#64748B] max-w-xl mx-auto">
                 Connect with Anveshak Hub to bridge cutting-edge academic research with enterprise solution delivery.
               </p>
-              <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Link
                   href="/login"
-                  className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-[#d49b38] to-[#c48b28] px-8 py-3.5 text-sm font-semibold text-[#151c2e] shadow-lg shadow-[#d49b38]/20 hover:opacity-95 transition-all"
+                  className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-[#d49b38] to-[#c48b28] px-7 py-3 text-xs font-bold text-[#151c2e] shadow-sm hover:opacity-95 transition-all"
                 >
                   Login to Platform
                 </Link>
                 <Link
                   href="/register"
-                  className="w-full sm:w-auto rounded-xl border border-[#d49b38]/40 bg-[#151c2e] px-8 py-3.5 text-sm font-medium text-white hover:border-[#d49b38] transition-all"
+                  className="w-full sm:w-auto rounded-xl border border-[#E2E8F0] bg-white px-7 py-3 text-xs font-semibold text-[#0F172A] hover:bg-[#F8FAFC] hover:border-[#d49b38] transition-all"
                 >
                   Register Organization
                 </Link>
@@ -458,19 +525,19 @@ export default function Fnd01LandingPage() {
         </section>
       </main>
 
-      {/* 7. FOOTER */}
-      <footer className="border-t border-[#d49b38]/20 bg-[#151c2e] py-10 text-xs text-[#94a3b8]">
+      {/* 7. FOOTER (Midnight Navy Footer) */}
+      <footer className="border-t border-[#182238] bg-[#151c2e] py-8 text-xs text-[#94a3b8]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col items-center justify-between space-y-4 sm:flex-row sm:space-y-0">
             <div className="flex items-center space-x-3">
-              <div className="flex h-7 w-7 items-center justify-center rounded bg-[#d49b38] font-bold text-[#151c2e] text-xs">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#d49b38] to-[#c48b28] font-bold text-[#151c2e] text-xs">
                 AH
               </div>
               <span className="font-semibold text-white">Anveshak Hub Private Limited</span>
               <span>© {currentYear}</span>
             </div>
 
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-6 text-xs">
               <Link href="/privacy" className="hover:text-[#d49b38] transition-colors">
                 Privacy
               </Link>
