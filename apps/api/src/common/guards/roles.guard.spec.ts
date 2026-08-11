@@ -27,9 +27,9 @@ describe('RolesGuard & RBAC Security Verification', () => {
     expect(guard.canActivate(ctx)).toBe(true);
   });
 
-  it('2. should allow SUPER_ADMIN global access', () => {
-    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['ADMIN']);
-    const ctx = createMockContext({ roles: ['SUPER_ADMIN'] });
+  it('2. should allow ADMIN global access', () => {
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['HR']);
+    const ctx = createMockContext({ roles: ['ADMIN'] });
     expect(guard.canActivate(ctx)).toBe(true);
   });
 

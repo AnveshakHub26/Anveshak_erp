@@ -27,8 +27,7 @@ async function main() {
 
   // 2. Seed System Roles (Product Design Specification v3.0 Master Roles)
   const roles = [
-    { code: 'SUPER_ADMIN', name: 'Super Admin', description: 'Full platform and governance access; emergency/technical administration.' },
-    { code: 'ADMIN', name: 'Admin', description: 'Operational administration, approvals, organizations, projects and configurable governance.' },
+    { code: 'ADMIN', name: 'Admin', description: 'Full platform-level administration across all modules, approvals, organizations, users, roles, projects and governance.' },
     { code: 'HR', name: 'HR', description: 'Employee/personnel records, employment history, compensation, availability and HR reporting.' },
     { code: 'FINANCE', name: 'Finance', description: 'Ledger, expenses, invoices, receipts, payments, financial reports and reconciliation.' },
     { code: 'SALES', name: 'Sales', description: 'Customer orders, revenue, invoices and collections.' },
@@ -51,7 +50,7 @@ async function main() {
     });
     roleMap[r.code] = roleRecord.id;
   }
-  console.log('✅ Seeded 13 System Roles');
+  console.log('✅ Seeded 12 System Roles');
 
   // 3. Seed Base Permissions
   const basePermissions = [
@@ -81,18 +80,18 @@ async function main() {
     await prisma.rolePermission.upsert({
       where: {
         roleId_permissionId: {
-          roleId: roleMap['SUPER_ADMIN'],
+          roleId: roleMap['ADMIN'],
           permissionId: permRecord.id,
         },
       },
       update: {},
       create: {
-        roleId: roleMap['SUPER_ADMIN'],
+        roleId: roleMap['ADMIN'],
         permissionId: permRecord.id,
       },
     });
   }
-  console.log('✅ Seeded Base Permissions & Linked to SUPER_ADMIN');
+  console.log('✅ Seeded Base Permissions & Linked to ADMIN');
 
   // 4. Seed Bootstrap Admin Account using Environment Variables & Argon2id Hashing
   const superAdminEmail = (process.env.BOOTSTRAP_ADMIN_EMAIL || 'superadmin@anveshakhub.com').toLowerCase();
@@ -118,17 +117,17 @@ async function main() {
     where: {
       userId_roleId: {
         userId: superAdminUser.id,
-        roleId: roleMap['SUPER_ADMIN'],
+        roleId: roleMap['ADMIN'],
       },
     },
     update: {},
     create: {
       userId: superAdminUser.id,
-      roleId: roleMap['SUPER_ADMIN'],
+      roleId: roleMap['ADMIN'],
     },
   });
 
-  console.log(`✅ Seeded Bootstrap Admin Account (${superAdminEmail}) with Argon2id hashing & mandatory password change.`);
+  console.log(`✅ Seeded Bootstrap Admin Account (${superAdminEmail}) with ADMIN role, Argon2id hashing & mandatory password change.`);
   console.log('🎉 Master data seeding complete. Zero fake business records created!');
 }
 

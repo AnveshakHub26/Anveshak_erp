@@ -13,7 +13,7 @@ export class AuditLogsController {
   constructor(private readonly auditService: AuditLogsService) {}
 
   @Get()
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Roles('ADMIN')
   @ApiOperation({ summary: 'ADM-05 Audit Log - Read-only immutable audit trail' })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })

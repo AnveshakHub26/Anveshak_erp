@@ -41,26 +41,26 @@ export const Combobox: React.FC<ComboboxProps> = ({
       <div
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'flex cursor-pointer items-center justify-between rounded border border-[#D7DEE6] bg-white px-3 py-2 text-body text-[#17202A]',
+          'flex cursor-pointer items-center justify-between rounded-lg border border-[#E2E8F0] bg-white px-3 py-2 text-sm text-[#0F172A]',
           error && 'border-[#B42318]',
           className,
         )}
       >
         <span>{selectedOption ? selectedOption.label : placeholder}</span>
-        <Search className="h-4 w-4 text-[#5B6673]" />
+        <Search className="h-4 w-4 text-[#64748B]" />
       </div>
 
       {isOpen && (
-        <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded border border-[#D7DEE6] bg-white p-1 shadow-lg">
+        <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-[#E2E8F0] bg-white p-1 shadow-lg">
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search..."
-            className="mb-1 w-full rounded border border-[#D7DEE6] p-1.5 text-table focus:outline-none focus:ring-1 focus:ring-[#1F4E79]"
+            className="mb-1 w-full rounded border border-[#E2E8F0] p-1.5 text-xs text-[#0F172A] focus:outline-none focus:ring-1 focus:ring-[#d49b38]"
           />
           {filteredOptions.length === 0 ? (
-            <div className="p-2 text-center text-label text-[#5B6673]">No options found</div>
+            <div className="p-2 text-center text-xs text-[#64748B]">No options found</div>
           ) : (
             filteredOptions.map((opt) => (
               <div
@@ -71,18 +71,18 @@ export const Combobox: React.FC<ComboboxProps> = ({
                   setSearch('');
                 }}
                 className={cn(
-                  'cursor-pointer px-3 py-1.5 text-table hover:bg-[#F7F8FA]',
-                  opt.value === value && 'bg-[#F7F8FA] font-semibold text-[#1F4E79]',
+                  'cursor-pointer px-3 py-1.5 text-xs text-[#0F172A] hover:bg-[#F8FAFC]',
+                  opt.value === value && 'bg-[#F8FAFC] font-semibold text-[#d49b38]',
                 )}
               >
                 <div>{opt.label}</div>
-                {opt.sublabel && <div className="text-xs text-[#5B6673]">{opt.sublabel}</div>}
+                {opt.sublabel && <div className="text-xs text-[#64748B]">{opt.sublabel}</div>}
               </div>
             ))
           )}
         </div>
       )}
-      {error && <p className="mt-1 text-label text-[#B42318]">{error}</p>}
+      {error && <p className="mt-1 text-xs text-[#B42318]">{error}</p>}
     </div>
   );
 };

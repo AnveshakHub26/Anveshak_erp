@@ -69,21 +69,21 @@ export default function Fnd09NotificationsPage() {
   const unreadCount = notifications.filter((n) => !n.readAt).length;
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA] px-4 py-8 text-[#17202A]">
+    <div className="min-h-screen bg-[#F8FAFC] px-4 py-8 text-[#0F172A]">
       <div className="mx-auto max-w-4xl space-y-6">
         {/* Header */}
-        <div className="rounded border border-[#D7DEE6] bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
             <div className="flex items-center space-x-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded bg-[#17324D] text-white">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#d49b38] to-[#c48b28] text-[#151c2e] font-bold">
                 <Bell className="h-5 w-5" />
               </div>
               <div>
-                <h1 className="text-page-title font-semibold text-[#17324D]">
+                <h1 className="text-2xl font-bold text-[#0F172A]">
                   Notification Center
                 </h1>
-                <p className="text-label text-[#5B6673]">
-                  FND-09 In-App Operational Events & Alerts
+                <p className="text-xs text-[#64748B]">
+                  In-App Operational Events & System Alerts
                 </p>
               </div>
             </div>
@@ -91,10 +91,10 @@ export default function Fnd09NotificationsPage() {
             <div className="flex items-center space-x-3">
               <button
                 onClick={() => setUnreadOnly(!unreadOnly)}
-                className={`rounded px-3 py-1.5 text-xs font-medium border transition-colors ${
+                className={`rounded-full px-3.5 py-1 text-xs font-semibold uppercase tracking-wider transition-colors ${
                   unreadOnly
-                    ? 'border-[#1F4E79] bg-[#1F4E79] text-white'
-                    : 'border-[#D7DEE6] bg-white text-[#5B6673] hover:text-[#17202A]'
+                    ? 'bg-[#151c2e] text-white shadow-sm'
+                    : 'border border-[#E2E8F0] bg-white text-[#64748B] hover:text-[#0F172A]'
                 }`}
               >
                 Unread Only ({unreadCount})
@@ -104,8 +104,9 @@ export default function Fnd09NotificationsPage() {
                 size="sm"
                 onClick={handleMarkAllAsRead}
                 disabled={unreadCount === 0}
+                className="border-[#E2E8F0] text-[#0F172A]"
               >
-                <CheckCheck className="mr-1.5 h-4 w-4" /> Mark All Read
+                <CheckCheck className="mr-1.5 h-4 w-4 text-[#d49b38]" /> Mark All Read
               </Button>
             </div>
           </div>
@@ -116,18 +117,18 @@ export default function Fnd09NotificationsPage() {
         {/* Notifications List */}
         <div className="space-y-3">
           {loading ? (
-            <div className="rounded border border-[#D7DEE6] bg-white p-8 text-center text-label text-[#5B6673]">
+            <div className="rounded-xl border border-[#E2E8F0] bg-white p-8 text-center text-xs text-[#64748B]">
               Loading inbox notifications...
             </div>
           ) : notifications.length === 0 ? (
-            <div className="rounded border border-[#D7DEE6] bg-white p-12 text-center shadow-sm">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#F7F8FA] text-[#5B6673]">
+            <div className="rounded-xl border border-[#E2E8F0] bg-white p-12 text-center shadow-sm">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-[#F8FAFC] text-[#d49b38] border border-[#E2E8F0]">
                 <Inbox className="h-6 w-6" />
               </div>
-              <h3 className="text-section-title font-semibold text-[#17324D]">
+              <h3 className="text-lg font-bold text-[#0F172A]">
                 No Notifications Found
               </h3>
-              <p className="mt-1 text-label text-[#5B6673]">
+              <p className="mt-1 text-xs text-[#64748B]">
                 {unreadOnly
                   ? 'You have no unread notifications.'
                   : 'Notifications will appear here as operational events occur.'}
@@ -141,27 +142,27 @@ export default function Fnd09NotificationsPage() {
               return (
                 <div
                   key={item.id}
-                  className={`rounded border p-4 shadow-sm transition-colors ${
+                  className={`rounded-xl border p-4 shadow-sm transition-colors ${
                     isUnread
-                      ? 'border-[#1F4E79] bg-white border-l-4'
-                      : 'border-[#D7DEE6] bg-[#F7F8FA]'
+                      ? 'border-[#d49b38] bg-white border-l-4'
+                      : 'border-[#E2E8F0] bg-[#F8FAFC]'
                   }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <div className="flex items-center space-x-2">
-                        <span className="rounded border border-[#D7DEE6] bg-[#F7F8FA] px-2 py-0.5 text-xs font-semibold text-[#1F4E79]">
+                        <span className="rounded-full bg-[#151c2e] px-2.5 py-0.5 text-[10px] font-semibold uppercase text-white">
                           {item.eventType}
                         </span>
                         {isUnread && (
-                          <span className="rounded bg-[#1F4E79] px-2 py-0.5 text-xs font-medium text-white">
+                          <span className="rounded-full bg-[#d49b38] px-2 py-0.5 text-[10px] font-bold text-[#151c2e]">
                             NEW
                           </span>
                         )}
                       </div>
-                      <p className="text-body font-medium text-[#17202A]">{item.message}</p>
-                      <div className="flex items-center space-x-1 text-xs text-[#5B6673]">
-                        <Clock className="h-3.5 w-3.5" />
+                      <p className="text-xs font-semibold text-[#0F172A]">{item.message}</p>
+                      <div className="flex items-center space-x-1 text-xs text-[#64748B]">
+                        <Clock className="h-3.5 w-3.5 text-[#d49b38]" />
                         <span>{formattedDate}</span>
                       </div>
                     </div>
@@ -169,10 +170,10 @@ export default function Fnd09NotificationsPage() {
                     {isUnread && (
                       <button
                         onClick={() => handleMarkAsRead(item.id)}
-                        className="rounded border border-[#D7DEE6] bg-white px-2.5 py-1 text-xs font-medium text-[#1F4E79] hover:bg-[#F7F8FA] flex items-center"
+                        className="rounded-lg border border-[#E2E8F0] bg-white px-2.5 py-1 text-xs font-semibold text-[#0F172A] hover:bg-[#F8FAFC] hover:text-[#d49b38] flex items-center transition-colors"
                         title="Mark as read"
                       >
-                        <Check className="mr-1 h-3.5 w-3.5" /> Mark Read
+                        <Check className="mr-1 h-3.5 w-3.5 text-[#d49b38]" /> Mark Read
                       </button>
                     )}
                   </div>

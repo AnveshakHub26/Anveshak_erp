@@ -45,7 +45,7 @@ model User {
 
 model Role {
   id          String   @id @default(uuid())
-  code        String   @unique // e.g. SUPER_ADMIN, ADMIN, HR, FINANCE, SALES, PURCHASE, CRM_STAFF, PM, EXPERT, INTERN, QA, LEGAL, ORG_USER
+  code        String   @unique // e.g. ADMIN, HR, FINANCE, SALES, PURCHASE, CRM_STAFF, PM, EXPERT, INTERN, QA, LEGAL, ORG_USER
   name        String
   description String?
   active      Boolean  @default(true)

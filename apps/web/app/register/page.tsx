@@ -123,30 +123,30 @@ export default function Fnd03RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA] px-4 py-8 text-[#17202A]">
+    <div className="min-h-screen bg-[#F8FAFC] px-4 py-10 text-[#0F172A]">
       <div className="mx-auto max-w-3xl">
         {/* Navigation back link */}
         <div className="mb-6">
           <Link
             href="/"
-            className="inline-flex items-center text-label font-medium text-[#5B6673] hover:text-[#17202A] focus:outline-none focus:ring-2 focus:ring-[#1F4E79] rounded px-1 py-0.5"
+            className="inline-flex items-center text-xs font-semibold text-[#64748B] hover:text-[#d49b38] focus:outline-none focus:ring-2 focus:ring-[#d49b38] rounded-md px-2 py-1 transition-colors"
           >
-            <ArrowLeft className="mr-1.5 h-4 w-4" /> Return to Home
+            <ArrowLeft className="mr-1.5 h-4 w-4 text-[#d49b38]" /> Return to Home
           </Link>
         </div>
 
         {/* Form Card Header */}
-        <div className="mb-6 rounded border border-[#D7DEE6] bg-white p-6 shadow-sm">
-          <div className="flex items-center space-x-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded bg-[#17324D] font-bold text-white text-xl">
+        <div className="mb-6 rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
+          <div className="flex items-center space-x-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#d49b38] to-[#c48b28] font-bold text-[#151c2e] text-xl shadow-sm">
               AH
             </div>
             <div>
-              <h1 className="text-page-title font-semibold text-[#17324D]">
+              <h1 className="text-2xl font-bold tracking-tight text-[#0F172A]">
                 Organization Registration
               </h1>
-              <p className="mt-0.5 text-label text-[#5B6673]">
-                FND-03 — Onboarding Self-Registration Request
+              <p className="mt-0.5 text-xs text-[#64748B]">
+                Canonical Enterprise Onboarding Self-Registration
               </p>
             </div>
           </div>

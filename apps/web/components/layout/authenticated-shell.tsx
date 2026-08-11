@@ -10,7 +10,7 @@ export interface AuthenticatedShellProps {
 
 export const AuthenticatedShell: React.FC<AuthenticatedShellProps> = ({ children }) => {
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#F7F8FA]">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#F8FAFC]">
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopNav />

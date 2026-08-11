@@ -65,7 +65,7 @@ export class SystemService {
       };
 
       // Organization boundary restriction for ORG_USER
-      if (roles.includes('ORG_USER') && !roles.includes('SUPER_ADMIN') && !roles.includes('ADMIN')) {
+      if (roles.includes('ORG_USER') && !roles.includes('ADMIN')) {
         orgWhere.id = user.organizationId;
       }
 
@@ -87,9 +87,9 @@ export class SystemService {
       }
     }
 
-    // 2. Search Users (Restricted to SUPER_ADMIN, ADMIN, HR)
+    // 2. Search Users (Restricted to ADMIN, HR)
     if (category === 'all' || category === 'users') {
-      if (roles.includes('SUPER_ADMIN') || roles.includes('ADMIN') || roles.includes('HR')) {
+      if (roles.includes('ADMIN') || roles.includes('HR')) {
         const users = await this.prisma.user.findMany({
           where: {
             OR: [
@@ -122,7 +122,7 @@ export class SystemService {
         ],
       };
 
-      if (!roles.includes('SUPER_ADMIN') && !roles.includes('ADMIN')) {
+      if (!roles.includes('ADMIN')) {
         docWhere.OR = [
           { uploadedById: user.id },
           { visibility: 'PUBLIC' },

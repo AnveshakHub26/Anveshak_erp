@@ -21,8 +21,8 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('Access denied: User roles not resolved');
     }
 
-    // SUPER_ADMIN has global access
-    if (user.roles.includes('SUPER_ADMIN')) {
+    // ADMIN has global access across all modules
+    if (user.roles.includes('ADMIN')) {
       return true;
     }
 

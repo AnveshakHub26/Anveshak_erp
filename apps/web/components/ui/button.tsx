@@ -12,10 +12,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const baseStyles = 'inline-flex items-center justify-center font-medium rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed';
 
     const variants = {
-      primary: 'bg-[#1F4E79] text-white hover:bg-[#17324D] focus:ring-[#1F4E79]',
-      secondary: 'bg-[#D7DEE6] text-[#17202A] hover:bg-[#c1c7cd] focus:ring-[#D7DEE6]',
-      outline: 'border border-[#D7DEE6] bg-white text-[#17202A] hover:bg-[#F7F8FA] focus:ring-[#1F4E79]',
-      ghost: 'bg-transparent text-[#17202A] hover:bg-[#F7F8FA] focus:ring-[#1F4E79]',
+      primary: 'bg-gradient-to-r from-[#d49b38] to-[#c48b28] text-[#151c2e] font-semibold hover:opacity-95 shadow-sm focus:ring-[#d49b38]',
+      secondary: 'bg-[#151c2e] text-white hover:bg-[#182238] focus:ring-[#151c2e]',
+      outline: 'border border-[#D7DEE6] bg-white text-[#0f172a] hover:bg-[#F8FAFC] focus:ring-[#d49b38]',
+      ghost: 'bg-transparent text-[#475569] hover:text-[#0f172a] hover:bg-[#F1F5F9] focus:ring-[#d49b38]',
       danger: 'bg-[#B42318] text-white hover:bg-[#911c13] focus:ring-[#B42318]',
     };
 

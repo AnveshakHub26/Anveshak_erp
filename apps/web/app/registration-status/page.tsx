@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+
+export const dynamic = 'force-dynamic';
 import { useSearchParams } from 'next/navigation';
 import { apiRequest } from '@/lib/api-client';
 import { CheckCircle, ArrowLeft, Clock, ShieldCheck, AlertCircle, XCircle } from 'lucide-react';
@@ -52,21 +54,21 @@ function StatusContent() {
 
   if (loading) {
     return (
-      <div className="w-full max-w-lg rounded border border-[#D7DEE6] bg-white p-8 text-center shadow-sm">
-        <div className="text-body text-[#5B6673]">Verifying registration status with server...</div>
+      <div className="w-full max-w-lg rounded-xl border border-[#E2E8F0] bg-white p-8 text-center shadow-sm">
+        <div className="text-sm text-[#64748B]">Verifying registration status with server...</div>
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="w-full max-w-lg rounded border border-[#D7DEE6] bg-white p-8 shadow-sm">
+      <div className="w-full max-w-lg rounded-xl border border-[#E2E8F0] bg-white p-8 shadow-sm">
         <div className="mb-4 flex justify-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#FECDCA] text-[#B42318]">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#FDF2F2] text-[#B42318] border border-[#FECACA]">
             <AlertCircle className="h-8 w-8" />
           </div>
         </div>
-        <h1 className="text-center text-page-title font-semibold text-[#17324D]">
+        <h1 className="text-center text-xl font-bold text-[#0F172A]">
           Registration Reference Not Found
         </h1>
         <Alert variant="error" className="my-6">
@@ -74,13 +76,13 @@ function StatusContent() {
         </Alert>
         <div className="flex flex-col space-y-3">
           <Link href="/register" className="w-full">
-            <Button variant="primary" className="w-full">
+            <Button variant="primary" className="w-full bg-gradient-to-r from-[#d49b38] to-[#c48b28] text-[#151c2e] font-bold">
               Register Organization
             </Button>
           </Link>
           <Link href="/" className="w-full">
-            <Button variant="outline" className="w-full">
-              <ArrowLeft className="mr-2 h-4 w-4" /> Return to Home
+            <Button variant="outline" className="w-full border-[#E2E8F0] text-[#0F172A]">
+              <ArrowLeft className="mr-2 h-4 w-4 text-[#d49b38]" /> Return to Home
             </Button>
           </Link>
         </div>
@@ -95,7 +97,7 @@ function StatusContent() {
   });
 
   return (
-    <div className="w-full max-w-lg rounded border border-[#D7DEE6] bg-white p-8 shadow-sm">
+    <div className="w-full max-w-lg rounded-xl border border-[#E2E8F0] bg-white p-8 shadow-sm">
       {/* Icon based on status */}
       <div className="mb-6 flex justify-center">
         {data.status === 'APPROVED' || data.status === 'ACTIVE' ? (

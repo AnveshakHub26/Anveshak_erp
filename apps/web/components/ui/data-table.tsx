@@ -22,38 +22,38 @@ export function DataTable<T extends Record<string, any>>({
   emptyMessage = 'No records found.',
 }: DataTableProps<T>) {
   return (
-    <div className="w-full overflow-x-auto rounded border border-[#D7DEE6] bg-white">
-      <table className="w-full border-collapse text-left text-table">
+    <div className="w-full overflow-x-auto rounded-xl border border-[#E2E8F0] bg-white shadow-sm">
+      <table className="w-full border-collapse text-left text-xs">
         <thead>
-          <tr className="border-b border-[#D7DEE6] bg-[#F7F8FA] text-[#5B6673]">
+          <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC] text-[#64748B]">
             {columns.map((col, idx) => (
-              <th key={idx} className={cn('px-4 py-3 font-semibold', col.className)}>
+              <th key={idx} className={cn('px-4 py-3 font-semibold uppercase tracking-wider text-[11px]', col.className)}>
                 {col.header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-[#D7DEE6]">
+        <tbody className="divide-y divide-[#E2E8F0]">
           {isLoading ? (
             <tr>
-              <td colSpan={columns.length} className="px-4 py-8 text-center text-[#5B6673]">
+              <td colSpan={columns.length} className="px-4 py-8 text-center text-[#64748B]">
                 <div className="flex items-center justify-center space-x-2">
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#1F4E79] border-t-transparent" />
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#d49b38] border-t-transparent" />
                   <span>Loading records...</span>
                 </div>
               </td>
             </tr>
           ) : data.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="px-4 py-8 text-center text-[#5B6673]">
+              <td colSpan={columns.length} className="px-4 py-8 text-center text-[#64748B]">
                 {emptyMessage}
               </td>
             </tr>
           ) : (
             data.map((row, rowIdx) => (
-              <tr key={rowIdx} className="hover:bg-[#F7F8FA]">
+              <tr key={rowIdx} className="hover:bg-[#F8FAFC] transition-colors">
                 {columns.map((col, colIdx) => (
-                  <td key={colIdx} className={cn('px-4 py-3 text-[#17202A]', col.className)}>
+                  <td key={colIdx} className={cn('px-4 py-3 text-[#0F172A]', col.className)}>
                     {col.cell
                       ? col.cell(row)
                       : col.accessorKey

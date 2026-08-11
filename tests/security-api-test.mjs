@@ -52,7 +52,7 @@ async function run() {
   // ======================================================
   // TEST 1: Valid Login
   // ======================================================
-  console.log('--- Test 1: Valid Login (SUPER_ADMIN) ---');
+  console.log('--- Test 1: Valid Login (ADMIN) ---');
   const loginRes = await req('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email: 'superadmin@anveshakhub.com', password: 'Admin@Anveshak2026!' }),
@@ -60,7 +60,7 @@ async function run() {
   check('Login returns HTTP 200', loginRes.status === 200);
   check('Login response has user.email', loginRes.body?.user?.email === 'superadmin@anveshakhub.com');
   check('Login response has roles array', Array.isArray(loginRes.body?.user?.roles));
-  check('SUPER_ADMIN role assigned', loginRes.body?.user?.roles?.includes('SUPER_ADMIN'));
+  check('ADMIN role assigned', loginRes.body?.user?.roles?.includes('ADMIN'));
   check('mustChangePassword=true (bootstrap)', loginRes.body?.mustChangePassword === true);
   // Security: no accessToken in body
   check('accessToken NOT in response body (HttpOnly only)', !loginRes.body?.accessToken);

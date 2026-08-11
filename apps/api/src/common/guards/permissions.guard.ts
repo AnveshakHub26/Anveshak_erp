@@ -21,7 +21,7 @@ export class PermissionsGuard implements CanActivate {
       throw new ForbiddenException('Access denied: User permissions not resolved');
     }
 
-    if (user.roles?.includes('SUPER_ADMIN')) {
+    if (user.roles?.includes('ADMIN')) {
       return true;
     }
 

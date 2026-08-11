@@ -24,7 +24,7 @@ export class UsersController {
   }
 
   @Get()
-  @Roles('SUPER_ADMIN', 'ADMIN', 'HR')
+  @Roles('ADMIN', 'HR')
   @ApiOperation({ summary: 'ADM-02 Searchable user account list' })
   async findAll(@Query('page') page?: string, @Query('limit') limit?: string) {
     const pageNum = page ? parseInt(page, 10) : 1;
@@ -34,7 +34,7 @@ export class UsersController {
   }
 
   @Get(':id')
-  @Roles('SUPER_ADMIN', 'ADMIN', 'HR')
+  @Roles('ADMIN', 'HR')
   @ApiOperation({ summary: 'Get user details by ID' })
   async findOne(@Param('id') id: string) {
     const data = await this.usersService.findOne(id);

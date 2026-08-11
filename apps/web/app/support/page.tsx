@@ -63,27 +63,27 @@ export default function Fnd11SupportPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA] px-4 py-8 text-[#17202A]">
+    <div className="min-h-screen bg-[#F8FAFC] px-4 py-8 text-[#0F172A]">
       <div className="mx-auto max-w-2xl space-y-6">
         <Link
           href="/"
-          className="inline-flex items-center text-xs font-medium text-[#1F4E79] hover:underline"
+          className="inline-flex items-center text-xs font-semibold text-[#64748B] hover:text-[#d49b38] transition-colors"
         >
-          <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to Home Page
+          <ArrowLeft className="mr-1.5 h-3.5 w-3.5 text-[#d49b38]" /> Return to Home
         </Link>
 
         {/* Header */}
-        <div className="rounded border border-[#D7DEE6] bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
           <div className="flex items-center space-x-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded bg-[#17324D] text-white">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#d49b38] to-[#c48b28] text-[#151c2e] font-bold">
               <HelpCircle className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-page-title font-semibold text-[#17324D]">
+              <h1 className="text-2xl font-bold text-[#0F172A]">
                 Contact Administration & Technical Support
               </h1>
-              <p className="text-label text-[#5B6673]">
-                FND-11 Official Platform Support & Assistance Entry Point
+              <p className="text-xs text-[#64748B]">
+                Official Platform Technical Support & Assistance Entry Point
               </p>
             </div>
           </div>
@@ -92,36 +92,36 @@ export default function Fnd11SupportPage() {
         {serverError && <Alert variant="error">{serverError}</Alert>}
 
         {ticketResult ? (
-          <div className="rounded border border-[#D7DEE6] bg-white p-8 text-center shadow-sm space-y-4">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#F7F8FA] text-[#2F6F52]">
+          <div className="rounded-xl border border-[#E2E8F0] bg-white p-8 text-center shadow-sm space-y-4">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#EBF5F0] text-[#2F6F52] border border-[#A3D9C0]">
               <CheckCircle2 className="h-8 w-8" />
             </div>
-            <h2 className="text-section-title font-semibold text-[#17324D]">
+            <h2 className="text-xl font-bold text-[#0F172A]">
               Support Request Submitted
             </h2>
-            <p className="text-body text-[#17202A]">
+            <p className="text-xs text-[#0F172A]">
               Your support ticket reference is{' '}
-              <strong className="font-mono text-[#1F4E79]">{ticketResult.ticketId}</strong>.
+              <strong className="font-mono text-[#d49b38] bg-[#F8FAFC] px-2 py-0.5 rounded border border-[#E2E8F0]">{ticketResult.ticketId}</strong>.
             </p>
-            <p className="text-xs text-[#5B6673]">
+            <p className="text-xs text-[#64748B]">
               An administrator will review your submission and respond to your registered contact email address.
             </p>
             <div className="pt-2">
               <Link href="/">
-                <Button variant="primary" size="sm">
+                <Button variant="primary" size="sm" className="bg-gradient-to-r from-[#d49b38] to-[#c48b28] text-[#151c2e] font-bold">
                   Return to Home
                 </Button>
               </Link>
             </div>
           </div>
         ) : (
-          <div className="rounded border border-[#D7DEE6] bg-white p-6 shadow-sm">
+          <div className="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <FormField label="Support Category" required error={errors.category?.message} htmlFor="category">
                 <select
                   id="category"
                   {...register('category')}
-                  className="w-full rounded border border-[#D7DEE6] bg-white p-2 text-body text-[#17202A] focus:border-[#1F4E79] focus:outline-none"
+                  className="w-full rounded-lg border border-[#E2E8F0] bg-white p-2.5 text-xs text-[#0F172A] focus:border-[#d49b38] focus:outline-none focus:ring-1 focus:ring-[#d49b38]"
                 >
                   <option value="General Support">General Support</option>
                   <option value="Account Access">Account Access & Recovery</option>
@@ -134,14 +134,14 @@ export default function Fnd11SupportPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField label="Your Full Name" required error={errors.contactName?.message} htmlFor="contactName">
                   <div className="relative">
-                    <User className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-[#5B6673]" />
+                    <User className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-[#64748B]" />
                     <Input id="contactName" {...register('contactName')} className="pl-9" placeholder="John Doe" />
                   </div>
                 </FormField>
 
                 <FormField label="Contact Email" required error={errors.contactEmail?.message} htmlFor="contactEmail">
                   <div className="relative">
-                    <Mail className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-[#5B6673]" />
+                    <Mail className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-[#64748B]" />
                     <Input id="contactEmail" type="email" {...register('contactEmail')} className="pl-9" placeholder="john@company.com" />
                   </div>
                 </FormField>
@@ -156,12 +156,12 @@ export default function Fnd11SupportPage() {
                   id="message"
                   {...register('message')}
                   rows={5}
-                  className="w-full rounded border border-[#D7DEE6] bg-white p-3 text-body text-[#17202A] focus:border-[#1F4E79] focus:outline-none"
+                  className="w-full rounded-lg border border-[#E2E8F0] bg-white p-3 text-xs text-[#0F172A] focus:border-[#d49b38] focus:outline-none focus:ring-1 focus:ring-[#d49b38]"
                   placeholder="Describe your query or issue in detail..."
                 />
               </FormField>
 
-              <Button type="submit" variant="primary" isLoading={submitting} disabled={submitting} className="w-full sm:w-auto">
+              <Button type="submit" variant="primary" isLoading={submitting} disabled={submitting} className="w-full sm:w-auto bg-gradient-to-r from-[#d49b38] to-[#c48b28] text-[#151c2e] font-bold">
                 Submit Support Request
               </Button>
             </form>

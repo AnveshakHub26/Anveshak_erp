@@ -1,7 +1,6 @@
 // Shared TypeScript interfaces and domain types for AnveshakHub Enterprise Application
 
 export enum RoleCode {
-  SUPER_ADMIN = 'SUPER_ADMIN',
   ADMIN = 'ADMIN',
   HR = 'HR',
   FINANCE = 'FINANCE',

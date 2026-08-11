@@ -26,7 +26,7 @@ export class DocumentsService {
     if (user && doc.visibility === 'PRIVATE') {
       const roles: string[] = user.roles || [];
       const isOwner = doc.uploadedBy === user.id;
-      const isAdmin = roles.includes('SUPER_ADMIN') || roles.includes('ADMIN');
+      const isAdmin = roles.includes('ADMIN');
 
       if (!isOwner && !isAdmin) {
         throw new ForbiddenException('Access denied: You are not authorized to access this private document.');

@@ -9,17 +9,17 @@ export interface BadgeProps {
 
 export const Badge: React.FC<BadgeProps> = ({ variant = 'neutral', children, className }) => {
   const styles = {
-    neutral: 'bg-[#F7F8FA] text-[#5B6673] border-[#D7DEE6]',
-    success: 'bg-[#EBF5F0] text-[#2F6F52] border-[#2F6F52]',
-    warning: 'bg-[#FFF8E6] text-[#A56A00] border-[#A56A00]',
-    error: 'bg-[#FDF2F2] text-[#B42318] border-[#B42318]',
-    info: 'bg-[#F0F6FA] text-[#356A95] border-[#356A95]',
+    neutral: 'bg-[#F1F5F9] text-[#475569] border-[#E2E8F0]',
+    success: 'bg-[#EBF5F0] text-[#2F6F52] border-[#A3D9C0]',
+    warning: 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]',
+    error: 'bg-[#FDF2F2] text-[#B42318] border-[#FECACA]',
+    info: 'bg-[#F0F6FA] text-[#356A95] border-[#CBD5E1]',
   };
 
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded border px-2 py-0.5 text-xs font-medium',
+        'inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tracking-wider uppercase',
         styles[variant],
         className,
       )}

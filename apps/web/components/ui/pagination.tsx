@@ -16,10 +16,10 @@ export const Pagination: React.FC<PaginationProps> = ({
   onPageChange,
 }) => {
   return (
-    <div className="flex items-center justify-between border-t border-[#D7DEE6] bg-white px-4 py-3 text-label">
-      <div className="text-[#5B6673]">
-        Showing page <span className="font-semibold text-[#17202A]">{page}</span> of{' '}
-        <span className="font-semibold text-[#17202A]">{totalPages}</span> ({total} total records)
+    <div className="flex items-center justify-between border-t border-[#E2E8F0] bg-white px-4 py-3 text-xs">
+      <div className="text-[#64748B]">
+        Showing page <span className="font-semibold text-[#0F172A]">{page}</span> of{' '}
+        <span className="font-semibold text-[#0F172A]">{totalPages}</span> ({total} total records)
       </div>
       <div className="flex space-x-2">
         <Button

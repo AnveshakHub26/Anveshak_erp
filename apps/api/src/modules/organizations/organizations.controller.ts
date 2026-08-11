@@ -52,7 +52,7 @@ export class OrganizationsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get()
-  @Roles('SUPER_ADMIN', 'ADMIN', 'CRM_STAFF', 'FINANCE', 'SALES')
+  @Roles('ADMIN', 'CRM_STAFF', 'FINANCE', 'SALES')
   @ApiOperation({ summary: 'Paginated list of canonical business organizations' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 20 })
@@ -71,10 +71,10 @@ export class OrganizationsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(':id')
-  @Roles('SUPER_ADMIN', 'ADMIN', 'CRM_STAFF', 'FINANCE', 'SALES', 'ORG_USER')
+  @Roles('ADMIN', 'CRM_STAFF', 'FINANCE', 'SALES', 'ORG_USER')
   @ApiOperation({ summary: 'Get canonical organization details by ID (with boundary isolation)' })
   async findOne(@Param('id') id: string, @CurrentUser() user: any) {
-    if (user.roles?.includes('ORG_USER') && !user.roles?.includes('SUPER_ADMIN') && !user.roles?.includes('ADMIN')) {
+    if (user.roles?.includes('ORG_USER') && !user.roles?.includes('ADMIN')) {
       if (user.organizationId !== id) {
         throw new ForbiddenException('Access denied: You do not have permission to view this organization record.');
       }
@@ -87,7 +87,7 @@ export class OrganizationsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post()
-  @Roles('SUPER_ADMIN', 'ADMIN', 'CRM_STAFF')
+  @Roles('ADMIN', 'CRM_STAFF')
   @ApiOperation({ summary: 'Create a new canonical organization record' })
   async create(
     @Body()

@@ -13,7 +13,7 @@ export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
   @Get()
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Roles('ADMIN')
   @ApiOperation({ summary: 'List all system roles and assigned permissions' })
   async findAll() {
     const data = await this.rolesService.findAll();
@@ -21,7 +21,7 @@ export class RolesController {
   }
 
   @Get('permissions')
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Roles('ADMIN')
   @ApiOperation({ summary: 'List all available permission nodes' })
   async findAllPermissions() {
     const data = await this.rolesService.findAllPermissions();

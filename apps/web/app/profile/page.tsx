@@ -75,20 +75,20 @@ export default function Fnd07ProfilePage() {
   const currentUser = profile || authUser;
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA] px-4 py-8 text-[#17202A]">
+    <div className="min-h-screen bg-[#F8FAFC] px-4 py-8 text-[#0F172A]">
       <div className="mx-auto max-w-3xl space-y-6">
         {/* Header Card */}
-        <div className="rounded border border-[#D7DEE6] bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
             <div className="flex items-center space-x-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#17324D] text-white text-xl font-bold">
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#d49b38] to-[#c48b28] text-[#151c2e] text-xl font-bold shadow-sm">
                 {currentUser?.email?.substring(0, 2).toUpperCase() || 'US'}
               </div>
               <div>
-                <h1 className="text-page-title font-semibold text-[#17324D]">
+                <h1 className="text-2xl font-bold text-[#0F172A]">
                   {currentUser?.email}
                 </h1>
-                <p className="mt-0.5 text-label text-[#5B6673]">FND-07 User Profile & Credentials</p>
+                <p className="mt-0.5 text-xs text-[#64748B]">User Account Profile & Credentials</p>
               </div>
             </div>
             <StatusBadge status={currentUser?.status || 'ACTIVE'} />
@@ -99,15 +99,15 @@ export default function Fnd07ProfilePage() {
         {successMsg && <Alert variant="success">{successMsg}</Alert>}
 
         {/* Profile Details & Form */}
-        <div className="rounded border border-[#D7DEE6] bg-white p-6 shadow-sm space-y-6">
-          <h2 className="text-section-title font-semibold text-[#17324D] border-b border-[#D7DEE6] pb-3">
+        <div className="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm space-y-6">
+          <h2 className="text-lg font-bold text-[#0F172A] border-b border-[#E2E8F0] pb-3">
             Contact Information
           </h2>
 
           <form onSubmit={handleUpdateProfile} className="space-y-4">
             <FormField label="Email Address" required htmlFor="profileEmail">
               <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-[#5B6673]" />
+                <Mail className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-[#64748B]" />
                 <Input
                   id="profileEmail"
                   type="email"
@@ -119,28 +119,28 @@ export default function Fnd07ProfilePage() {
               </div>
             </FormField>
 
-            <Button type="submit" variant="primary" isLoading={isUpdating} disabled={isUpdating}>
+            <Button type="submit" variant="primary" isLoading={isUpdating} disabled={isUpdating} className="bg-gradient-to-r from-[#d49b38] to-[#c48b28] text-[#151c2e] font-bold">
               Save Profile Changes
             </Button>
           </form>
         </div>
 
         {/* Read-Only System Roles & Permissions */}
-        <div className="rounded border border-[#D7DEE6] bg-white p-6 shadow-sm space-y-4">
-          <div className="flex items-center space-x-2 border-b border-[#D7DEE6] pb-3">
-            <Shield className="h-5 w-5 text-[#1F4E79]" />
-            <h2 className="text-section-title font-semibold text-[#17324D]">
+        <div className="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm space-y-4">
+          <div className="flex items-center space-x-2 border-b border-[#E2E8F0] pb-3">
+            <Shield className="h-5 w-5 text-[#d49b38]" />
+            <h2 className="text-lg font-bold text-[#0F172A]">
               Assigned System Roles (Read-Only)
             </h2>
           </div>
-          <p className="text-xs text-[#5B6673]">
+          <p className="text-xs text-[#64748B]">
             System roles control security authorization and module access boundaries. Roles cannot be modified by user request.
           </p>
           <div className="flex flex-wrap gap-2 pt-2">
             {(currentUser?.roles || ['USER']).map((r: string) => (
               <span
                 key={r}
-                className="rounded border border-[#D7DEE6] bg-[#F7F8FA] px-3 py-1 text-xs font-semibold text-[#17324D]"
+                className="rounded-full bg-[#151c2e] px-3 py-1 text-xs font-semibold uppercase text-white"
               >
                 {r}
               </span>
@@ -149,21 +149,21 @@ export default function Fnd07ProfilePage() {
         </div>
 
         {/* Security & Password Entry */}
-        <div className="rounded border border-[#D7DEE6] bg-white p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-[#D7DEE6] pb-3">
+        <div className="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
             <div className="flex items-center space-x-2">
-              <Lock className="h-5 w-5 text-[#1F4E79]" />
-              <h2 className="text-section-title font-semibold text-[#17324D]">
+              <Lock className="h-5 w-5 text-[#d49b38]" />
+              <h2 className="text-lg font-bold text-[#0F172A]">
                 Account Password Security
               </h2>
             </div>
             <Link href="/reset-password">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="border-[#E2E8F0] text-[#0F172A]">
                 Change Password
               </Button>
             </Link>
           </div>
-          <p className="text-xs text-[#5B6673]">
+          <p className="text-xs text-[#64748B]">
             Update your account password via the single-use token password change workflow.
           </p>
         </div>

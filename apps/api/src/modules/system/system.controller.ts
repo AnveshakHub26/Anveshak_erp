@@ -55,7 +55,7 @@ export class SystemController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Roles('ADMIN')
   @Get('settings')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'ADM-08 Platform Settings & Global Config' })

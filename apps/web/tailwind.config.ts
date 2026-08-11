@@ -9,6 +9,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        brand: {
+          midnight: '#151c2e',
+          deep: '#182238',
+          gold: '#d49b38',
+          goldHover: '#c48b28',
+          goldLight: '#f5c768',
+        },
         navy: {
           900: '#17324D', // Primary Navy
           800: '#1F4E79', // Enterprise Blue
