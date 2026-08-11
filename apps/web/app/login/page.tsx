@@ -49,7 +49,7 @@ export default function Fnd02LoginPage() {
         else router.push('/projects');
       }
     } catch (err: any) {
-      if (err.status === 401) {
+      if (err.status === 401 || err.status === 400 || err.message?.toLowerCase().includes('invalid') || err.message?.toLowerCase().includes('credential')) {
         setServerError('Invalid email or password. Please verify your credentials and try again.');
       } else if (err.status === 403) {
         setServerError('Your account is currently inactive or restricted. Please contact system administration.');

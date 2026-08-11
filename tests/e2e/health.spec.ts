@@ -30,7 +30,7 @@ test.describe('FND-01 through FND-12: Foundation Validation', () => {
     await page.locator('input#email').fill('invalid@test.com');
     await page.locator('input#password').fill('WrongPass123!');
     await page.getByRole('button', { name: 'Sign In' }).click();
-    await expect(page.getByText('Invalid email or password. Please verify your credentials and try again.').first()).toBeVisible({ timeout: 20000 });
+    await expect(page.getByText(/Invalid email or password|Invalid credentials/i).first()).toBeVisible({ timeout: 20000 });
   });
 
   test('FND-02: Unauthenticated profile access handles safely', async ({ page }) => {

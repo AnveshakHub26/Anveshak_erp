@@ -13,7 +13,7 @@ export interface ComboboxProps {
   value?: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  error?: string;
+  error?: string | boolean;
   className?: string;
 }
 
@@ -82,7 +82,6 @@ export const Combobox: React.FC<ComboboxProps> = ({
           )}
         </div>
       )}
-      {error && <p className="mt-1 text-xs text-[#B42318]">{error}</p>}
     </div>
   );
 };
