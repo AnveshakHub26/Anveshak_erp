@@ -6,11 +6,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { apiRequest } from '@/lib/api-client';
-import { HelpCircle, Mail, User, MessageSquare, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { HelpCircle, Mail, User, MessageSquare, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/ui/form-field';
 import { Alert } from '@/components/ui/alert';
+import { PublicShell } from '@/components/layout/public-shell';
 
 const SupportSchema = z.object({
   category: z.string().min(1, 'Support category is required'),
@@ -63,14 +64,9 @@ export default function Fnd11SupportPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] px-4 py-8 text-[#0F172A]">
+    <PublicShell>
+    <div className="bg-[#F8FAFC] px-4 py-8 text-[#0F172A]">
       <div className="mx-auto max-w-2xl space-y-6">
-        <Link
-          href="/"
-          className="inline-flex items-center text-xs font-semibold text-[#64748B] hover:text-[#d49b38] transition-colors"
-        >
-          <ArrowLeft className="mr-1.5 h-3.5 w-3.5 text-[#d49b38]" /> Return to Home
-        </Link>
 
         {/* Header */}
         <div className="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
@@ -169,5 +165,6 @@ export default function Fnd11SupportPage() {
         )}
       </div>
     </div>
+    </PublicShell>
   );
 }

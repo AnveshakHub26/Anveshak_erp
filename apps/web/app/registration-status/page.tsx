@@ -10,6 +10,7 @@ import { CheckCircle, ArrowLeft, Clock, ShieldCheck, AlertCircle, XCircle } from
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { PublicShell } from '@/components/layout/public-shell';
 
 interface RegistrationStatusData {
   orgNumber: string;
@@ -208,10 +209,12 @@ function StatusContent() {
 
 export default function RegistrationStatusPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[#F7F8FA] px-4 py-8 text-[#17202A]">
-      <Suspense fallback={<div className="text-center text-label text-[#5B6673]">Loading registration status...</div>}>
-        <StatusContent />
-      </Suspense>
-    </div>
+    <PublicShell>
+      <div className="flex min-h-[calc(100vh-128px)] flex-col items-center justify-center bg-[#F8FAFC] px-4 py-8">
+        <Suspense fallback={<div className="text-center text-xs text-[#64748B]">Loading registration status...</div>}>
+          <StatusContent />
+        </Suspense>
+      </div>
+    </PublicShell>
   );
 }

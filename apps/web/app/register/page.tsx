@@ -14,7 +14,8 @@ import { Combobox } from '@/components/ui/combobox';
 import { Alert } from '@/components/ui/alert';
 import { FormField } from '@/components/ui/form-field';
 import { FormSection } from '@/components/ui/form-section';
-import { ArrowLeft, Building2, User, Lock, Mail, Phone, Globe, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { PublicShell } from '@/components/layout/public-shell';
+import { Building2, User, Lock, Mail, Phone, Globe, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 
 export default function Fnd03RegisterPage() {
   const router = useRouter();
@@ -123,17 +124,9 @@ export default function Fnd03RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] px-4 py-10 text-[#0F172A]">
+    <PublicShell>
+    <div className="bg-[#F8FAFC] px-4 py-10 text-[#0F172A]">
       <div className="mx-auto max-w-3xl">
-        {/* Navigation back link */}
-        <div className="mb-6">
-          <Link
-            href="/"
-            className="inline-flex items-center text-xs font-semibold text-[#64748B] hover:text-[#d49b38] focus:outline-none focus:ring-2 focus:ring-[#d49b38] rounded-md px-2 py-1 transition-colors"
-          >
-            <ArrowLeft className="mr-1.5 h-4 w-4 text-[#d49b38]" /> Return to Home
-          </Link>
-        </div>
 
         {/* Form Card Header */}
         <div className="mb-6 rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
@@ -331,5 +324,6 @@ export default function Fnd03RegisterPage() {
         </div>
       </div>
     </div>
+    </PublicShell>
   );
 }

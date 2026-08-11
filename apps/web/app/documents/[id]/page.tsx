@@ -7,6 +7,7 @@ import { apiRequest } from '@/lib/api-client';
 import { FileText, Download, ShieldCheck, ShieldAlert, ArrowLeft, History, Lock, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
+import { PublicShell } from '@/components/layout/public-shell';
 
 export default function Fnd10DocumentViewerPage() {
   const params = useParams();
@@ -62,37 +63,31 @@ export default function Fnd10DocumentViewerPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC] p-6 text-sm text-[#64748B]">
-        Loading document metadata...
-      </div>
+      <PublicShell>
+        <div className="flex min-h-[calc(100vh-128px)] items-center justify-center text-sm text-[#64748B]">
+          Loading document metadata...
+        </div>
+      </PublicShell>
     );
   }
 
   if (isUnauthorized) {
     return (
-      <div className="min-h-screen bg-[#151c2e] px-4 py-16 text-[#f8fafc] flex items-center justify-center relative overflow-hidden">
-        <div className="pointer-events-none absolute -top-40 left-1/2 h-[400px] w-[400px] -translate-x-1/2 rounded-full bg-[#d49b38]/10 blur-3xl"></div>
-
-        <div className="relative mx-auto max-w-md rounded-2xl border border-[#d49b38]/25 bg-[#182238]/90 p-8 text-center shadow-2xl backdrop-blur-md space-y-4">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#d49b38]/10 text-[#d49b38] border border-[#d49b38]/30">
-            <Lock className="h-7 w-7 text-[#d49b38]" />
+      <div className="min-h-screen bg-[#F8FAFC] px-4 py-16 flex items-center justify-center">
+        <div className="mx-auto max-w-md rounded-2xl border border-[#E2E8F0] bg-white p-8 text-center shadow-sm space-y-4">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FEF3C7] border border-[#FDE68A]">
+            <Lock className="h-7 w-7 text-[#92400E]" />
           </div>
-          <h1 className="text-2xl font-bold text-white">
-            403 Forbidden Access
-          </h1>
-          <p className="text-xs text-[#94a3b8]">
+          <h1 className="text-2xl font-bold text-[#0F172A]">403 Forbidden Access</h1>
+          <p className="text-xs text-[#64748B]">
             You are not authorized to view or download this private document.
           </p>
           <div className="pt-2 flex justify-center space-x-3">
             <Link href="/search">
-              <Button variant="outline" size="sm" className="border-[#d49b38]/40 bg-[#151c2e] text-white hover:bg-[#182238]">
-                Return to Search
-              </Button>
+              <Button variant="outline" size="sm">Return to Search</Button>
             </Link>
             <Link href="/">
-              <Button variant="primary" size="sm" className="bg-gradient-to-r from-[#d49b38] to-[#c48b28] text-[#151c2e] font-bold">
-                Go to Home
-              </Button>
+              <Button variant="primary" size="sm">Go to Home</Button>
             </Link>
           </div>
         </div>
@@ -128,8 +123,9 @@ export default function Fnd10DocumentViewerPage() {
   const isClean = doc.scanStatus === 'CLEAN';
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] px-4 py-8 text-[#0F172A]">
-      <div className="mx-auto max-w-4xl space-y-6">
+    <PublicShell>
+    <div className="min-h-[calc(100vh-128px)] bg-[#F8FAFC] px-4 py-8">
+    <div className="max-w-4xl mx-auto space-y-6">
         <Link
           href="/search"
           className="inline-flex items-center text-xs font-semibold text-[#64748B] hover:text-[#d49b38] transition-colors"
@@ -240,5 +236,6 @@ export default function Fnd10DocumentViewerPage() {
         </div>
       </div>
     </div>
+    </PublicShell>
   );
 }
