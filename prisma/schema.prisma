@@ -1,0 +1,275 @@
+// AnveshakHub Enterprise Application Database Schema
+// Source of Truth Master Build Blueprint v3.0
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// USER, ROLE & ACCESS CONTROL (RBAC)
+// ==========================================
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+model User {
+  id                   String       @id @default(uuid())
+  email                String       @unique
+  passwordHash         String       @map("password_hash")
+  mustChangePassword   Boolean      @default(false) @map("must_change_password")
+  passwordResetToken   String?      @unique @map("password_reset_token")
+  passwordResetExpires DateTime?    @map("password_reset_expires")
+  passwordResetUsed    Boolean      @default(false) @map("password_reset_used")
+  status               UserStatus   @default(PENDING)
+  lastLoginAt          DateTime?    @map("last_login_at")
+  createdAt            DateTime     @default(now()) @map("created_at")
+  updatedAt            DateTime     @updatedAt @map("updated_at")
+
+  userRoles     UserRole[]
+  orgUsers      OrganizationUser[]
+  uploadedDocs  Document[]         @relation("UploadedDocuments")
+  auditLogs     AuditLog[]         @relation("ActorAuditLogs")
+  notifications Notification[]     @relation("UserNotifications")
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  code        String   @unique // e.g. SUPER_ADMIN, ADMIN, HR, FINANCE, SALES, PURCHASE, CRM_STAFF, PM, EXPERT, INTERN, QA, LEGAL, ORG_USER
+  name        String
+  description String?
+  active      Boolean  @default(true)
+
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  code        String   @unique // e.g. organization:create, project:view, finance:manage
+  resource    String   // e.g. organization, project, finance
+  action      String   // e.g. create, read, update, delete, approve
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model UserRole {
+  userId String @map("user_id")
+  roleId String @map("role_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       String @map("role_id")
+  permissionId String @map("permission_id")
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// ==========================================
+// BUSINESS VERTICALS MASTER DATA
+// ==========================================
+
+model BusinessVertical {
+  id        String   @id @default(uuid())
+  code      String   @unique // BV-01, BV-02, BV-03, BV-04, BV-05, BV-06
+  name      String   // Official Corporate Service Offering Name
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  primaryOrganizations   Organization[]                 @relation("PrimaryBV")
+  organizationBvs        OrganizationBusinessVertical[]
+
+  @@map("business_verticals")
+}
+
+// ==========================================
+// CANONICAL ORGANIZATION MODEL
+// ==========================================
+
+enum OrgStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  INACTIVE
+}
+
+model Organization {
+  id          String    @id @default(uuid())
+  orgNumber   String    @unique @map("org_number") // e.g. ORG-000001
+  legalName   String    @map("legal_name")
+  tradeName   String?   @map("trade_name")
+  type        String    // e.g. Enterprise, Institution, Startup, Government
+  website     String?
+  address     String?
+  primaryBvId String    @map("primary_bv_id")
+  status      OrgStatus @default(DRAFT)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  primaryBv               BusinessVertical               @relation("PrimaryBV", fields: [primaryBvId], references: [id])
+  organizationBvs        OrganizationBusinessVertical[]
+  organizationUsers       OrganizationUser[]
+
+  @@map("organizations")
+}
+
+model OrganizationBusinessVertical {
+  organizationId String  @map("organization_id")
+  bvId           String  @map("bv_id")
+  isPrimary      Boolean @default(false) @map("is_primary")
+
+  organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  businessVertical BusinessVertical @relation(fields: [bvId], references: [id], onDelete: Cascade)
+
+  @@id([organizationId, bvId])
+  @@map("organization_business_verticals")
+}
+
+model OrganizationUser {
+  id             String    @id @default(uuid())
+  organizationId String    @map("organization_id")
+  userId         String    @map("user_id")
+  orgRole        String    @default("MEMBER") @map("org_role") // PRIMARY_CONTACT, ADMIN, MEMBER
+  status         UserStatus @default(ACTIVE)
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@map("organization_users")
+}
+
+// ==========================================
+// DOCUMENT FOUNDATION
+// ==========================================
+
+enum ScanStatus {
+  PENDING
+  CLEAN
+  INFECTED
+}
+
+enum DocumentVisibility {
+  PRIVATE
+  SHARED
+  PUBLIC
+}
+
+model Document {
+  id         String             @id @default(uuid())
+  entityType String             @map("entity_type") // e.g. Organization, Lead, Project, Deliverable
+  entityId   String             @map("entity_id")
+  type       String             // e.g. Registration, Proposal, NDA, Invoice
+  storageKey String             @map("storage_key")
+  scanStatus ScanStatus         @default(PENDING) @map("scan_status")
+  visibility DocumentVisibility @default(PRIVATE)
+  uploadedBy String             @map("uploaded_by")
+  createdAt  DateTime           @default(now()) @map("created_at")
+  updatedAt  DateTime           @updatedAt @map("updated_at")
+
+  uploader User              @relation("UploadedDocuments", fields: [uploadedBy], references: [id])
+  versions DocumentVersion[]
+
+  @@index([entityType, entityId])
+  @@map("documents")
+}
+
+model DocumentVersion {
+  id         String   @id @default(uuid())
+  documentId String   @map("document_id")
+  version    Int      @default(1)
+  storageKey String   @map("storage_key")
+  checksum   String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, version])
+  @@map("document_versions")
+}
+
+// ==========================================
+// NOTIFICATION FOUNDATION
+// ==========================================
+
+model Notification {
+  id              String    @id @default(uuid())
+  recipientUserId String    @map("recipient_user_id")
+  eventType       String    @map("event_type") // e.g. ORG_SUBMITTED, PROPOSAL_ACCEPTED, MILESTONE_DUE
+  entityType      String    @map("entity_type")
+  entityId        String    @map("entity_id")
+  message         String
+  readAt          DateTime? @map("read_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  recipient User @relation("UserNotifications", fields: [recipientUserId], references: [id], onDelete: Cascade)
+
+  @@index([recipientUserId, readAt])
+  @@map("notifications")
+}
+
+// ==========================================
+// AUDIT LOG FOUNDATION (IMMUTABLE)
+// ==========================================
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  actorUserId   String?  @map("actor_user_id")
+  action        String   // e.g. CREATE, EDIT, APPROVE, REJECT, ARCHIVE, DEACTIVATE, LOGIN
+  entityType    String   @map("entity_type")
+  entityId      String   @map("entity_id")
+  beforeJson    Json?    @map("before_json")
+  afterJson     Json?    @map("after_json")
+  ip            String?
+  sessionId     String?  @map("session_id")
+  correlationId String?  @map("correlation_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  actor User? @relation("ActorAuditLogs", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([actorUserId])
+  @@map("audit_logs")
+}
+
+// ==========================================
+// SYSTEM SETTINGS FOUNDATION
+// ==========================================
+
+model SystemSetting {
+  key       String   @id
+  valueJson Json     @map("value_json")
+  version   Int      @default(1)
+  updatedBy String?  @map("updated_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}

@@ -1,0 +1,35 @@
+{
+  "name": "anveshakhub-enterprise",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AnveshakHub Enterprise Management Platform Monorepo",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --prefix apps/web",
+    "dev:api": "npm run dev --prefix apps/api",
+    "build:web": "npm run build --prefix apps/web",
+    "build:api": "npm run build --prefix apps/api",
+    "build": "npm run build:api && npm run build:web",
+    "prisma:generate": "prisma generate --schema=./prisma/schema.prisma",
+    "prisma:migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
+    "prisma:seed": "ts-node prisma/seed/seed.ts",
+    "test:api": "npm run test --prefix apps/api",
+    "test:e2e": "playwright test",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.42.1",
+    "@types/node": "^20.11.24",
+    "prisma": "^5.10.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.7.1",
+    "@prisma/client": "^5.10.2"
+  }
+}

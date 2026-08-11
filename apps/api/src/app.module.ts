@@ -1,0 +1,60 @@
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { APP_FILTER, APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+
+import { PrismaModule } from './database/prisma.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
+import { RolesModule } from './modules/roles/roles.module';
+import { OrganizationsModule } from './modules/organizations/organizations.module';
+import { BusinessVerticalsModule } from './modules/business-verticals/business-verticals.module';
+import { DocumentsModule } from './modules/documents/documents.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
+import { SystemModule } from './modules/system/system.module';
+
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { AuditInterceptor } from './common/interceptors/audit.interceptor';
+import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 1 minute window
+        limit: 10,  // Max 10 requests per minute for rate-limited sensitive endpoints
+      },
+    ]),
+    PrismaModule,
+    AuthModule,
+    UsersModule,
+    RolesModule,
+    OrganizationsModule,
+    BusinessVerticalsModule,
+    DocumentsModule,
+    NotificationsModule,
+    AuditLogsModule,
+    SystemModule,
+  ],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: AllExceptionsFilter,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditInterceptor,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
+})
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(CorrelationIdMiddleware).forRoutes('*');
+  }
+}

@@ -1,0 +1,142 @@
+import { PrismaClient } from '@prisma/client';
+import * as argon2 from 'argon2';
+
+const prisma = new PrismaClient();
+
+async function main() {
+  console.log('🌱 Starting AnveshakHub Enterprise Master Data Seeding...');
+
+  // 1. Seed Official 6 Business Verticals (Master Data defined by corporate deck)
+  const businessVerticals = [
+    { code: 'BV-01', name: 'Research-led Projects', sortOrder: 1 },
+    { code: 'BV-02', name: 'IP and Knowledge Management', sortOrder: 2 },
+    { code: 'BV-03', name: 'Startup Ecosystem', sortOrder: 3 },
+    { code: 'BV-04', name: 'Consulting', sortOrder: 4 },
+    { code: 'BV-05', name: 'Design and Development', sortOrder: 5 },
+    { code: 'BV-06', name: 'Upskilling and Workshops', sortOrder: 6 },
+  ];
+
+  for (const bv of businessVerticals) {
+    await prisma.businessVertical.upsert({
+      where: { code: bv.code },
+      update: { name: bv.name, sortOrder: bv.sortOrder },
+      create: { code: bv.code, name: bv.name, sortOrder: bv.sortOrder },
+    });
+  }
+  console.log('✅ Seeded 6 Official Business Verticals (BV-01 to BV-06)');
+
+  // 2. Seed System Roles (Product Design Specification v3.0 Master Roles)
+  const roles = [
+    { code: 'SUPER_ADMIN', name: 'Super Admin', description: 'Full platform and governance access; emergency/technical administration.' },
+    { code: 'ADMIN', name: 'Admin', description: 'Operational administration, approvals, organizations, projects and configurable governance.' },
+    { code: 'HR', name: 'HR', description: 'Employee/personnel records, employment history, compensation, availability and HR reporting.' },
+    { code: 'FINANCE', name: 'Finance', description: 'Ledger, expenses, invoices, receipts, payments, financial reports and reconciliation.' },
+    { code: 'SALES', name: 'Sales', description: 'Customer orders, revenue, invoices and collections.' },
+    { code: 'PURCHASE', name: 'Purchase', description: 'Vendors, purchase orders, vendor invoices and vendor payments.' },
+    { code: 'CRM_STAFF', name: 'CRM Staff', description: 'External contacts, CRM-facing records, RFP/proposal process and CRM integration.' },
+    { code: 'PM', name: 'Project Manager', description: 'Assigned project execution, milestones, tasks, team allocation, timesheets, deliverables and closure.' },
+    { code: 'EXPERT', name: 'Expert', description: 'Assigned project work, tasks, deliverables, timesheets and configured reviews.' },
+    { code: 'INTERN', name: 'Intern', description: 'Assigned project tasks, timesheets and deliverables; no unrestricted finance/admin.' },
+    { code: 'QA', name: 'QA', description: 'Assigned deliverable QA review and approval/rejection.' },
+    { code: 'LEGAL', name: 'Legal', description: 'Assigned legal records and legal gates; project closure legal sign-off.' },
+    { code: 'ORG_USER', name: 'Organization User', description: 'Own organization, submitted RFPs, project information, documents, deliverable/client acceptance and own invoices/payment view.' },
+  ];
+
+  const roleMap: Record<string, string> = {};
+  for (const r of roles) {
+    const roleRecord = await prisma.role.upsert({
+      where: { code: r.code },
+      update: { name: r.name, description: r.description },
+      create: { code: r.code, name: r.name, description: r.description },
+    });
+    roleMap[r.code] = roleRecord.id;
+  }
+  console.log('✅ Seeded 13 System Roles');
+
+  // 3. Seed Base Permissions
+  const basePermissions = [
+    { code: 'auth:login', resource: 'auth', action: 'login' },
+    { code: 'organization:create', resource: 'organization', action: 'create' },
+    { code: 'organization:read', resource: 'organization', action: 'read' },
+    { code: 'organization:approve', resource: 'organization', action: 'approve' },
+    { code: 'project:read', resource: 'project', action: 'read' },
+    { code: 'project:manage', resource: 'project', action: 'manage' },
+    { code: 'hr:read', resource: 'hr', action: 'read' },
+    { code: 'hr:manage', resource: 'hr', action: 'manage' },
+    { code: 'finance:read', resource: 'finance', action: 'read' },
+    { code: 'finance:manage', resource: 'finance', action: 'manage' },
+    { code: 'sales:manage', resource: 'sales', action: 'manage' },
+    { code: 'purchase:manage', resource: 'purchase', action: 'manage' },
+    { code: 'audit:read', resource: 'audit', action: 'read' },
+    { code: 'system:manage', resource: 'system', action: 'manage' },
+  ];
+
+  for (const p of basePermissions) {
+    const permRecord = await prisma.permission.upsert({
+      where: { code: p.code },
+      update: { resource: p.resource, action: p.action },
+      create: { code: p.code, resource: p.resource, action: p.action },
+    });
+
+    await prisma.rolePermission.upsert({
+      where: {
+        roleId_permissionId: {
+          roleId: roleMap['SUPER_ADMIN'],
+          permissionId: permRecord.id,
+        },
+      },
+      update: {},
+      create: {
+        roleId: roleMap['SUPER_ADMIN'],
+        permissionId: permRecord.id,
+      },
+    });
+  }
+  console.log('✅ Seeded Base Permissions & Linked to SUPER_ADMIN');
+
+  // 4. Seed Bootstrap Admin Account using Environment Variables & Argon2id Hashing
+  const superAdminEmail = (process.env.BOOTSTRAP_ADMIN_EMAIL || 'superadmin@anveshakhub.com').toLowerCase();
+  const superAdminPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD || 'Admin@Anveshak2026!';
+  
+  // Hash password securely with Argon2id
+  const passwordHash = await argon2.hash(superAdminPassword, {
+    type: argon2.argon2id,
+  });
+
+  const superAdminUser = await prisma.user.upsert({
+    where: { email: superAdminEmail },
+    update: { status: 'ACTIVE' },
+    create: {
+      email: superAdminEmail,
+      passwordHash,
+      mustChangePassword: true, // Mandatory password change on initial bootstrap login
+      status: 'ACTIVE',
+    },
+  });
+
+  await prisma.userRole.upsert({
+    where: {
+      userId_roleId: {
+        userId: superAdminUser.id,
+        roleId: roleMap['SUPER_ADMIN'],
+      },
+    },
+    update: {},
+    create: {
+      userId: superAdminUser.id,
+      roleId: roleMap['SUPER_ADMIN'],
+    },
+  });
+
+  console.log(`✅ Seeded Bootstrap Admin Account (${superAdminEmail}) with Argon2id hashing & mandatory password change.`);
+  console.log('🎉 Master data seeding complete. Zero fake business records created!');
+}
+
+main()
+  .catch((e) => {
+    console.error('❌ Seeding failed:', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
