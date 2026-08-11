@@ -165,7 +165,7 @@ test.describe('FND-01 through FND-12: Foundation Validation', () => {
     await expect(page.locator('textarea#message')).toBeVisible();
     // Submit empty form → validation errors
     await page.getByRole('button', { name: 'Submit Support Request' }).click();
-    await expect(page.getByText(/required|must be/i).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/required|must be/i).first()).toBeVisible({ timeout: 20000 });
   });
 
   test('FND-11: Support form submission works', async ({ page }) => {

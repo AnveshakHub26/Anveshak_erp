@@ -131,20 +131,20 @@ export default function Fnd11SupportPage() {
                 <FormField label="Your Full Name" required error={errors.contactName?.message} htmlFor="contactName">
                   <div className="relative">
                     <User className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-[#64748B]" />
-                    <Input id="contactName" {...register('contactName')} className="pl-9" placeholder="John Doe" />
+                    <Input id="contactName" error={errors.contactName?.message} {...register('contactName')} className="pl-9" placeholder="John Doe" />
                   </div>
                 </FormField>
 
                 <FormField label="Contact Email" required error={errors.contactEmail?.message} htmlFor="contactEmail">
                   <div className="relative">
                     <Mail className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-[#64748B]" />
-                    <Input id="contactEmail" type="email" {...register('contactEmail')} className="pl-9" placeholder="john@company.com" />
+                    <Input id="contactEmail" type="email" error={errors.contactEmail?.message} {...register('contactEmail')} className="pl-9" placeholder="john@company.com" />
                   </div>
                 </FormField>
               </div>
 
               <FormField label="Subject" required error={errors.subject?.message} htmlFor="subject">
-                <Input id="subject" {...register('subject')} placeholder="Brief summary of request..." />
+                <Input id="subject" error={errors.subject?.message} {...register('subject')} placeholder="Brief summary of request..." />
               </FormField>
 
               <FormField label="Detailed Message" required error={errors.message?.message} htmlFor="message">
@@ -152,7 +152,9 @@ export default function Fnd11SupportPage() {
                   id="message"
                   {...register('message')}
                   rows={5}
-                  className="w-full rounded-lg border border-[#E2E8F0] bg-white p-3 text-xs text-[#0F172A] focus:border-[#d49b38] focus:outline-none focus:ring-1 focus:ring-[#d49b38]"
+                  className={`w-full rounded-lg border bg-white p-3 text-xs text-[#0F172A] focus:border-[#d49b38] focus:outline-none focus:ring-1 focus:ring-[#d49b38] ${
+                    errors.message ? 'border-[#B42318]' : 'border-[#E2E8F0]'
+                  }`}
                   placeholder="Describe your query or issue in detail..."
                 />
               </FormField>

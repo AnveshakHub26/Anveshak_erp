@@ -2,9 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { usePermissions } from '@/hooks/usePermissions';
-import { useAuthStore } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import {
   UserCheck,
@@ -17,16 +16,18 @@ import {
   ShieldCheck,
   Bell,
   Search,
+  ArrowLeft,
+  Home,
 } from 'lucide-react';
 import { UserMenu } from './user-menu';
 
 /**
  * AppShell — Full authenticated layout with Midnight Navy sidebar + white topnav.
- * Used for all post-login pages. Renders safely even when unauthenticated 
- * (sidebar items filtered by role permissions, empty for unauthenticated users).
+ * Used for all post-login pages with Back & Home navigation controls.
  */
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
+  const router = useRouter();
   const { hasRole } = usePermissions();
 
   const navItems = [
@@ -93,8 +94,31 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top Nav — White with border */}
         <header className="flex h-16 w-full items-center justify-between border-b border-[#E2E8F0] bg-white px-6 shadow-sm shrink-0">
-          <div className="flex items-center w-96">
-            <div className="relative w-full">
+          <div className="flex items-center space-x-3 w-auto md:w-[480px]">
+            {/* Back & Home controls */}
+            <div className="flex items-center space-x-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="flex items-center space-x-1 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-2.5 py-1.5 text-xs font-semibold text-[#64748B] hover:border-[#d49b38] hover:text-[#0F172A] transition-colors cursor-pointer"
+                title="Go to previous page"
+                aria-label="Go to previous page"
+              >
+                <ArrowLeft className="h-3.5 w-3.5 text-[#d49b38]" />
+                <span className="hidden sm:inline">Back</span>
+              </button>
+              <Link
+                href="/"
+                className="flex items-center space-x-1 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-2.5 py-1.5 text-xs font-semibold text-[#64748B] hover:border-[#d49b38] hover:text-[#0F172A] transition-colors"
+                title="Navigate to Home Page"
+                aria-label="Navigate to Home Page"
+              >
+                <Home className="h-3.5 w-3.5 text-[#d49b38]" />
+                <span className="hidden sm:inline">Home</span>
+              </Link>
+            </div>
+
+            <div className="relative w-full hidden sm:block">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#64748B]" />
               <input
                 type="text"
@@ -103,6 +127,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
               />
             </div>
           </div>
+
           <div className="flex items-center space-x-4">
             <Link href="/notifications" className="relative rounded-lg p-2 text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A] transition-colors" title="Notification Center">
               <Bell className="h-5 w-5" />
