@@ -112,7 +112,7 @@ export default function Fnd11SupportPage() {
           </div>
         ) : (
           <div className="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+            <form method="POST" onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
               <FormField label="Support Category" required error={errors.category?.message} htmlFor="category">
                 <select
                   id="category"

@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import * as argon2 from 'argon2';
 
@@ -93,21 +94,14 @@ async function main() {
   }
   console.log('✅ Seeded Base Permissions & Linked to ADMIN');
 
-  // 4. Seed Bootstrap Admin Account using Environment Variables & Argon2id Hashing
-  const superAdminEmail = (process.env.BOOTSTRAP_ADMIN_EMAIL || 'superadmin@anveshakhub.com').toLowerCase();
-  const superAdminPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD || 'Admin@Anveshak2026!';
+  // 4. Seed Bootstrap Admin Account with Single Supabase Auth Authority
+  const superAdminEmail = (process.env.BOOTSTRAP_ADMIN_EMAIL || 'anveshakhub26@gmail.com').toLowerCase();
   
-  // Hash password securely with Argon2id
-  const passwordHash = await argon2.hash(superAdminPassword, {
-    type: argon2.argon2id,
-  });
-
   const superAdminUser = await prisma.user.upsert({
     where: { email: superAdminEmail },
     update: { status: 'ACTIVE' },
     create: {
       email: superAdminEmail,
-      passwordHash,
       mustChangePassword: true, // Mandatory password change on initial bootstrap login
       status: 'ACTIVE',
     },
@@ -127,7 +121,7 @@ async function main() {
     },
   });
 
-  console.log(`✅ Seeded Bootstrap Admin Account (${superAdminEmail}) with ADMIN role, Argon2id hashing & mandatory password change.`);
+  console.log(`✅ Seeded Bootstrap Admin Account (${superAdminEmail}) mapped to single Supabase Auth identity with ADMIN role & mandatory password change.`);
   console.log('🎉 Master data seeding complete. Zero fake business records created!');
 }
 

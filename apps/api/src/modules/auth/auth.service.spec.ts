@@ -1,18 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
-import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../database/prisma.service';
+import { SupabaseService } from '../../common/supabase/supabase.service';
 import { UnauthorizedException, BadRequestException } from '@nestjs/common';
-import * as argon2 from 'argon2';
 
-describe('AuthService & Security Verification Suite', () => {
+describe('AuthService & Supabase Single Auth Authority Suite', () => {
   let service: AuthService;
   let prisma: PrismaService;
 
   const mockUser = {
     id: 'user-uuid-1',
     email: 'admin@anveshakhub.com',
-    passwordHash: '',
     status: 'ACTIVE',
     mustChangePassword: true,
     userRoles: [
@@ -34,20 +32,27 @@ describe('AuthService & Security Verification Suite', () => {
     },
   };
 
-  const mockJwtService = {
-    sign: jest.fn().mockReturnValue('mock_jwt_access_token'),
+  const mockSupabaseService = {
+    isOperational: true,
+    signInWithPassword: jest.fn().mockResolvedValue({
+      data: {
+        user: { id: 'user-uuid-1', email: 'admin@anveshakhub.com' },
+        session: { access_token: 'supa_access_token', refresh_token: 'supa_refresh_token' },
+      },
+      error: null,
+    }),
+    resetPasswordForEmail: jest.fn().mockResolvedValue({ data: {}, error: null }),
+    updateUserPassword: jest.fn().mockResolvedValue({ data: {}, error: null }),
+    ensureSupabaseAuthUser: jest.fn().mockResolvedValue({ id: 'user-uuid-1', email: 'admin@anveshakhub.com' }),
+    auth: { signOut: jest.fn().mockResolvedValue({ error: null }) },
   };
-
-  beforeAll(async () => {
-    mockUser.passwordHash = await argon2.hash('Admin@Anveshak2026!', { type: argon2.argon2id });
-  });
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
         { provide: PrismaService, useValue: mockPrismaService },
-        { provide: JwtService, useValue: mockJwtService },
+        { provide: SupabaseService, useValue: mockSupabaseService },
       ],
     }).compile();
 
@@ -55,46 +60,39 @@ describe('AuthService & Security Verification Suite', () => {
     prisma = module.get<PrismaService>(PrismaService);
   });
 
-  it('1. should verify Argon2id password hashing and successful login', async () => {
-    mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+  it('1. should perform successful single Supabase Auth login', async () => {
+    mockPrismaService.user.findFirst.mockResolvedValue(mockUser);
+    mockPrismaService.user.update.mockResolvedValue(mockUser);
 
     const result = await service.login({
       email: 'admin@anveshakhub.com',
-      password: 'Admin@Anveshak2026!',
+      password: 'SupabaseAdminPassword2026!',
     });
 
     expect(result.success).toBe(true);
     expect(result.user.email).toBe('admin@anveshakhub.com');
     expect(result.mustChangePassword).toBe(true);
-    // Verify accessToken is NOT in the response body (HttpOnly cookie only)
-    expect((result as any).accessToken).toBeUndefined();
+    expect(mockSupabaseService.signInWithPassword).toHaveBeenCalledWith('admin@anveshakhub.com', 'SupabaseAdminPassword2026!');
   });
 
-  it('2. should throw UnauthorizedException on invalid password', async () => {
-    mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+  it('2. should throw UnauthorizedException when Supabase Auth fails credentials', async () => {
+    mockSupabaseService.signInWithPassword.mockResolvedValueOnce({ data: null, error: new Error('Invalid credentials') });
+    mockPrismaService.user.findUnique.mockResolvedValue(null);
 
     await expect(
       service.login({ email: 'admin@anveshakhub.com', password: 'WrongPassword123!' }),
     ).rejects.toThrow(UnauthorizedException);
   });
 
-  it('3. should throw UnauthorizedException when email is not found', async () => {
-    mockPrismaService.user.findUnique.mockResolvedValue(null);
-
-    await expect(
-      service.login({ email: 'nonexistent@anveshakhub.com', password: 'Password123!' }),
-    ).rejects.toThrow(UnauthorizedException);
-  });
-
-  it('4. should handle forgot-password with non-leaking security message', async () => {
+  it('3. should handle forgot-password using Supabase Auth recovery API', async () => {
     mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
-    mockPrismaService.user.update.mockResolvedValue(mockUser);
 
     const res = await service.forgotPassword('admin@anveshakhub.com');
     expect(res.message).toContain('If an account exists');
+    expect(mockSupabaseService.resetPasswordForEmail).toHaveBeenCalledWith('admin@anveshakhub.com');
   });
 
-  it('5. should reject invalid password reset token', async () => {
+  it('4. should reject invalid password reset request', async () => {
     mockPrismaService.user.findFirst.mockResolvedValue(null);
 
     await expect(

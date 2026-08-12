@@ -151,7 +151,7 @@ export default function Fnd03RegisterPage() {
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <form method="POST" onSubmit={handleSubmit(onSubmit)} noValidate>
           {/* SECTION 1: ORGANIZATION DETAILS */}
           <FormSection
             title="1. Organization Details"

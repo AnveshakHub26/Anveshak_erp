@@ -114,7 +114,7 @@ function ResetPasswordForm() {
             </Button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+          <form method="POST" onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
             <input type="hidden" {...register('token')} value={tokenParam} />
 
             {/* New Password */}

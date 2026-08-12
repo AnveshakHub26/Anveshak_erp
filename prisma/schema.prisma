@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ==========================================
@@ -24,7 +25,7 @@ enum UserStatus {
 model User {
   id                   String       @id @default(uuid())
   email                String       @unique
-  passwordHash         String       @map("password_hash")
+  passwordHash         String?      @map("password_hash") // Deprecated: Supabase Auth is the single password authority
   mustChangePassword   Boolean      @default(false) @map("must_change_password")
   passwordResetToken   String?      @unique @map("password_reset_token")
   passwordResetExpires DateTime?    @map("password_reset_expires")

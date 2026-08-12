@@ -4,6 +4,7 @@ import { APP_FILTER, APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
 import { PrismaModule } from './database/prisma.module';
+import { SupabaseModule } from './common/supabase/supabase.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
@@ -20,7 +21,7 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: ['../../.env', '../.env', '.env', '.env.local'] }),
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 1 minute window
@@ -28,6 +29,7 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
       },
     ]),
     PrismaModule,
+    SupabaseModule,
     AuthModule,
     UsersModule,
     RolesModule,

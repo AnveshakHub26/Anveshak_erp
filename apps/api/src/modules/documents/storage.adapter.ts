@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { SupabaseService } from '../../common/supabase/supabase.service';
 
 @Injectable()
 export class S3StorageAdapter {
@@ -8,8 +9,8 @@ export class S3StorageAdapter {
   private s3Client: S3Client;
   private bucketName: string;
 
-  constructor() {
-    this.bucketName = process.env.S3_BUCKET || 'anveshak-private-documents';
+  constructor(@Optional() private supabaseService?: SupabaseService) {
+    this.bucketName = process.env.SUPABASE_STORAGE_BUCKET || process.env.S3_BUCKET || 'anveshak-private-documents';
 
     const endpoint = process.env.S3_ENDPOINT || 'http://localhost:9000';
     const region = process.env.S3_REGION || 'us-east-1';
@@ -27,10 +28,25 @@ export class S3StorageAdapter {
       forcePathStyle,
     });
 
-    this.logger.log(`Initialized S3/MinIO Storage Adapter (Bucket: ${this.bucketName}, Endpoint: ${endpoint})`);
+    this.logger.log(`Initialized Storage Adapter (Bucket: ${this.bucketName}, Supabase Operational: ${this.supabaseService?.isOperational || false})`);
   }
 
   async generateSignedDownloadUrl(key: string, expiresInSeconds = 300): Promise<string> {
+    if (this.supabaseService?.isOperational && this.supabaseService?.storage) {
+      try {
+        const { data, error } = await this.supabaseService.storage
+          .from(this.bucketName)
+          .createSignedUrl(key, expiresInSeconds);
+
+        if (!error && data?.signedUrl) {
+          return data.signedUrl;
+        }
+      } catch (err: any) {
+        this.logger.warn(`Supabase Storage signed URL fallback: ${err.message}`);
+      }
+    }
+
+    // Fallback to S3 / MinIO signed URL generation
     const command = new GetObjectCommand({
       Bucket: this.bucketName,
       Key: key,
@@ -40,6 +56,21 @@ export class S3StorageAdapter {
   }
 
   async generateSignedUploadUrl(key: string, contentType: string, expiresInSeconds = 300): Promise<string> {
+    if (this.supabaseService?.isOperational && this.supabaseService?.storage) {
+      try {
+        const { data, error } = await this.supabaseService.storage
+          .from(this.bucketName)
+          .createSignedUploadUrl(key);
+
+        if (!error && data?.signedUrl) {
+          return data.signedUrl;
+        }
+      } catch (err: any) {
+        this.logger.warn(`Supabase Storage signed upload URL fallback: ${err.message}`);
+      }
+    }
+
+    // Fallback to S3 / MinIO signed upload URL generation
     const command = new PutObjectCommand({
       Bucket: this.bucketName,
       Key: key,

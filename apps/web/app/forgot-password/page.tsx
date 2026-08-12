@@ -77,7 +77,7 @@ export default function Fnd04ForgotPasswordPage() {
                 </Link>
               </div>
             ) : (
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+              <form method="POST" onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
                 {serverError && (
                   <div className="rounded-lg border border-[#B42318]/30 bg-[#FDF2F2] px-4 py-3 text-sm text-[#B42318]">
                     {serverError}

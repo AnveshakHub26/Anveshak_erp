@@ -86,7 +86,7 @@ export default function Fnd02LoginPage() {
             )}
 
             {/* Form */}
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+            <form method="POST" onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
               {/* Email */}
               <div>
                 <label htmlFor="email" className="mb-1.5 block text-xs font-semibold text-[#0F172A]">

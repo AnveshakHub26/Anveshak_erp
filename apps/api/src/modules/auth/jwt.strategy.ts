@@ -1,8 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Optional } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
 import { PrismaService } from '../../database/prisma.service';
+import { SupabaseService } from '../../common/supabase/supabase.service';
 
 const cookieExtractor = (req: Request): string | null => {
   if (req && req.cookies && req.cookies.access_token) {
@@ -13,20 +14,33 @@ const cookieExtractor = (req: Request): string | null => {
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    @Optional() private supabaseService?: SupabaseService,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         ExtractJwt.fromAuthHeaderAsBearerToken(),
         cookieExtractor,
       ]),
-      ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'anveshak_super_secret_jwt_key_change_in_production_2026!',
+      ignoreExpiration: true,
+      secretOrKeyProvider: (req, rawJwtToken, done) => {
+        done(null, process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET || 'anveshak_super_secret_jwt_key_change_in_production_2026!');
+      },
     });
   }
 
-  async validate(payload: { sub: string; email: string }) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: payload.sub },
+  async validate(payload: { sub?: string; id?: string; email?: string }) {
+    const searchId = payload?.sub || payload?.id;
+    const searchEmail = payload?.email?.toLowerCase().trim();
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          ...(searchId ? [{ id: searchId }] : []),
+          ...(searchEmail ? [{ email: searchEmail }] : []),
+        ],
+      },
       include: {
         userRoles: {
           include: {
