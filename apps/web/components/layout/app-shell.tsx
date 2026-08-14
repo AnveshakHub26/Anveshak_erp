@@ -31,8 +31,9 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const { hasRole } = usePermissions();
 
   const navItems = [
-    { label: 'External Interface', href: '/external', icon: UserCheck, roles: ['ADMIN', 'CRM_STAFF'] },
-    { label: 'CRM', href: '/crm', icon: Building2, roles: ['ADMIN', 'CRM_STAFF', 'ORG_USER'] },
+    { label: 'Industry Portal', href: '/industry', icon: Building2, roles: ['ADMIN', 'ORG_USER'] },
+    { label: 'External Interface', href: '/external', icon: UserCheck, roles: ['ADMIN'] },
+    { label: 'CRM', href: '/crm', icon: Building2, roles: ['ADMIN', 'ORG_USER'] },
     { label: 'Projects', href: '/projects', icon: FolderGit2, roles: ['ADMIN', 'PM', 'EXPERT', 'INTERN', 'QA', 'LEGAL'] },
     { label: 'HR', href: '/hr', icon: Users, roles: ['ADMIN', 'HR'] },
     { label: 'Finance', href: '/finance', icon: CircleDollarSign, roles: ['ADMIN', 'FINANCE'] },

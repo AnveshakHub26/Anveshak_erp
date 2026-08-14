@@ -30,6 +30,9 @@ model User {
   passwordResetToken   String?      @unique @map("password_reset_token")
   passwordResetExpires DateTime?    @map("password_reset_expires")
   passwordResetUsed    Boolean      @default(false) @map("password_reset_used")
+  activationToken      String?      @unique @map("activation_token")
+  activationExpires    DateTime?    @map("activation_expires")
+  activationUsed       Boolean      @default(false) @map("activation_used")
   status               UserStatus   @default(PENDING)
   lastLoginAt          DateTime?    @map("last_login_at")
   createdAt            DateTime     @default(now()) @map("created_at")
@@ -40,13 +43,25 @@ model User {
   uploadedDocs  Document[]         @relation("UploadedDocuments")
   auditLogs     AuditLog[]         @relation("ActorAuditLogs")
   notifications Notification[]     @relation("UserNotifications")
+  problemStatements ProblemStatement[] @relation("CreatedProblemStatements")
+  createdProjects   Project[]          @relation("CreatedProjects")
+  employeeProfile           Employee?           @relation("UserEmployeeProfile")
+  employmentHistoryChanges  EmploymentHistory[] @relation("EmploymentHistoryChangers")
+  projectMemberAssignments  ProjectMember[]     @relation("ProjectMemberAssigners")
+  createdResourceRequirements ProjectResourceRequirement[] @relation("RequirementCreators")
+  createdMilestones           ProjectMilestone[]           @relation("MilestoneCreators")
+  createdTasks                ProjectTask[]                @relation("TaskCreators")
+  submittedDeliverables       ProjectDeliverable[]         @relation("DeliverableSubmitters")
+  reviewedDeliverables        ProjectDeliverable[]         @relation("DeliverableReviewers")
+  createdMeetings             ProjectMeeting[]             @relation("MeetingCreators")
+  createdResourceLinks        ProjectResourceLink[]       @relation("ResourceLinkCreators")
 
   @@map("users")
 }
 
 model Role {
   id          String   @id @default(uuid())
-  code        String   @unique // e.g. ADMIN, HR, FINANCE, SALES, PURCHASE, CRM_STAFF, PM, EXPERT, INTERN, QA, LEGAL, ORG_USER
+  code        String   @unique // e.g. ADMIN, HR, FINANCE, SALES, PURCHASE, PM, EXPERT, INTERN, QA, LEGAL, ORG_USER
   name        String
   description String?
   active      Boolean  @default(true)
@@ -104,6 +119,8 @@ model BusinessVertical {
 
   primaryOrganizations   Organization[]                 @relation("PrimaryBV")
   organizationBvs        OrganizationBusinessVertical[]
+  problemStatements      ProblemStatement[]
+  projects               Project[]
 
   @@map("business_verticals")
 }
@@ -116,29 +133,122 @@ enum OrgStatus {
   DRAFT
   SUBMITTED
   UNDER_REVIEW
+  CHANGES_REQUESTED
   APPROVED
   REJECTED
   INACTIVE
 }
 
 model Organization {
-  id          String    @id @default(uuid())
-  orgNumber   String    @unique @map("org_number") // e.g. ORG-000001
-  legalName   String    @map("legal_name")
-  tradeName   String?   @map("trade_name")
-  type        String    // e.g. Enterprise, Institution, Startup, Government
-  website     String?
-  address     String?
-  primaryBvId String    @map("primary_bv_id")
-  status      OrgStatus @default(DRAFT)
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  id            String    @id @default(uuid())
+  orgNumber     String    @unique @map("org_number") // e.g. ORG-000001
+  legalName     String    @map("legal_name")
+  tradeName     String?   @map("trade_name")
+  applicantType String    @default("Company") @map("applicant_type") // Company vs Industry
+  type          String    // e.g. Enterprise, Institution, Startup, Government
+  website       String?
+  address       String?
+  primaryBvId   String    @map("primary_bv_id")
+  status        OrgStatus @default(DRAFT)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
   primaryBv               BusinessVertical               @relation("PrimaryBV", fields: [primaryBvId], references: [id])
   organizationBvs        OrganizationBusinessVertical[]
   organizationUsers       OrganizationUser[]
+  problemStatements       ProblemStatement[]
+  projects                Project[]
+  employees               Employee[]
 
   @@map("organizations")
+}
+
+// ==========================================
+// INDUSTRY PROBLEM STATEMENT FOUNDATION
+// ==========================================
+
+enum ProblemStatementStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  CHANGES_REQUESTED
+  APPROVED
+  REJECTED
+  CLOSED
+  // Legacy values retained for database compatibility:
+  PUBLISHED
+  ACCEPTED
+}
+
+model ProblemStatement {
+  id               String                 @id @default(uuid())
+  code             String                 @unique // e.g. PS-2026-0001
+  organizationId   String                 @map("organization_id")
+  createdById      String                 @map("created_by_id")
+  bvId             String                 @map("bv_id")
+  title            String
+  description      String                 @db.Text
+  category         String?
+  budgetEstimate   String?                @map("budget_estimate")
+  expectedTimeline String?                @map("expected_timeline")
+  status           ProblemStatementStatus @default(DRAFT)
+  createdAt        DateTime               @default(now()) @map("created_at")
+  updatedAt        DateTime               @updatedAt @map("updated_at")
+
+  organization     Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy        User                   @relation("CreatedProblemStatements", fields: [createdById], references: [id], onDelete: Cascade)
+  businessVertical BusinessVertical       @relation(fields: [bvId], references: [id], onDelete: Cascade)
+  project          Project?
+
+  @@index([organizationId])
+  @@index([status])
+  @@map("problem_statements")
+}
+
+// ==========================================
+// ENTERPRISE PROJECT MANAGEMENT FOUNDATION
+// ==========================================
+
+enum ProjectStatus {
+  INITIATED
+  RESOURCE_ASSIGNMENT
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+model Project {
+  id                 String        @id @default(uuid())
+  projectCode        String        @unique @map("project_code") // e.g. PRJ-2026-000001
+  organizationId     String        @map("organization_id")
+  problemStatementId String        @unique @map("problem_statement_id")
+  bvId               String        @map("bv_id")
+  createdById        String        @map("created_by_id")
+  title              String
+  description        String        @db.Text
+  category           String?
+  budget             String?
+  timeline           String?
+  status             ProjectStatus @default(INITIATED)
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+
+  organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  problemStatement ProblemStatement @relation(fields: [problemStatementId], references: [id], onDelete: Restrict)
+  businessVertical BusinessVertical @relation(fields: [bvId], references: [id], onDelete: Restrict)
+  createdBy        User             @relation("CreatedProjects", fields: [createdById], references: [id], onDelete: Restrict)
+  members              ProjectMember[]
+  resourceRequirements ProjectResourceRequirement[]
+  milestones           ProjectMilestone[]
+  tasks                ProjectTask[]
+  deliverables         ProjectDeliverable[]
+  meetings             ProjectMeeting[]
+  resourceLinks        ProjectResourceLink[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@map("projects")
 }
 
 model OrganizationBusinessVertical {
@@ -274,3 +384,391 @@ model SystemSetting {
 
   @@map("system_settings")
 }
+
+model SystemCounter {
+  name      String   @id
+  nextValue Int      @default(1) @map("next_value")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_counters")
+}
+
+// ==========================================
+// HUMAN RESOURCES & WORKFORCE FOUNDATION
+// ==========================================
+
+enum EmployeeCategory {
+  EXPERT
+  INTERN
+  STAFF
+  EXECUTIVE
+}
+
+enum EmploymentType {
+  PERMANENT
+  PROBATIONARY
+  TEMPORARY
+  CONTRACT
+  PART_TIME
+}
+
+enum EmploymentStatus {
+  ONBOARDING
+  PROBATION
+  ACTIVE
+  ON_LEAVE
+  RESIGNED
+  TERMINATED
+}
+
+enum NdaStatus {
+  PENDING
+  SIGNED_PHYSICAL
+  SIGNED_ELECTRONIC
+  EXPIRED
+}
+
+model Employee {
+  id               String           @id @default(uuid())
+  employeeCode     String           @unique @map("employee_code") // e.g. EMP-2026-000001 (lifelong immutable identifier)
+  userId           String           @unique @map("user_id")
+  organizationId   String?          @map("organization_id")
+  firstName        String           @map("first_name")
+  lastName         String           @map("last_name")
+  fullName         String           @map("full_name")
+  workEmail        String           @unique @map("work_email")
+  personalEmail    String?          @map("personal_email")
+  phone            String?
+  dateOfBirth      DateTime?        @map("date_of_birth")
+  gender           String?
+  address          String?          @db.Text
+  professionalRole String           @map("professional_role")
+  department       String
+  designation      String
+  category         EmployeeCategory @default(STAFF)
+  employmentType   EmploymentType   @default(PERMANENT) @map("employment_type")
+  status           EmploymentStatus @default(ONBOARDING)
+  joiningDate      DateTime         @map("joining_date")
+  exitDate         DateTime?        @map("exit_date")
+  skills           String[]         @default([])
+  technologies     String[]         @default([])
+  baseSalary       String?          @map("base_salary")
+  ndaStatus        NdaStatus        @default(PENDING) @map("nda_status")
+  ndaSignedAt      DateTime?        @map("nda_signed_at")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  user               User                @relation("UserEmployeeProfile", fields: [userId], references: [id], onDelete: Restrict)
+  organization       Organization?       @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  history            EmploymentHistory[]
+  projectMemberships    ProjectMember[]
+  assignedTasks         ProjectTask[]
+  meetingParticipations ProjectMeetingParticipant[]
+
+  @@index([department])
+  @@index([status])
+  @@index([category])
+  @@index([employmentType])
+  @@map("employees")
+}
+
+model EmploymentHistory {
+  id                  String            @id @default(uuid())
+  employeeId          String            @map("employee_id")
+  changeType          String            @map("change_type") // e.g. REHIRED, TYPE_CHANGE, STATUS_CHANGE, DESIGNATION_CHANGE
+  previousType        EmploymentType?   @map("previous_type")
+  newType             EmploymentType?   @map("new_type")
+  previousStatus      EmploymentStatus? @map("previous_status")
+  newStatus           EmploymentStatus? @map("new_status")
+  previousDesignation String?           @map("previous_designation")
+  newDesignation      String?           @map("new_designation")
+  remarks             String?           @db.Text
+  effectiveDate       DateTime          @default(now()) @map("effective_date")
+  changedById         String            @map("changed_by_id")
+  createdAt           DateTime          @default(now()) @map("created_at")
+
+  employee  Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  changedBy User     @relation("EmploymentHistoryChangers", fields: [changedById], references: [id], onDelete: Restrict)
+
+  @@index([employeeId])
+  @@map("employment_history")
+}
+
+model ProjectMember {
+  id            String    @id @default(uuid())
+  projectId     String    @map("project_id")
+  employeeId    String    @map("employee_id")
+  requirementId String?   @map("requirement_id")
+  projectRole   String    @map("project_role")
+  allocationPct Float?    @default(100.0) @map("allocation_pct")
+  startDate     DateTime? @map("start_date")
+  endDate       DateTime? @map("end_date")
+  assignedAt    DateTime  @default(now()) @map("assigned_at")
+  removedAt     DateTime? @map("removed_at")
+  status        String    @default("ACTIVE") // ACTIVE, RELEASED
+  assignedById  String    @map("assigned_by_id")
+
+  project     Project                     @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  employee    Employee                    @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  requirement ProjectResourceRequirement? @relation(fields: [requirementId], references: [id], onDelete: SetNull)
+  assignedBy  User                        @relation("ProjectMemberAssigners", fields: [assignedById], references: [id], onDelete: Restrict)
+
+  @@unique([projectId, employeeId, status])
+  @@index([projectId])
+  @@index([employeeId])
+  @@index([requirementId])
+  @@map("project_members")
+}
+
+// ==========================================
+// PROJECT RESOURCE REQUIREMENT FOUNDATION
+// ==========================================
+
+enum RequirementPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+model ProjectResourceRequirement {
+  id               String              @id @default(uuid())
+  projectId        String              @map("project_id")
+  professionalRole String              @map("professional_role")
+  category         EmployeeCategory?   @map("category")
+  employmentType   EmploymentType?     @map("employment_type")
+  requiredCount    Int                 @default(1) @map("required_count")
+  allocationPct    Float               @default(100.0) @map("allocation_pct")
+  skills           String[]            @default([])
+  technologies     String[]            @default([])
+  startDate        DateTime?           @map("start_date")
+  endDate          DateTime?           @map("end_date")
+  priority         RequirementPriority @default(HIGH)
+  notes            String?             @db.Text
+  isFulfilled      Boolean             @default(false) @map("is_fulfilled")
+  createdById      String              @map("created_by_id")
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
+
+  project   Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy User            @relation("RequirementCreators", fields: [createdById], references: [id], onDelete: Restrict)
+  members   ProjectMember[]
+
+  @@index([projectId])
+  @@index([priority])
+  @@index([isFulfilled])
+  @@map("project_resource_requirements")
+}
+
+// ==========================================
+// ENTERPRISE PROJECT EXECUTION & MANAGEMENT
+// ==========================================
+
+enum MilestoneStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+}
+
+enum TaskPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  COMPLETED
+  BLOCKED
+}
+
+enum DeliverableStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  REVISION_REQUESTED
+  APPROVED
+  REJECTED
+}
+
+model ProjectMilestone {
+  id              String          @id @default(uuid())
+  projectId       String          @map("project_id")
+  title           String
+  description     String?         @db.Text
+  sequence        Int             @default(1)
+  startDate       DateTime?       @map("start_date")
+  dueDate         DateTime        @map("due_date")
+  completedAt     DateTime?       @map("completed_at")
+  status          MilestoneStatus @default(PLANNED)
+  progressPct     Float           @default(0.0) @map("progress_pct")
+  isClientVisible Boolean         @default(true) @map("is_client_visible")
+  createdById     String          @map("created_by_id")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  project      Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy    User                 @relation("MilestoneCreators", fields: [createdById], references: [id], onDelete: Restrict)
+  tasks        ProjectTask[]
+  deliverables ProjectDeliverable[]
+
+  @@index([projectId])
+  @@index([status])
+  @@index([isClientVisible])
+  @@index([sequence])
+  @@map("project_milestones")
+}
+
+model ProjectTask {
+  id                 String       @id @default(uuid())
+  projectId          String       @map("project_id")
+  milestoneId        String?      @map("milestone_id")
+  assigneeEmployeeId String       @map("assignee_employee_id")
+  title              String
+  description        String?      @db.Text
+  priority           TaskPriority @default(MEDIUM)
+  status             TaskStatus   @default(TODO)
+  startDate          DateTime?    @map("start_date")
+  dueDate            DateTime?    @map("due_date")
+  completedAt        DateTime?    @map("completed_at")
+  progressPct        Float        @default(0.0) @map("progress_pct")
+  estimatedHours     Float?       @map("estimated_hours")
+  actualHours        Float?       @map("actual_hours")
+  isClientVisible    Boolean      @default(false) @map("is_client_visible")
+  createdById        String       @map("created_by_id")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+
+  project          Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  milestone        ProjectMilestone? @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
+  assigneeEmployee Employee          @relation(fields: [assigneeEmployeeId], references: [id], onDelete: Restrict)
+  createdBy        User              @relation("TaskCreators", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([projectId])
+  @@index([milestoneId])
+  @@index([assigneeEmployeeId])
+  @@index([status])
+  @@index([priority])
+  @@index([isClientVisible])
+  @@index([dueDate])
+  @@map("project_tasks")
+}
+
+model ProjectDeliverable {
+  id              String            @id @default(uuid())
+  projectId       String            @map("project_id")
+  milestoneId     String?           @map("milestone_id")
+  title           String
+  description     String?           @db.Text
+  status          DeliverableStatus @default(DRAFT)
+  isClientVisible Boolean           @default(true) @map("is_client_visible")
+  submittedById   String            @map("submitted_by_id")
+  submittedAt     DateTime          @default(now()) @map("submitted_at")
+  reviewedById    String?           @map("reviewed_by_id")
+  reviewedAt      DateTime?         @map("reviewed_at")
+  reviewNotes     String?           @db.Text @map("review_notes")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  milestone   ProjectMilestone? @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
+  submittedBy User              @relation("DeliverableSubmitters", fields: [submittedById], references: [id], onDelete: Restrict)
+  reviewedBy  User?             @relation("DeliverableReviewers", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([milestoneId])
+  @@index([status])
+  @@index([isClientVisible])
+  @@index([submittedById])
+  @@index([reviewedById])
+  @@map("project_deliverables")
+}
+
+enum MeetingProvider {
+  GOOGLE_MEET
+  MICROSOFT_TEAMS
+  ZOOM
+  OTHER
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  REQUESTED
+}
+
+enum ResourceType {
+  GIT_REPOSITORY
+  DESIGN
+  DOCUMENTATION
+  DATASET
+  API
+  CLOUD_STORAGE
+  PROJECT_MANAGEMENT
+  RESEARCH
+  OTHER
+}
+
+model ProjectMeeting {
+  id              String          @id @default(uuid())
+  projectId       String          @map("project_id")
+  title           String
+  description     String?         @db.Text
+  meetingUrl      String          @map("meeting_url")
+  meetingProvider MeetingProvider @default(GOOGLE_MEET) @map("meeting_provider")
+  startDateTime   DateTime        @map("start_date_time")
+  endDateTime     DateTime        @map("end_date_time")
+  status          MeetingStatus   @default(SCHEDULED)
+  isClientVisible Boolean         @default(false) @map("is_client_visible")
+  createdById     String          @map("created_by_id")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  project      Project                     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy    User                        @relation("MeetingCreators", fields: [createdById], references: [id], onDelete: Restrict)
+  participants ProjectMeetingParticipant[]
+
+  @@index([projectId])
+  @@index([startDateTime])
+  @@index([status])
+  @@map("project_meetings")
+}
+
+model ProjectMeetingParticipant {
+  meetingId  String @map("meeting_id")
+  employeeId String @map("employee_id")
+
+  meeting  ProjectMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  employee Employee       @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
+  @@id([meetingId, employeeId])
+  @@map("project_meeting_participants")
+}
+
+model ProjectResourceLink {
+  id              String       @id @default(uuid())
+  projectId       String       @map("project_id")
+  title           String
+  description     String?      @db.Text
+  url             String
+  resourceType    ResourceType @default(OTHER) @map("resource_type")
+  isClientVisible Boolean      @default(false) @map("is_client_visible")
+  createdById     String       @map("created_by_id")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy User    @relation("ResourceLinkCreators", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([projectId])
+  @@index([resourceType])
+  @@map("project_resource_links")
+}
+
+
+

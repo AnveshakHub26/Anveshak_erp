@@ -14,6 +14,9 @@ import { DocumentsModule } from './modules/documents/documents.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { SystemModule } from './modules/system/system.module';
+import { IndustryModule } from './modules/industry/industry.module';
+import { ProjectsModule } from './modules/projects/projects.module';
+import { HRModule } from './modules/hr/hr.module';
 
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
@@ -39,6 +42,9 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
     NotificationsModule,
     AuditLogsModule,
     SystemModule,
+    IndustryModule,
+    ProjectsModule,
+    HRModule,
   ],
   providers: [
     {

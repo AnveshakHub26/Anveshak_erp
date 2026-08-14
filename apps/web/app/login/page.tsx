@@ -45,7 +45,6 @@ export default function Fnd02LoginPage() {
         else if (response.user?.mustChangePassword) router.push('/reset-password?reason=mandatory');
         else if (roles.includes('HR')) router.push('/hr');
         else if (roles.includes('FINANCE')) router.push('/finance');
-        else if (roles.includes('CRM_STAFF')) router.push('/crm');
         else router.push('/projects');
       }
     } catch (err: any) {

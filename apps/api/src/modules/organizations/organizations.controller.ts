@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards, ForbiddenException, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards, ForbiddenException, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { OrganizationsService } from './organizations.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -21,6 +21,7 @@ export class OrganizationsController {
   async register(
     @Body()
     body: {
+      applicantType?: string;
       legalName: string;
       tradeName?: string;
       type: string;
@@ -33,6 +34,7 @@ export class OrganizationsController {
       password: string;
       primaryBvId: string;
       additionalBvIds?: string[];
+      documentStorageKeys?: string[];
     },
   ) {
     const data = await this.orgsService.registerOrganization(body);
@@ -52,26 +54,30 @@ export class OrganizationsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get()
-  @Roles('ADMIN', 'CRM_STAFF', 'FINANCE', 'SALES')
+  @Roles('ADMIN', 'FINANCE', 'SALES')
   @ApiOperation({ summary: 'Paginated list of canonical business organizations' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 20 })
   @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'status', required: false })
+  @ApiQuery({ name: 'type', required: false })
   async findAll(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
+    @Query('status') status?: string,
+    @Query('type') type?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 20;
-    const data = await this.orgsService.findAll(pageNum, limitNum, search);
+    const data = await this.orgsService.findAll(pageNum, limitNum, search, status, type);
     return { success: true, data };
   }
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(':id')
-  @Roles('ADMIN', 'CRM_STAFF', 'FINANCE', 'SALES', 'ORG_USER')
+  @Roles('ADMIN', 'FINANCE', 'SALES', 'ORG_USER')
   @ApiOperation({ summary: 'Get canonical organization details by ID (with boundary isolation)' })
   async findOne(@Param('id') id: string, @CurrentUser() user: any) {
     if (user.roles?.includes('ORG_USER') && !user.roles?.includes('ADMIN')) {
@@ -86,8 +92,26 @@ export class OrganizationsController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch(':id/decision')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'ADM-03 Process ADMIN approval decision (APPROVE, REJECT, REQUEST_CHANGES)' })
+  async processDecision(
+    @Param('id') id: string,
+    @CurrentUser('id') adminUserId: string,
+    @Body()
+    body: {
+      decision: 'APPROVE' | 'REJECT' | 'REQUEST_CHANGES';
+      reason?: string;
+    },
+  ) {
+    const data = await this.orgsService.processDecision(id, adminUserId, body.decision, body.reason);
+    return { success: true, data };
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post()
-  @Roles('ADMIN', 'CRM_STAFF')
+  @Roles('ADMIN')
   @ApiOperation({ summary: 'Create a new canonical organization record' })
   async create(
     @Body()

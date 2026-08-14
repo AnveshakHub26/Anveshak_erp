@@ -33,7 +33,6 @@ async function main() {
     { code: 'FINANCE', name: 'Finance', description: 'Ledger, expenses, invoices, receipts, payments, financial reports and reconciliation.' },
     { code: 'SALES', name: 'Sales', description: 'Customer orders, revenue, invoices and collections.' },
     { code: 'PURCHASE', name: 'Purchase', description: 'Vendors, purchase orders, vendor invoices and vendor payments.' },
-    { code: 'CRM_STAFF', name: 'CRM Staff', description: 'External contacts, CRM-facing records, RFP/proposal process and CRM integration.' },
     { code: 'PM', name: 'Project Manager', description: 'Assigned project execution, milestones, tasks, team allocation, timesheets, deliverables and closure.' },
     { code: 'EXPERT', name: 'Expert', description: 'Assigned project work, tasks, deliverables, timesheets and configured reviews.' },
     { code: 'INTERN', name: 'Intern', description: 'Assigned project tasks, timesheets and deliverables; no unrestricted finance/admin.' },

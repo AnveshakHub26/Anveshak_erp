@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import * as argon2 from 'argon2';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class OrganizationsService {
@@ -13,6 +14,7 @@ export class OrganizationsService {
   }
 
   async registerOrganization(data: {
+    applicantType?: string;
     legalName: string;
     tradeName?: string;
     type: string;
@@ -25,6 +27,7 @@ export class OrganizationsService {
     password: string;
     primaryBvId: string;
     additionalBvIds?: string[];
+    documentStorageKeys?: string[];
   }) {
     const emailLower = data.email.toLowerCase().trim();
 
@@ -42,19 +45,30 @@ export class OrganizationsService {
       throw new ConflictException('An organization with this legal name is already registered.');
     }
 
-    // 3. Resolve ORG_USER role
+    // 3. Check duplicate website domain if provided
+    if (data.website && data.website.trim()) {
+      const cleanWebsite = data.website.trim().toLowerCase();
+      const existingDomain = await this.prisma.organization.findFirst({
+        where: { website: { equals: cleanWebsite, mode: 'insensitive' } },
+      });
+      if (existingDomain) {
+        throw new ConflictException('An organization with this website domain is already registered.');
+      }
+    }
+
+    // 4. Resolve ORG_USER role
     const orgUserRole = await this.prisma.role.findUnique({ where: { code: 'ORG_USER' } });
     if (!orgUserRole) {
       throw new BadRequestException('System configuration error: ORG_USER role not found.');
     }
 
-    // 4. Hash password with Argon2id
+    // 5. Hash password with Argon2id
     const passwordHash = await argon2.hash(data.password, { type: argon2.argon2id });
 
-    // 5. Generate human-readable Organization Number
+    // 6. Generate human-readable Organization Number
     const orgNumber = await this.generateOrgNumber();
 
-    // 6. Execute atomic creation transaction
+    // 7. Execute atomic creation transaction
     const result = await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
@@ -77,9 +91,10 @@ export class OrganizationsService {
           orgNumber,
           legalName: data.legalName.trim(),
           tradeName: data.tradeName?.trim() || null,
+          applicantType: data.applicantType || 'Company',
           type: data.type,
-          website: data.website || null,
-          address: data.address || null,
+          website: data.website?.trim() || null,
+          address: data.address?.trim() || null,
           primaryBvId: data.primaryBvId,
           status: 'SUBMITTED',
           organizationBvs: {
@@ -107,6 +122,22 @@ export class OrganizationsService {
         },
       });
 
+      // Link any uploaded registration documents to the organization entity
+      if (data.documentStorageKeys && data.documentStorageKeys.length > 0) {
+        for (const storageKey of data.documentStorageKeys) {
+          await tx.document.create({
+            data: {
+              entityType: 'Organization',
+              entityId: organization.id,
+              type: 'Registration',
+              storageKey,
+              visibility: 'PRIVATE',
+              uploadedBy: user.id,
+            },
+          });
+        }
+      }
+
       await tx.auditLog.create({
         data: {
           actorUserId: user.id,
@@ -117,6 +148,7 @@ export class OrganizationsService {
             orgNumber: organization.orgNumber,
             legalName: organization.legalName,
             status: organization.status,
+            applicantType: data.applicantType || 'Company',
           },
         },
       });
@@ -151,16 +183,29 @@ export class OrganizationsService {
     return org;
   }
 
-  async findAll(page = 1, limit = 20, search?: string) {
+  async findAll(page = 1, limit = 20, search?: string, status?: string, type?: string) {
     const skip = (page - 1) * limit;
-    const where = search
-      ? {
-          OR: [
-            { legalName: { contains: search, mode: 'insensitive' as const } },
-            { orgNumber: { contains: search, mode: 'insensitive' as const } },
-          ],
-        }
-      : {};
+    const whereAnd: any[] = [];
+
+    if (search && search.trim()) {
+      whereAnd.push({
+        OR: [
+          { legalName: { contains: search.trim(), mode: 'insensitive' as const } },
+          { orgNumber: { contains: search.trim(), mode: 'insensitive' as const } },
+          { tradeName: { contains: search.trim(), mode: 'insensitive' as const } },
+        ],
+      });
+    }
+
+    if (status && status.trim()) {
+      whereAnd.push({ status: status.trim() as any });
+    }
+
+    if (type && type.trim()) {
+      whereAnd.push({ type: { equals: type.trim(), mode: 'insensitive' as const } });
+    }
+
+    const where = whereAnd.length > 0 ? { AND: whereAnd } : {};
 
     const [items, total] = await Promise.all([
       this.prisma.organization.findMany({
@@ -170,6 +215,7 @@ export class OrganizationsService {
         include: {
           primaryBv: true,
           organizationBvs: { include: { businessVertical: true } },
+          organizationUsers: { include: { user: true } },
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -199,7 +245,135 @@ export class OrganizationsService {
       throw new NotFoundException(`Organization with ID ${id} not found`);
     }
 
-    return org;
+    // Fetch attached compliance/registration documents for this organization
+    const documents = await this.prisma.document.findMany({
+      where: { entityType: 'Organization', entityId: id },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      ...org,
+      documents,
+    };
+  }
+
+  async processDecision(
+    id: string,
+    adminUserId: string,
+    decision: 'APPROVE' | 'REJECT' | 'REQUEST_CHANGES',
+    reason?: string,
+  ) {
+    const org = await this.prisma.organization.findUnique({
+      where: { id },
+      include: { organizationUsers: { include: { user: true } } },
+    });
+
+    if (!org) {
+      throw new NotFoundException(`Organization with ID ${id} not found.`);
+    }
+
+    // State transition guard: block decisions on applications already in final states
+    if (org.status === 'APPROVED' || org.status === 'REJECTED') {
+      throw new BadRequestException(
+        `Cannot process decision on organization '${org.legalName}' because it is already in final state '${org.status}'.`,
+      );
+    }
+
+    if (decision === 'REJECT' && (!reason || !reason.trim())) {
+      throw new BadRequestException('A reason is mandatory when rejecting an organization onboarding request.');
+    }
+
+    if (decision === 'REQUEST_CHANGES' && (!reason || !reason.trim())) {
+      throw new BadRequestException('A detailed comment is mandatory when requesting changes on an onboarding request.');
+    }
+
+    const primaryOrgUser = org.organizationUsers.find((ou) => ou.orgRole === 'PRIMARY_CONTACT') || org.organizationUsers[0];
+    const primaryUserId = primaryOrgUser?.userId;
+
+    let targetOrgStatus: 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED';
+    let targetUserStatus: 'INACTIVE' | 'PENDING';
+    let auditAction: string;
+
+    let activationToken: string | null = null;
+    let activationExpires: Date | null = null;
+
+    if (decision === 'APPROVE') {
+      targetOrgStatus = 'APPROVED';
+      targetUserStatus = 'PENDING';
+      auditAction = 'APPROVE_ORGANIZATION';
+      activationToken = crypto.randomBytes(32).toString('hex');
+      activationExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    } else if (decision === 'REJECT') {
+      targetOrgStatus = 'REJECTED';
+      targetUserStatus = 'INACTIVE';
+      auditAction = 'REJECT_ORGANIZATION';
+    } else {
+      targetOrgStatus = 'CHANGES_REQUESTED';
+      targetUserStatus = 'PENDING';
+      auditAction = 'REQUEST_ORGANIZATION_CHANGES';
+    }
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const updatedOrg = await tx.organization.update({
+        where: { id },
+        data: { status: targetOrgStatus },
+      });
+
+      if (primaryUserId) {
+        await tx.user.update({
+          where: { id: primaryUserId },
+          data: {
+            status: targetUserStatus,
+            activationToken: decision === 'APPROVE' ? activationToken : undefined,
+            activationExpires: decision === 'APPROVE' ? activationExpires : undefined,
+            activationUsed: false,
+          },
+        });
+
+        await tx.organizationUser.updateMany({
+          where: { organizationId: id, userId: primaryUserId },
+          data: { status: targetUserStatus === 'INACTIVE' ? 'INACTIVE' : 'PENDING' },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: adminUserId,
+          action: auditAction,
+          entityType: 'ORGANIZATION',
+          entityId: id,
+          beforeJson: { status: org.status },
+          afterJson: {
+            status: targetOrgStatus,
+            decision,
+            reason: reason?.trim() || null,
+            decidedBy: adminUserId,
+            activationToken: decision === 'APPROVE' ? activationToken : null,
+          },
+        },
+      });
+
+      if (primaryUserId) {
+        let notifMessage = `Your organization (${org.legalName}) onboarding request has been `;
+        if (decision === 'APPROVE') notifMessage += 'APPROVED. Please complete account activation (FND-04) to access your dashboard.';
+        else if (decision === 'REJECT') notifMessage += `REJECTED. Reason: ${reason?.trim()}`;
+        else notifMessage += `returned for changes. Action required: ${reason?.trim()}`;
+
+        await tx.notification.create({
+          data: {
+            recipientUserId: primaryUserId,
+            eventType: `ORG_${targetOrgStatus}`,
+            entityType: 'ORGANIZATION',
+            entityId: id,
+            message: notifMessage,
+          },
+        });
+      }
+
+      return updatedOrg;
+    });
+
+    return result;
   }
 
   async create(data: {
