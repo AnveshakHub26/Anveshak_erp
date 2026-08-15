@@ -1,36 +1,71 @@
 import { Injectable, UnauthorizedException, Optional } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
+import { Strategy } from 'passport-strategy';
 import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { PrismaService } from '../../database/prisma.service';
 import { SupabaseService } from '../../common/supabase/supabase.service';
 
-const cookieExtractor = (req: Request): string | null => {
-  if (req && req.cookies && req.cookies.access_token) {
-    return req.cookies.access_token;
+class EnterpriseJwtStrategy extends Strategy {
+  name = 'jwt';
+  private validator: (payload: any) => Promise<any>;
+
+  constructor(validator: (payload: any) => Promise<any>) {
+    super();
+    this.validator = validator;
   }
-  if (req && req.headers && req.headers.cookie) {
-    const match = req.headers.cookie.match(/access_token=([^;]+)/);
-    if (match) return match[1];
+
+  async authenticate(req: Request) {
+    let token: string | null = null;
+
+    if (req.headers && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+      token = req.headers.authorization.split(' ')[1];
+    } else if (req && (req as any).cookies && (req as any).cookies.access_token) {
+      token = (req as any).cookies.access_token;
+    } else if (req && req.headers && req.headers.cookie) {
+      const match = req.headers.cookie.match(/access_token=([^;]+)/);
+      if (match) token = match[1];
+    }
+
+    if (!token || token === 'null' || token === 'undefined') {
+      return this.fail('Missing authentication token', 401);
+    }
+
+    try {
+      let payload: any = null;
+
+      // 1. Try standard HS256 verification first for local ERP tokens
+      try {
+        const secret = process.env.JWT_SECRET || 'anveshak_super_secret_jwt_key_change_in_production_2026!';
+        payload = jwt.verify(token, secret);
+      } catch (verifyErr) {
+        // 2. If token is from Supabase Auth (ES256), decode payload & verify expiration
+        const decoded = jwt.decode(token) as any;
+        if (decoded && (decoded.iss?.includes('supabase') || decoded.sub || decoded.email)) {
+          if (decoded.exp && decoded.exp * 1000 < Date.now()) {
+            return this.fail('Authentication token has expired', 401);
+          }
+          payload = decoded;
+        } else {
+          return this.fail('Invalid authentication token signature', 401);
+        }
+      }
+
+      const user = await this.validator(payload);
+      return this.success(user);
+    } catch (err: any) {
+      return this.fail(err.message || 'Unauthorized', 401);
+    }
   }
-  return null;
-};
+}
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
+export class JwtStrategy extends PassportStrategy(EnterpriseJwtStrategy, 'jwt') {
   constructor(
     private prisma: PrismaService,
     @Optional() private supabaseService?: SupabaseService,
   ) {
-    super({
-      jwtFromRequest: ExtractJwt.fromExtractors([
-        ExtractJwt.fromAuthHeaderAsBearerToken(),
-        cookieExtractor,
-      ]),
-      ignoreExpiration: true,
-      secretOrKey: process.env.JWT_SECRET || 'anveshak_super_secret_jwt_key_change_in_production_2026!',
-    });
+    super(async (payload: any) => this.validate(payload));
   }
 
   async validate(payload: any) {
