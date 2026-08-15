@@ -463,4 +463,78 @@ export class OrganizationsService {
       },
     });
   }
+
+  /**
+   * DELETE /api/v1/organizations/:id — Admin deletion of organization record and associated user accounts
+   */
+  async deleteOrganization(id: string, adminUserId: string) {
+    const org = await this.prisma.organization.findUnique({
+      where: { id },
+      include: {
+        organizationUsers: { include: { user: true } },
+      },
+    });
+
+    if (!org) {
+      throw new NotFoundException(`Organization with ID '${id}' not found.`);
+    }
+
+    const userIdsToDelete = org.organizationUsers.map((ou) => ou.userId);
+
+    await this.prisma.$transaction(async (tx) => {
+      // 1. Delete documents attached to this organization
+      await tx.document.deleteMany({
+        where: { entityType: 'Organization', entityId: id },
+      });
+
+      // 2. Delete organization business vertical links
+      await tx.organizationBusinessVertical.deleteMany({
+        where: { organizationId: id },
+      });
+
+      // 3. Delete organization user links
+      await tx.organizationUser.deleteMany({
+        where: { organizationId: id },
+      });
+
+      // 4. Delete organization record
+      await tx.organization.delete({
+        where: { id },
+      });
+
+      // 5. Delete associated users (and their roles/notifications)
+      for (const uid of userIdsToDelete) {
+        const otherOrgUsers = await tx.organizationUser.count({ where: { userId: uid } });
+        if (otherOrgUsers === 0) {
+          await tx.notification.deleteMany({ where: { recipientUserId: uid } });
+          await tx.userRole.deleteMany({ where: { userId: uid } });
+          await tx.user.delete({ where: { id: uid } });
+
+          // Supabase Auth user teardown
+          if (this.supabaseService?.isOperational && this.supabaseService?.getClient()) {
+            try {
+              const client = this.supabaseService.getClient();
+              await client?.auth.admin.deleteUser(uid);
+            } catch {}
+          }
+        }
+      }
+
+      // 6. Record Audit Log
+      await tx.auditLog.create({
+        data: {
+          actorUserId: adminUserId,
+          action: 'DELETE_ORGANIZATION',
+          entityType: 'ORGANIZATION',
+          entityId: id,
+          afterJson: { legalName: org.legalName, orgNumber: org.orgNumber, deletedBy: adminUserId },
+        },
+      });
+    });
+
+    return {
+      success: true,
+      message: `Organization '${org.legalName}' (${org.orgNumber}) and associated user accounts deleted successfully.`,
+    };
+  }
 }

@@ -30,6 +30,7 @@ import {
   Globe,
   MapPin,
   Clock,
+  Trash2,
 } from 'lucide-react';
 
 interface OrganizationItem {
@@ -57,7 +58,7 @@ export default function Adm03ApprovalsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('SUBMITTED');
+  const [statusFilter, setStatusFilter] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +79,22 @@ export default function Adm03ApprovalsPage() {
     reason: '',
   });
   const [isSubmittingDecision, setIsSubmittingDecision] = useState(false);
+
+  // Delete Modal State
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    orgId: string;
+    orgName: string;
+    orgNumber: string;
+    email: string;
+  }>({
+    isOpen: false,
+    orgId: '',
+    orgName: '',
+    orgNumber: '',
+    email: '',
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Check ADMIN Authorization
   useEffect(() => {
@@ -192,6 +209,26 @@ export default function Adm03ApprovalsPage() {
       alert(err.message || 'Failed to submit approval decision.');
     } finally {
       setIsSubmittingDecision(false);
+    }
+  };
+
+  const handleDeleteOrganization = async () => {
+    if (!deleteModal.orgId) return;
+    setIsDeleting(true);
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      const res = await apiRequest(`/organizations/${deleteModal.orgId}`, {
+        method: 'DELETE',
+      });
+      setSuccessMsg(res.data?.message || `Organization '${deleteModal.orgName}' deleted successfully.`);
+      setDeleteModal({ isOpen: false, orgId: '', orgName: '', orgNumber: '', email: '' });
+      setSelectedOrg(null);
+      loadApplications();
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete organization.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -378,15 +415,35 @@ export default function Adm03ApprovalsPage() {
                         </td>
                         <td className="px-5 py-4">{statusBadge(item.status)}</td>
                         <td className="px-5 py-4 text-right">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => openDetailModal(item.id)}
-                            className="text-xs"
-                          >
-                            <Eye className="h-3.5 w-3.5 mr-1" />
-                            Review
-                          </Button>
+                          <div className="flex items-center justify-end space-x-2">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => openDetailModal(item.id)}
+                              className="text-xs font-semibold"
+                            >
+                              <Eye className="h-3.5 w-3.5 mr-1" />
+                              Review
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                setDeleteModal({
+                                  isOpen: true,
+                                  orgId: item.id,
+                                  orgName: item.legalName,
+                                  orgNumber: item.orgNumber,
+                                  email: primaryUser?.email || 'N/A',
+                                })
+                              }
+                              className="text-xs text-[#EF4444] border-[#EF4444]/30 hover:bg-[#FCE8E6] transition-colors"
+                              title="Delete Organization Record & Free Account"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -571,6 +628,23 @@ export default function Adm03ApprovalsPage() {
                   <Button
                     variant="outline"
                     onClick={() =>
+                      setDeleteModal({
+                        isOpen: true,
+                        orgId: selectedOrg.id,
+                        orgName: selectedOrg.legalName,
+                        orgNumber: selectedOrg.orgNumber,
+                        email: selectedOrg.organizationUsers?.[0]?.user?.email || 'N/A',
+                      })
+                    }
+                    className="text-xs font-semibold border-[#EF4444] text-[#C5221F] hover:bg-[#FCE8E6] whitespace-nowrap shrink-0"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                    Delete Record
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={() =>
                       setDecisionModal({ isOpen: true, decision: 'REQUEST_CHANGES', reason: '' })
                     }
                     className="text-xs font-semibold border-[#F59E0B] text-[#B06000] hover:bg-[#FEF7E0] whitespace-nowrap shrink-0"
@@ -663,6 +737,48 @@ export default function Adm03ApprovalsPage() {
                   }
                 >
                   Confirm {decisionModal.decision}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* DELETE CONFIRMATION MODAL */}
+        {deleteModal.isOpen && (
+          <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+            <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl space-y-4">
+              <div className="flex items-center space-x-3 text-[#EF4444] border-b border-[#E2E8F0] pb-3">
+                <Trash2 className="h-6 w-6 shrink-0" />
+                <h3 className="text-base font-bold text-[#0F172A]">
+                  Delete Organization Record?
+                </h3>
+              </div>
+
+              <div className="text-xs text-[#64748B] space-y-2">
+                <p>
+                  You are about to permanently delete organization <strong className="text-[#0F172A]">{deleteModal.orgName}</strong> ({deleteModal.orgNumber}).
+                </p>
+                <p className="bg-[#FCE8E6] text-[#C5221F] p-3 rounded-lg font-medium">
+                  ⚠️ This action will permanently purge the organization profile, document links, and primary user account ({deleteModal.email}). The email address will become available for re-registration immediately.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end space-x-2 pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDeleteModal({ isOpen: false, orgId: '', orgName: '', orgNumber: '', email: '' })}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  isLoading={isDeleting}
+                  onClick={handleDeleteOrganization}
+                  className="bg-[#EF4444] hover:bg-[#DC2626] text-white font-bold"
+                >
+                  Confirm Delete
                 </Button>
               </div>
             </div>

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards, ForbiddenException, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, ForbiddenException, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { OrganizationsService } from './organizations.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -126,6 +126,16 @@ export class OrganizationsController {
     },
   ) {
     const data = await this.orgsService.create(body);
+    return { success: true, data };
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Delete(':id')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'ADM-03 Admin permanent deletion of organization record & user identity' })
+  async deleteOrganization(@Param('id') id: string, @CurrentUser('id') adminUserId: string) {
+    const data = await this.orgsService.deleteOrganization(id, adminUserId);
     return { success: true, data };
   }
 }
