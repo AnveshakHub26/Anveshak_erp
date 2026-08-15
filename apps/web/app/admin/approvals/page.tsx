@@ -192,11 +192,9 @@ export default function Adm03ApprovalsPage() {
 
   if (!hasRole('ADMIN')) {
     return (
-      <AppShell>
-        <div className="flex h-64 items-center justify-center">
-          <div className="text-xs text-[#64748B]">Verifying ADMIN authorization...</div>
-        </div>
-      </AppShell>
+      <div className="flex h-64 items-center justify-center">
+        <div className="text-xs text-[#64748B]">Verifying ADMIN authorization...</div>
+      </div>
     );
   }
 

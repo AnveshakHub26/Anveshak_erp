@@ -7,12 +7,15 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/user.decorator';
 
+import { SkipThrottle } from '@nestjs/throttler';
+
 @ApiTags('System Governance')
 @Controller()
 export class SystemController {
   constructor(private readonly systemService: SystemService) {}
 
   @Public()
+  @SkipThrottle()
   @Get('health')
   @ApiOperation({ summary: 'FND-00 System Health & Connectivity Check' })
   async checkPublicHealth() {
@@ -20,6 +23,7 @@ export class SystemController {
   }
 
   @Public()
+  @SkipThrottle()
   @Get('admin/health')
   @ApiOperation({ summary: 'ADM-06 System Health & Connectivity Check' })
   async checkHealth() {

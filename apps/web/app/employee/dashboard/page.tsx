@@ -154,28 +154,24 @@ export default function EmployeeDashboardPage() {
 
   if (loading) {
     return (
-      <AppShell>
-        <div className="space-y-6">
-          <Skeleton className="h-28 w-full" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 w-full" />
-            ))}
-          </div>
+      <div className="space-y-6">
+        <Skeleton className="h-28 w-full" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 w-full" />
+          ))}
         </div>
-      </AppShell>
+      </div>
     );
   }
 
   if (!profile) {
     return (
-      <AppShell>
-        <div className="p-12 text-center text-[#64748B]">
-          <AlertCircle className="h-10 w-10 mx-auto text-amber-500 mb-3" />
-          <p className="font-semibold text-[#0F172A]">No Employee Profile Found</p>
-          <p className="text-xs text-[#64748B] mt-1">Your user account is not linked to an active Employee record.</p>
-        </div>
-      </AppShell>
+      <div className="p-12 text-center text-[#64748B]">
+        <AlertCircle className="h-10 w-10 mx-auto text-amber-500 mb-3" />
+        <p className="font-semibold text-[#0F172A]">No Employee Profile Found</p>
+        <p className="text-xs text-[#64748B] mt-1">Your user account is not linked to an active Employee record.</p>
+      </div>
     );
   }
 
@@ -192,8 +188,7 @@ export default function EmployeeDashboardPage() {
   ];
 
   return (
-    <AppShell>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Workspace Banner */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-[#151c2e] to-[#182238] p-6 rounded-2xl text-white shadow-md">
           <div>
@@ -429,6 +424,5 @@ export default function EmployeeDashboardPage() {
           </div>
         )}
       </div>
-    </AppShell>
   );
 }

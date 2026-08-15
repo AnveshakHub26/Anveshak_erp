@@ -95,8 +95,7 @@ export default function Ind02IndustryProfilePage() {
   }
 
   return (
-    <AppShell>
-      <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-6 max-w-5xl mx-auto">
 
         {/* Page Header */}
         <div className="flex items-center justify-between">
@@ -271,6 +270,5 @@ export default function Ind02IndustryProfilePage() {
         )}
 
       </div>
-    </AppShell>
   );
 }

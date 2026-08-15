@@ -284,33 +284,28 @@ export default function HREmployeeDetailPage() {
 
   if (loading) {
     return (
-      <AppShell>
-        <div className="flex h-96 items-center justify-center">
-          <RefreshCw className="h-8 w-8 animate-spin text-[#d49b38]" />
-        </div>
-      </AppShell>
+      <div className="flex h-96 items-center justify-center">
+        <RefreshCw className="h-8 w-8 animate-spin text-[#d49b38]" />
+      </div>
     );
   }
 
   if (!employee) {
     return (
-      <AppShell>
-        <div className="p-12 text-center text-[#94a3b8]">
-          <AlertCircle className="h-10 w-10 mx-auto text-red-400 mb-3" />
-          <h2 className="text-[#182238] font-bold text-lg">Employee Record Not Found</h2>
-          <Link href="/hr">
-            <Button className="mt-4 bg-[#d49b38] text-[#151c2e] text-xs">Return to HR Directory</Button>
-          </Link>
-        </div>
-      </AppShell>
+      <div className="p-12 text-center text-[#94a3b8]">
+        <AlertCircle className="h-10 w-10 mx-auto text-red-400 mb-3" />
+        <h2 className="text-[#182238] font-bold text-lg">Employee Record Not Found</h2>
+        <Link href="/hr">
+          <Button className="mt-4 bg-[#d49b38] text-[#151c2e] text-xs">Return to HR Directory</Button>
+        </Link>
+      </div>
     );
   }
 
   const isOffboarded = employee.status === 'RESIGNED' || employee.status === 'TERMINATED';
 
   return (
-    <AppShell>
-      <div className="space-y-6 p-6 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto">
         {/* Navigation Breadcrumb */}
         <div>
           <Link href="/hr" className="inline-flex items-center text-xs text-[#94a3b8] hover:text-white mb-3 transition-colors">
@@ -1094,6 +1089,5 @@ export default function HREmployeeDetailPage() {
           </div>
         )}
       </div>
-    </AppShell>
   );
 }

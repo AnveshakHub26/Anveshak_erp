@@ -1,8 +1,10 @@
-// API Client Wrapper for AnveshakHub Backend REST API
+// API Client Wrapper for AnveshakHub Backend REST API with In-Flight Deduplication & Abort Safety
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 
-export async function apiRequest<T = any>(
+const inFlightGetRequests = new Map<string, Promise<any>>();
+
+async function executeApiRequest<T = any>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<T> {
@@ -38,6 +40,12 @@ export async function apiRequest<T = any>(
       headers,
     });
   } catch (netErr: any) {
+    if (netErr.name === 'AbortError') {
+      const err = new Error('Request aborted.') as any;
+      err.status = 0;
+      err.code = 'ABORTED';
+      throw err;
+    }
     const err = new Error('Network connection failed. Please check network or API server availability.') as any;
     err.status = 0;
     err.code = 'NETWORK_ERROR';
@@ -46,7 +54,7 @@ export async function apiRequest<T = any>(
 
   let data: any = null;
   const contentType = response.headers.get('content-type') || '';
-  
+
   if (contentType.includes('application/json')) {
     try {
       data = await response.json();
@@ -60,7 +68,6 @@ export async function apiRequest<T = any>(
 
   if (!response.ok) {
     if (response.status === 401 && typeof window !== 'undefined') {
-      // Clear expired tokens on 401 Unauthorized
       try {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -84,4 +91,30 @@ export async function apiRequest<T = any>(
   }
 
   return data as T;
+}
+
+export async function apiRequest<T = any>(
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const method = (options.method || 'GET').toUpperCase();
+
+  // Deduplicate identical concurrent in-flight GET requests
+  if (method === 'GET' && !options.signal) {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') || '' : '';
+    const dedupeKey = `${endpoint}:${token}`;
+
+    if (inFlightGetRequests.has(dedupeKey)) {
+      return inFlightGetRequests.get(dedupeKey) as Promise<T>;
+    }
+
+    const promise = executeApiRequest<T>(endpoint, options).finally(() => {
+      inFlightGetRequests.delete(dedupeKey);
+    });
+
+    inFlightGetRequests.set(dedupeKey, promise);
+    return promise;
+  }
+
+  return executeApiRequest<T>(endpoint, options);
 }

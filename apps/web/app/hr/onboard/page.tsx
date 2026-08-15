@@ -324,8 +324,7 @@ export default function HROnboardPage() {
   };
 
   return (
-    <AppShell>
-      <div className="space-y-8 p-6 max-w-5xl mx-auto">
+    <div className="space-y-8 max-w-5xl mx-auto">
         {/* Navigation Breadcrumb & Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#182238] pb-6">
           <div>
@@ -1047,6 +1046,5 @@ export default function HROnboardPage() {
           </div>
         )}
       </div>
-    </AppShell>
   );
 }

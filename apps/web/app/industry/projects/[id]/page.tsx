@@ -120,33 +120,28 @@ export default function IndustryProjectDetailPage() {
 
   if (loading) {
     return (
-      <AppShell>
-        <div className="flex h-96 items-center justify-center">
-          <RefreshCw className="h-8 w-8 animate-spin text-[#d49b38]" />
-        </div>
-      </AppShell>
+      <div className="flex h-96 items-center justify-center">
+        <RefreshCw className="h-8 w-8 animate-spin text-[#d49b38]" />
+      </div>
     );
   }
 
   if (!data?.project) {
     return (
-      <AppShell>
-        <div className="p-12 text-center text-[#94a3b8]">
-          <AlertCircle className="h-10 w-10 mx-auto text-amber-400 mb-3" />
-          <p className="font-semibold text-[#f8fafc]">Project Not Found or Access Restricted</p>
-          <Link href="/industry">
-            <Button size="sm" className="mt-4 bg-[#d49b38] text-slate-950 font-bold">Back to Industry Portal</Button>
-          </Link>
-        </div>
-      </AppShell>
+      <div className="p-12 text-center text-[#94a3b8]">
+        <AlertCircle className="h-10 w-10 mx-auto text-amber-400 mb-3" />
+        <p className="font-semibold text-[#f8fafc]">Project Not Found or Access Restricted</p>
+        <Link href="/industry">
+          <Button size="sm" className="mt-4 bg-[#d49b38] text-slate-950 font-bold">Back to Industry Portal</Button>
+        </Link>
+      </div>
     );
   }
 
   const p = data.project;
 
   return (
-    <AppShell>
-      <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto">
         {/* Workspace Banner */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#151c2e] p-6 rounded-2xl border border-[#182238] shadow-xl">
           <div>
@@ -419,6 +414,5 @@ export default function IndustryProjectDetailPage() {
           </div>
         )}
       </div>
-    </AppShell>
   );
 }

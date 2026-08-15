@@ -104,16 +104,14 @@ export default function IndustryDashboardPage() {
 
   if (loading) {
     return (
-      <AppShell>
-        <div className="space-y-6">
-          <Skeleton className="h-24 w-full" />
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-20 w-full" />
-            ))}
-          </div>
+      <div className="space-y-6">
+        <Skeleton className="h-24 w-full" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-20 w-full" />
+          ))}
         </div>
-      </AppShell>
+      </div>
     );
   }
 
@@ -125,8 +123,7 @@ export default function IndustryDashboardPage() {
   });
 
   return (
-    <AppShell>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Banner Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-[#151c2e] to-[#182238] p-6 rounded-2xl text-white shadow-md">
           <div>
@@ -335,6 +332,5 @@ export default function IndustryDashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </AppShell>
   );
 }

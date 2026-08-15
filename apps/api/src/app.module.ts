@@ -28,7 +28,7 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 1 minute window
-        limit: 100, // Max 100 requests per minute per IP for normal ERP API queries
+        limit: 120, // Max 120 requests per minute per IP for normal authenticated ERP API queries
       },
     ]),
     PrismaModule,
