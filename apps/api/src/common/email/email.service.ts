@@ -4,23 +4,30 @@ import * as nodemailer from 'nodemailer';
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private transporter: nodemailer.Transporter;
+  private transporter: nodemailer.Transporter | null = null;
 
   constructor() {
-    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
-    const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
-    const smtpUser = process.env.SMTP_USER || process.env.BOOTSTRAP_ADMIN_EMAIL || 'anveshakhub26@gmail.com';
-    const smtpPass = process.env.SMTP_PASS || process.env.BOOTSTRAP_ADMIN_PASSWORD || '';
+    this.initTransporter();
+  }
 
-    this.transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: smtpPort === 465,
-      auth: smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : undefined,
-      tls: {
-        rejectUnauthorized: false,
-      },
-    });
+  private async initTransporter() {
+    const smtpHost = process.env.SMTP_HOST;
+    const smtpUser = process.env.SMTP_USER;
+    const smtpPass = process.env.SMTP_PASS;
+    const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
+
+    if (smtpHost && smtpHost !== 'localhost' && smtpUser && smtpPass) {
+      this.transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpPort === 465,
+        auth: { user: smtpUser, pass: smtpPass },
+        tls: { rejectUnauthorized: false },
+      });
+      this.logger.log(`📧 SMTP Transporter configured for ${smtpHost}:${smtpPort}`);
+    } else {
+      this.logger.warn(`⚠️ No external SMTP credentials in environment. Fallback enabled.`);
+    }
   }
 
   async sendApprovalEmail(toEmail: string, orgName: string, orgNumber: string) {
@@ -76,8 +83,49 @@ export class EmailService {
       </html>
     `;
 
+    // 1. Check Resend HTTP API Key
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (resendApiKey) {
+      try {
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${resendApiKey}`,
+          },
+          body: JSON.stringify({
+            from: process.env.SMTP_FROM || 'AnveshakHub ERP <onboarding@resend.dev>',
+            to: [toEmail],
+            subject,
+            html: htmlContent,
+          }),
+        });
+        const resData = await res.json();
+        if (res.ok) {
+          this.logger.log(`📧 Approval email delivered via Resend API to ${toEmail} (ID: ${resData.id})`);
+          return { success: true, messageId: resData.id };
+        } else {
+          this.logger.warn(`Resend API response error: ${JSON.stringify(resData)}`);
+        }
+      } catch (err: any) {
+        this.logger.error(`Resend API error: ${err.message}`);
+      }
+    }
+
+    // 2. SMTP Transporter
     try {
-      const info = await this.transporter.sendMail({
+      let activeTransporter = this.transporter;
+      if (!activeTransporter) {
+        const testAccount = await nodemailer.createTestAccount();
+        activeTransporter = nodemailer.createTransport({
+          host: 'smtp.ethereal.email',
+          port: 587,
+          secure: false,
+          auth: { user: testAccount.user, pass: testAccount.pass },
+        });
+      }
+
+      const info = await activeTransporter.sendMail({
         from: fromAddress,
         to: toEmail,
         subject,
@@ -85,10 +133,15 @@ export class EmailService {
         text: `Welcome to AnveshakHub Enterprise ERP! Your organization application (${orgNumber}) for ${orgName} has been APPROVED. You can now log in at ${loginUrl} using email: ${toEmail} and the password specified during registration.`,
       });
 
-      this.logger.log(`📧 Approval email sent successfully to ${toEmail} (MsgID: ${info.messageId})`);
-      return { success: true, messageId: info.messageId };
+      const previewUrl = nodemailer.getTestMessageUrl(info);
+      this.logger.log(`📧 Approval email dispatched to ${toEmail}. Message ID: ${info.messageId}`);
+      if (previewUrl) {
+        this.logger.log(`🔗 Ethereal Live Email Preview URL: ${previewUrl}`);
+      }
+
+      return { success: true, messageId: info.messageId, previewUrl: previewUrl || undefined };
     } catch (err: any) {
-      this.logger.error(`Failed to send email via SMTP transport to ${toEmail}: ${err.message}`);
+      this.logger.error(`Failed to dispatch approval email to ${toEmail}: ${err.message}`);
       return { success: false, error: err.message };
     }
   }
