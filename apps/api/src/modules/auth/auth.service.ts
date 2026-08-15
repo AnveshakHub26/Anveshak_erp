@@ -5,6 +5,8 @@ import { SupabaseService } from '../../common/supabase/supabase.service';
 import { LoginDto } from './dto/login.dto';
 import { Response } from 'express';
 
+import * as argon2 from 'argon2';
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -30,21 +32,28 @@ export class AuthService {
       const { data, error } = await this.supabaseService.signInWithPassword(email, loginDto.password);
 
       if (error || !data?.user) {
-        // Check if bootstrap admin user needs initial Supabase Auth identity creation
+        // Check if ERP user is active and needs initial Supabase Auth identity creation
         const erpUser = await this.prisma.user.findUnique({ where: { email } });
         if (erpUser && erpUser.status === 'ACTIVE') {
-          // Ensure bootstrap identity exists in Supabase Auth
-          const createdSupaUser = await this.supabaseService.ensureSupabaseAuthUser({
-            id: erpUser.id,
-            email: erpUser.email,
-            password: loginDto.password,
-          });
-          if (createdSupaUser) {
-            supabaseUserId = createdSupaUser.id;
-            const retry = await this.supabaseService.signInWithPassword(email, loginDto.password);
-            if (retry.data?.session) {
-              accessToken = retry.data.session.access_token;
-              refreshToken = retry.data.session.refresh_token;
+          let isValidPassword = false;
+          if (erpUser.passwordHash) {
+            try {
+              isValidPassword = await argon2.verify(erpUser.passwordHash, loginDto.password);
+            } catch {}
+          }
+          if (isValidPassword || !erpUser.passwordHash) {
+            const createdSupaUser = await this.supabaseService.ensureSupabaseAuthUser({
+              id: erpUser.id,
+              email: erpUser.email,
+              password: loginDto.password,
+            });
+            if (createdSupaUser) {
+              supabaseUserId = createdSupaUser.id;
+              const retry = await this.supabaseService.signInWithPassword(email, loginDto.password);
+              if (retry.data?.session) {
+                accessToken = retry.data.session.access_token;
+                refreshToken = retry.data.session.refresh_token;
+              }
             }
           }
         }

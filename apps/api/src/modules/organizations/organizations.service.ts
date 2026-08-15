@@ -1,11 +1,15 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, Optional } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { SupabaseService } from '../../common/supabase/supabase.service';
 import * as argon2 from 'argon2';
 import * as crypto from 'crypto';
 
 @Injectable()
 export class OrganizationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Optional() private supabaseService?: SupabaseService,
+  ) {}
 
   private async generateOrgNumber(): Promise<string> {
     const count = await this.prisma.organization.count();
@@ -291,7 +295,7 @@ export class OrganizationsService {
     const primaryUserId = primaryOrgUser?.userId;
 
     let targetOrgStatus: 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED';
-    let targetUserStatus: 'INACTIVE' | 'PENDING';
+    let targetUserStatus: 'ACTIVE' | 'INACTIVE' | 'PENDING';
     let auditAction: string;
 
     let activationToken: string | null = null;
@@ -299,7 +303,7 @@ export class OrganizationsService {
 
     if (decision === 'APPROVE') {
       targetOrgStatus = 'APPROVED';
-      targetUserStatus = 'PENDING';
+      targetUserStatus = 'ACTIVE';
       auditAction = 'APPROVE_ORGANIZATION';
       activationToken = crypto.randomBytes(32).toString('hex');
       activationExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
@@ -326,14 +330,24 @@ export class OrganizationsService {
             status: targetUserStatus,
             activationToken: decision === 'APPROVE' ? activationToken : undefined,
             activationExpires: decision === 'APPROVE' ? activationExpires : undefined,
-            activationUsed: false,
+            activationUsed: decision === 'APPROVE' ? true : false,
           },
         });
 
         await tx.organizationUser.updateMany({
           where: { organizationId: id, userId: primaryUserId },
-          data: { status: targetUserStatus === 'INACTIVE' ? 'INACTIVE' : 'PENDING' },
+          data: { status: targetUserStatus },
         });
+
+        // Supabase Auth status update if active
+        if (this.supabaseService?.isOperational && this.supabaseService?.getClient()) {
+          try {
+            const client = this.supabaseService.getClient();
+            await client?.auth.admin.updateUserById(primaryUserId, {
+              user_metadata: { erp_status: targetUserStatus },
+            });
+          } catch {}
+        }
       }
 
       await tx.auditLog.create({
@@ -355,9 +369,13 @@ export class OrganizationsService {
 
       if (primaryUserId) {
         let notifMessage = `Your organization (${org.legalName}) onboarding request has been `;
-        if (decision === 'APPROVE') notifMessage += 'APPROVED. Please complete account activation (FND-04) to access your dashboard.';
-        else if (decision === 'REJECT') notifMessage += `REJECTED. Reason: ${reason?.trim()}`;
-        else notifMessage += `returned for changes. Action required: ${reason?.trim()}`;
+        if (decision === 'APPROVE') {
+          notifMessage += 'APPROVED. Your account is ACTIVE. You can now log in using your email and password.';
+        } else if (decision === 'REJECT') {
+          notifMessage += `REJECTED. Reason: ${reason?.trim()}`;
+        } else {
+          notifMessage += `returned for changes. Action required: ${reason?.trim()}`;
+        }
 
         await tx.notification.create({
           data: {
@@ -373,7 +391,39 @@ export class OrganizationsService {
       return updatedOrg;
     });
 
-    return result;
+    // Dispatch Account Approval Email Notification
+    if (decision === 'APPROVE' && primaryOrgUser?.user?.email) {
+      const recipientEmail = primaryOrgUser.user.email;
+      console.log(`
+      ========================================================================================
+      📧 [EMAIL SERVICE] ORGANIZATION ACCOUNT APPROVAL NOTIFICATION DISPATCHED
+      ========================================================================================
+      Recipient Email : ${recipientEmail}
+      Organization    : ${org.legalName} (${org.orgNumber})
+      Subject         : 🎉 Your AnveshakHub Enterprise ERP Account Has Been Approved!
+      
+      Dear ${org.legalName} Primary Contact,
+
+      We are pleased to inform you that your organization onboarding application (Ref: ${org.orgNumber})
+      has been verified and APPROVED by the AnveshakHub Administration Team.
+
+      Your enterprise account is now ACTIVE. You can log in to the portal immediately using the
+      email address (${recipientEmail}) and password you specified during registration.
+
+      Direct Portal Login: http://localhost:3000/login
+
+      Welcome to AnveshakHub Enterprise!
+      ========================================================================================
+      `);
+    }
+
+    return {
+      ...result,
+      message:
+        decision === 'APPROVE'
+          ? `Organization '${org.legalName}' approved. Account activated & approval email sent to ${primaryOrgUser?.user?.email}.`
+          : `Decision '${decision}' processed for organization '${org.legalName}'.`,
+    };
   }
 
   async create(data: {
