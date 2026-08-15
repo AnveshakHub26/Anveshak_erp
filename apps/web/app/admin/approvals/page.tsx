@@ -427,21 +427,21 @@ export default function Adm03ApprovalsPage() {
 
         {/* APPLICATION DETAIL MODAL */}
         {selectedOrg && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-            <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl bg-white p-6 shadow-xl space-y-6">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 sm:p-6 backdrop-blur-xs">
+            <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl bg-white p-5 sm:p-6 shadow-2xl space-y-6">
 
               {/* Modal Header */}
               <div className="flex items-start justify-between border-b border-[#E2E8F0] pb-4">
                 <div>
                   <div className="flex items-center space-x-3">
-                    <h2 className="text-lg font-bold text-[#0F172A]">{selectedOrg.legalName}</h2>
+                    <h2 className="text-lg sm:text-xl font-bold text-[#0F172A]">{selectedOrg.legalName}</h2>
                     {statusBadge(selectedOrg.status)}
                   </div>
-                  <p className="text-xs font-mono text-[#d49b38] mt-0.5">Reference Number: {selectedOrg.orgNumber}</p>
+                  <p className="text-xs font-mono text-[#d49b38] mt-1 font-semibold">Reference Number: {selectedOrg.orgNumber}</p>
                 </div>
                 <button
                   onClick={() => setSelectedOrg(null)}
-                  className="rounded-lg p-1 text-[#94A3B8] hover:bg-[#F1F5F9] hover:text-[#0F172A]"
+                  className="rounded-lg p-1.5 text-[#94A3B8] hover:bg-[#F1F5F9] hover:text-[#0F172A] transition-colors"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -483,12 +483,12 @@ export default function Adm03ApprovalsPage() {
                   {selectedOrg.address && (
                     <div>
                       <span className="text-[#64748B]">Registered Address:</span>
-                      <p className="font-medium text-[#0F172A] mt-0.5">{selectedOrg.address}</p>
+                      <p className="font-semibold text-[#0F172A]">{selectedOrg.address}</p>
                     </div>
                   )}
                 </div>
 
-                {/* Column 2: Contact & Business Verticals */}
+                {/* Column 2: Contact & Verticals */}
                 <div className="space-y-3 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] p-4">
                   <h3 className="font-bold text-[#0F172A] border-b border-[#E2E8F0] pb-2 flex items-center">
                     <User className="h-4 w-4 text-[#d49b38] mr-1.5" />
@@ -563,17 +563,17 @@ export default function Adm03ApprovalsPage() {
               </div>
 
               {/* ADMIN DECISION ACTIONS */}
-              <div className="border-t border-[#E2E8F0] pt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="text-xs text-[#64748B]">
+              <div className="border-t border-[#E2E8F0] pt-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div className="text-xs text-[#64748B] max-w-md">
                   Executing an action will update status, persist audit logs, and notify the applicant.
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-wrap items-center gap-2.5 shrink-0 justify-end">
                   <Button
                     variant="outline"
                     onClick={() =>
                       setDecisionModal({ isOpen: true, decision: 'REQUEST_CHANGES', reason: '' })
                     }
-                    className="text-xs font-semibold border-[#F59E0B] text-[#B06000] hover:bg-[#FEF7E0]"
+                    className="text-xs font-semibold border-[#F59E0B] text-[#B06000] hover:bg-[#FEF7E0] whitespace-nowrap shrink-0"
                   >
                     <AlertCircle className="h-3.5 w-3.5 mr-1" />
                     Request Changes
@@ -584,7 +584,7 @@ export default function Adm03ApprovalsPage() {
                     onClick={() =>
                       setDecisionModal({ isOpen: true, decision: 'REJECT', reason: '' })
                     }
-                    className="text-xs font-semibold border-[#EF4444] text-[#C5221F] hover:bg-[#FCE8E6]"
+                    className="text-xs font-semibold border-[#EF4444] text-[#C5221F] hover:bg-[#FCE8E6] whitespace-nowrap shrink-0"
                   >
                     <XCircle className="h-3.5 w-3.5 mr-1" />
                     Reject Application
@@ -595,7 +595,7 @@ export default function Adm03ApprovalsPage() {
                     onClick={() =>
                       setDecisionModal({ isOpen: true, decision: 'APPROVE', reason: '' })
                     }
-                    className="text-xs font-bold bg-[#10B981] hover:bg-[#059669] text-white"
+                    className="text-xs font-bold bg-[#10B981] hover:bg-[#059669] text-white whitespace-nowrap shrink-0"
                   >
                     <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
                     Approve Application
