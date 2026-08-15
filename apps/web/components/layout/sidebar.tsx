@@ -1,84 +1,139 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { usePermissions } from '@/hooks/usePermissions';
 import { cn } from '@/lib/utils';
 import {
-  UserCheck,
   Building2,
   FolderGit2,
   Users,
-  CircleDollarSign,
-  TrendingUp,
-  ShoppingBag,
-  ShieldCheck,
+  UserCheck,
+  CheckSquare,
+  FileText,
+  UserPlus,
 } from 'lucide-react';
 
-export const Sidebar: React.FC = () => {
+export interface NavItem {
+  label: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  roles: string[];
+}
+
+export const NAV_ITEMS: NavItem[] = [
+  {
+    label: 'Admin Approvals',
+    href: '/admin/approvals',
+    icon: CheckSquare,
+    roles: ['ADMIN'],
+  },
+  {
+    label: 'Projects & Resource Mgmt',
+    href: '/projects',
+    icon: FolderGit2,
+    roles: ['ADMIN', 'PM', 'EXPERT', 'INTERN', 'STAFF', 'EXECUTIVE', 'HR'],
+  },
+  {
+    label: 'HR & Workforce',
+    href: '/hr',
+    icon: Users,
+    roles: ['ADMIN', 'HR'],
+  },
+  {
+    label: 'Employee Onboarding',
+    href: '/hr/onboard',
+    icon: UserPlus,
+    roles: ['ADMIN', 'HR'],
+  },
+  {
+    label: 'Problem Statements',
+    href: '/admin/problem-statements',
+    icon: FileText,
+    roles: ['ADMIN'],
+  },
+  {
+    label: 'Employee Workspace',
+    href: '/employee/dashboard',
+    icon: UserCheck,
+    roles: ['HR', 'PM', 'EXPERT', 'INTERN', 'STAFF', 'EXECUTIVE'],
+  },
+  {
+    label: 'Industry Client Portal',
+    href: '/industry',
+    icon: Building2,
+    roles: ['ORG_USER'],
+  },
+];
+
+export const Sidebar: React.FC<{ onItemClick?: () => void }> = ({ onItemClick }) => {
   const pathname = usePathname();
-  const { hasRole } = usePermissions();
+  const { hasExactRole, isInitializing } = usePermissions();
+  const [isHydrated, setIsHydrated] = useState(false);
 
-  const navItems = [
-    { label: 'My Dashboard', href: '/employee/dashboard', icon: UserCheck, roles: ['EXPERT', 'INTERN', 'STAFF', 'EXECUTIVE'] },
-    { label: 'Industry Portal', href: '/industry', icon: Building2, roles: ['ADMIN', 'ORG_USER'] },
-    { label: 'External Interface', href: '/external', icon: UserCheck, roles: ['ADMIN'] },
-    { label: 'CRM', href: '/crm', icon: Building2, roles: ['ADMIN', 'ORG_USER'] },
-    { label: 'Projects', href: '/projects', icon: FolderGit2, roles: ['ADMIN', 'PM', 'EXPERT', 'INTERN', 'QA', 'LEGAL'] },
-    { label: 'HR', href: '/hr', icon: Users, roles: ['ADMIN', 'HR'] },
-    { label: 'Finance', href: '/finance', icon: CircleDollarSign, roles: ['ADMIN', 'FINANCE'] },
-    { label: 'Sales', href: '/sales', icon: TrendingUp, roles: ['ADMIN', 'SALES', 'FINANCE'] },
-    { label: 'Purchase', href: '/purchase', icon: ShoppingBag, roles: ['ADMIN', 'PURCHASE', 'FINANCE'] },
-    { label: 'Admin Governance', href: '/admin', icon: ShieldCheck, roles: ['ADMIN'] },
-  ];
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
-  const filteredItems = navItems.filter((item) => hasRole('ADMIN') || item.roles.some((r) => hasRole(r)));
+  const filteredItems = NAV_ITEMS.filter((item) =>
+    item.roles.some((r) => hasExactRole(r)),
+  );
 
   return (
-    <aside className="w-64 border-r border-[#182238] bg-[#151c2e] text-white min-h-screen flex flex-col shrink-0">
+    <div className="flex h-full w-full flex-col bg-[#151c2e] text-white">
       {/* Brand Header */}
-      <div className="flex h-16 items-center px-6 border-b border-[#182238]">
-        <Link href="/" className="flex items-center space-x-3 group">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#d49b38] to-[#c48b28] flex items-center justify-center font-bold text-[#151c2e] shadow-md shadow-[#d49b38]/10 group-hover:scale-105 transition-transform">
+      <div className="flex h-16 items-center px-6 border-b border-[#182238] shrink-0">
+        <Link href="/" prefetch={true} className="flex items-center space-x-3 group" onClick={onItemClick}>
+          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#d49b38] to-[#c48b28] flex items-center justify-center font-extrabold text-[#151c2e] text-sm shadow-md group-hover:scale-105 transition-transform">
             AH
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-base tracking-tight text-white">AnveshakHub</span>
-            <span className="text-[10px] text-[#d49b38] font-medium tracking-wider uppercase">Enterprise</span>
+            <span className="font-extrabold text-base tracking-tight text-white">AnveshakHub</span>
+            <span className="text-[10px] text-[#d49b38] font-semibold tracking-wider uppercase">Enterprise ERP</span>
           </div>
         </Link>
       </div>
 
       {/* Navigation Menu */}
-      <nav className="flex-1 space-y-1 p-3">
-        {filteredItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname.startsWith(item.href);
+      <nav className="flex-1 space-y-1 p-3 overflow-y-auto">
+        {!isHydrated || isInitializing ? (
+          <div className="space-y-2 p-1">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="h-9 w-full rounded-lg bg-[#182238]/60 animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          filteredItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'flex items-center space-x-3 rounded-lg px-3 py-2.5 text-xs font-semibold transition-all',
-                isActive
-                  ? 'bg-[#182238] text-white shadow-sm border-l-2 border-[#d49b38]'
-                  : 'text-[#94a3b8] hover:bg-[#182238]/60 hover:text-white',
-              )}
-            >
-              <Icon className={cn('h-4 w-4 shrink-0', isActive ? 'text-[#d49b38]' : 'text-[#94a3b8]')} />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                prefetch={true}
+                onClick={onItemClick}
+                className={cn(
+                  'flex items-center space-x-3 rounded-lg px-3.5 py-2.5 text-xs font-semibold transition-all',
+                  isActive
+                    ? 'bg-[#182238] text-white shadow-sm border-l-2 border-[#d49b38]'
+                    : 'text-[#94a3b8] hover:bg-[#182238]/60 hover:text-white',
+                )}
+              >
+                <Icon className={cn('h-4 w-4 shrink-0', isActive ? 'text-[#d49b38]' : 'text-[#94a3b8]')} />
+                <span className="truncate">{item.label}</span>
+              </Link>
+            );
+          })
+        )}
       </nav>
 
-      {/* Footer System Version */}
-      <div className="p-4 border-t border-[#182238] text-xs text-[#94a3b8]">
-        <div className="font-semibold text-white">AnveshakHub v3.0 Master</div>
-        <div className="text-[11px] text-[#64748b] mt-0.5">Unified Enterprise System</div>
+      {/* Footer System Info */}
+      <div className="p-4 border-t border-[#182238] text-xs text-[#94a3b8] shrink-0">
+        <div className="font-bold text-white">AnveshakHub v3.0</div>
+        <div className="text-[11px] text-[#64748b] mt-0.5">Enterprise Operations Platform</div>
       </div>
-    </aside>
+    </div>
   );
 };

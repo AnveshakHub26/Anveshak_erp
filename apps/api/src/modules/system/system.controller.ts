@@ -8,19 +8,26 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/user.decorator';
 
 @ApiTags('System Governance')
-@Controller('admin')
+@Controller()
 export class SystemController {
   constructor(private readonly systemService: SystemService) {}
 
   @Public()
   @Get('health')
+  @ApiOperation({ summary: 'FND-00 System Health & Connectivity Check' })
+  async checkPublicHealth() {
+    return this.systemService.checkHealth();
+  }
+
+  @Public()
+  @Get('admin/health')
   @ApiOperation({ summary: 'ADM-06 System Health & Connectivity Check' })
   async checkHealth() {
     return this.systemService.checkHealth();
   }
 
   @Public()
-  @Post('support')
+  @Post('admin/support')
   @ApiOperation({ summary: 'FND-11 Submit persistent contact admin & support request ticket' })
   async submitSupportRequest(
     @Body()
@@ -40,7 +47,7 @@ export class SystemController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('search')
+  @Get('admin/search')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'FND-08 Global Permission-Aware Search Endpoint' })
   @ApiQuery({ name: 'q', required: true, example: 'Tescom' })
@@ -56,7 +63,7 @@ export class SystemController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  @Get('settings')
+  @Get('admin/settings')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'ADM-08 Platform Settings & Global Config' })
   async getSettings() {

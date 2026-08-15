@@ -40,6 +40,18 @@ import {
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'POST /api/v1/projects — ADMIN creates new ERP project' })
+  async createProject(
+    @CurrentUser() user: any,
+    @Body() body: any,
+  ) {
+    const data = await this.projectsService.createProject(user, body);
+    return { success: true, data };
+  }
+
   @Get()
   @Roles('ADMIN', 'ORG_USER', 'PM', 'EXPERT', 'INTERN', 'QA', 'LEGAL')
   @ApiOperation({ summary: 'List all authorized Projects with multi-tenant organization boundary isolation' })

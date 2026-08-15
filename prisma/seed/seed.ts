@@ -1,6 +1,5 @@
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
-import * as argon2 from 'argon2';
 
 const prisma = new PrismaClient();
 
@@ -50,7 +49,7 @@ async function main() {
     });
     roleMap[r.code] = roleRecord.id;
   }
-  console.log('✅ Seeded 12 System Roles');
+  console.log('✅ Seeded 11 System Roles');
 
   // 3. Seed Base Permissions
   const basePermissions = [
@@ -95,13 +94,16 @@ async function main() {
 
   // 4. Seed Bootstrap Admin Account with Single Supabase Auth Authority
   const superAdminEmail = (process.env.BOOTSTRAP_ADMIN_EMAIL || 'anveshakhub26@gmail.com').toLowerCase();
-  
+
   const superAdminUser = await prisma.user.upsert({
     where: { email: superAdminEmail },
-    update: { status: 'ACTIVE' },
+    update: {
+      status: 'ACTIVE',
+      mustChangePassword: false,
+    },
     create: {
       email: superAdminEmail,
-      mustChangePassword: true, // Mandatory password change on initial bootstrap login
+      mustChangePassword: false,
       status: 'ACTIVE',
     },
   });
@@ -120,7 +122,7 @@ async function main() {
     },
   });
 
-  console.log(`✅ Seeded Bootstrap Admin Account (${superAdminEmail}) mapped to single Supabase Auth identity with ADMIN role & mandatory password change.`);
+  console.log(`✅ Seeded Bootstrap Admin Account (${superAdminEmail}) mapped to single Supabase Auth identity with ADMIN role.`);
   console.log('🎉 Master data seeding complete. Zero fake business records created!');
 }
 

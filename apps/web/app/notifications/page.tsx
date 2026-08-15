@@ -66,9 +66,7 @@ export default function Fnd09NotificationsPage() {
   const unreadCount = notifications.filter((n) => !n.readAt).length;
 
   return (
-    <PublicShell>
-      <div className="min-h-[calc(100vh-128px)] bg-[#F8FAFC] px-4 py-8">
-        <div className="mx-auto max-w-4xl space-y-6">
+    <div className="space-y-6">
           {/* Header */}
           <div className="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
@@ -171,7 +169,5 @@ export default function Fnd09NotificationsPage() {
             )}
           </div>
         </div>
-      </div>
-    </PublicShell>
   );
 }

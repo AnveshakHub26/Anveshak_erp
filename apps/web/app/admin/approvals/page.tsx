@@ -86,6 +86,15 @@ export default function Adm03ApprovalsPage() {
     }
   }, [hasRole, router]);
 
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 350);
+    return () => clearTimeout(handler);
+  }, [search]);
+
   // Load Applications List
   const loadApplications = useCallback(async () => {
     setIsLoading(true);
@@ -94,7 +103,7 @@ export default function Adm03ApprovalsPage() {
       const params = new URLSearchParams();
       params.set('page', page.toString());
       params.set('limit', '10');
-      if (search.trim()) params.set('search', search.trim());
+      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
       if (statusFilter) params.set('status', statusFilter);
       if (typeFilter) params.set('type', typeFilter);
 
@@ -109,7 +118,7 @@ export default function Adm03ApprovalsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, search, statusFilter, typeFilter]);
+  }, [page, debouncedSearch, statusFilter, typeFilter]);
 
   useEffect(() => {
     if (hasRole('ADMIN')) {
@@ -209,8 +218,7 @@ export default function Adm03ApprovalsPage() {
   };
 
   return (
-    <AppShell>
-      <div className="space-y-6">
+    <div className="space-y-6">
 
         {/* Page Title Banner */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
@@ -659,6 +667,5 @@ export default function Adm03ApprovalsPage() {
         )}
 
       </div>
-    </AppShell>
   );
 }

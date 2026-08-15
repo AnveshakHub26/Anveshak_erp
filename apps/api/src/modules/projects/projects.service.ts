@@ -96,6 +96,125 @@ export class ProjectsService {
   }
 
   /**
+   * ADMIN Project Creation with PRJ-YYYY-NNNNNN code generation and AuditLog
+   */
+  async createProject(user: any, data: any) {
+    const isAdmin = user.roles?.includes('ADMIN');
+    if (!isAdmin) {
+      throw new ForbiddenException('Only ADMIN can create new ERP projects.');
+    }
+
+    if (!data.title || !data.title.trim()) {
+      throw new BadRequestException('Project title is required.');
+    }
+    if (!data.description || !data.description.trim()) {
+      throw new BadRequestException('Project description is required.');
+    }
+    if (!data.organizationId) {
+      throw new BadRequestException('Organization ID is required.');
+    }
+    if (!data.bvId) {
+      throw new BadRequestException('Business Vertical ID is required.');
+    }
+
+    const org = await this.prisma.organization.findUnique({
+      where: { id: data.organizationId },
+    });
+    if (!org) {
+      throw new BadRequestException(`Organization with ID '${data.organizationId}' not found.`);
+    }
+
+    const bv = await this.prisma.businessVertical.findUnique({
+      where: { id: data.bvId },
+    });
+    if (!bv) {
+      throw new BadRequestException(`Business Vertical with ID '${data.bvId}' not found.`);
+    }
+
+    let problemStatementId = data.problemStatementId;
+
+    if (!problemStatementId) {
+      const year = new Date().getFullYear();
+      const psCounter = await this.prisma.systemCounter.upsert({
+        where: { name: `PS_CODE_${year}` },
+        update: { nextValue: { increment: 1 } },
+        create: { name: `PS_CODE_${year}`, nextValue: 2 },
+      });
+      const psVal = psCounter.nextValue - 1;
+      const psCode = `PS-${year}-${psVal.toString().padStart(6, '0')}`;
+
+      const ps = await this.prisma.problemStatement.create({
+        data: {
+          code: psCode,
+          organizationId: data.organizationId,
+          createdById: user.id,
+          bvId: data.bvId,
+          title: data.title.trim(),
+          description: data.description.trim(),
+          category: data.category?.trim() || null,
+          budgetEstimate: data.budget?.trim() || null,
+          expectedTimeline: data.timeline?.trim() || null,
+          status: 'APPROVED',
+        },
+      });
+      problemStatementId = ps.id;
+    }
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const year = new Date().getFullYear();
+      const counterKey = `PROJECT_CODE_${year}`;
+      const counter = await tx.systemCounter.upsert({
+        where: { name: counterKey },
+        update: { nextValue: { increment: 1 } },
+        create: { name: counterKey, nextValue: 2 },
+      });
+      const val = counter.nextValue - 1;
+      const projectCode = `PRJ-${year}-${val.toString().padStart(6, '0')}`;
+
+      const project = await tx.project.create({
+        data: {
+          projectCode,
+          organizationId: data.organizationId,
+          problemStatementId,
+          bvId: data.bvId,
+          createdById: user.id,
+          title: data.title.trim(),
+          description: data.description.trim(),
+          category: data.category?.trim() || null,
+          budget: data.budget?.trim() || null,
+          timeline: data.timeline?.trim() || null,
+          status: 'INITIATED',
+        },
+        include: {
+          organization: { select: { id: true, legalName: true, orgNumber: true, type: true } },
+          problemStatement: { select: { id: true, code: true, title: true } },
+          businessVertical: true,
+          createdBy: { select: { id: true, email: true } },
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: user.id,
+          action: 'CREATE_PROJECT',
+          entityType: 'PROJECT',
+          entityId: project.id,
+          afterJson: {
+            projectCode: project.projectCode,
+            title: project.title,
+            organizationId: project.organizationId,
+            status: project.status,
+          },
+        },
+      });
+
+      return project;
+    });
+
+    return result;
+  }
+
+  /**
    * Project Detail View with document traceability and organization isolation
    */
   async findOne(user: any, id: string) {

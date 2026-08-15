@@ -1,6 +1,7 @@
 import '@/styles/globals.css';
 import React from 'react';
 import { AppProvider } from '@/providers/app-provider';
+import { PersistentShell } from '@/components/layout/persistent-shell';
 
 export const metadata = {
   title: 'AnveshakHub Enterprise Application',
@@ -11,7 +12,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <AppProvider>{children}</AppProvider>
+        <AppProvider>
+          <PersistentShell>{children}</PersistentShell>
+        </AppProvider>
       </body>
     </html>
   );

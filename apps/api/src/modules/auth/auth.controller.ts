@@ -7,12 +7,15 @@ import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
+import { Throttle } from '@nestjs/throttler';
+
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'FND-02 Unified Login Endpoint with HttpOnly Cookie Support' })

@@ -1,109 +1,98 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { usePermissions } from '@/hooks/usePermissions';
-import { cn } from '@/lib/utils';
+import { Sidebar } from './sidebar';
+import { UserMenu } from './user-menu';
 import {
-  UserCheck,
-  Building2,
-  FolderGit2,
-  Users,
-  CircleDollarSign,
-  TrendingUp,
-  ShoppingBag,
-  ShieldCheck,
-  Bell,
-  Search,
+  Menu,
+  X,
   ArrowLeft,
   Home,
+  Bell,
+  Search,
+  ChevronRight,
 } from 'lucide-react';
-import { UserMenu } from './user-menu';
 
-/**
- * AppShell — Full authenticated layout with Midnight Navy sidebar + white topnav.
- * Used for all post-login pages with Back & Home navigation controls.
- */
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
   const router = useRouter();
-  const { hasRole } = usePermissions();
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
-  const navItems = [
-    { label: 'Industry Portal', href: '/industry', icon: Building2, roles: ['ADMIN', 'ORG_USER'] },
-    { label: 'External Interface', href: '/external', icon: UserCheck, roles: ['ADMIN'] },
-    { label: 'CRM', href: '/crm', icon: Building2, roles: ['ADMIN', 'ORG_USER'] },
-    { label: 'Projects', href: '/projects', icon: FolderGit2, roles: ['ADMIN', 'PM', 'EXPERT', 'INTERN', 'QA', 'LEGAL'] },
-    { label: 'HR', href: '/hr', icon: Users, roles: ['ADMIN', 'HR'] },
-    { label: 'Finance', href: '/finance', icon: CircleDollarSign, roles: ['ADMIN', 'FINANCE'] },
-    { label: 'Sales', href: '/sales', icon: TrendingUp, roles: ['ADMIN', 'SALES', 'FINANCE'] },
-    { label: 'Purchase', href: '/purchase', icon: ShoppingBag, roles: ['ADMIN', 'PURCHASE', 'FINANCE'] },
-    { label: 'Admin Governance', href: '/admin', icon: ShieldCheck, roles: ['ADMIN'] },
-  ];
+  // Generate dynamic breadcrumbs from path
+  const pathSegments = pathname.split('/').filter(Boolean);
 
-  const filteredItems = navItems.filter((item) => hasRole('ADMIN') || item.roles.some((r) => hasRole(r)));
+  const getSegmentLabel = (segment: string): string => {
+    if (segment === 'hr') return 'HR Workforce';
+    if (segment === 'onboard') return 'Onboarding';
+    if (segment === 'projects') return 'Projects';
+    if (segment === 'employee') return 'Employee';
+    if (segment === 'dashboard') return 'Dashboard';
+    if (segment === 'industry') return 'Industry Portal';
+    if (segment === 'admin') return 'Admin';
+    if (segment === 'approvals') return 'Approvals';
+    if (segment === 'problem-statements') return 'Problem Statements';
+    if (segment === 'notifications') return 'Notifications';
+    if (segment === 'profile') return 'User Profile';
+    if (segment.length > 20) return `ID: ${segment.substring(0, 8)}...`;
+    return segment.charAt(0).toUpperCase() + segment.slice(1);
+  };
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#F8FAFC]">
-      {/* Midnight Navy Sidebar */}
-      <aside className="w-64 border-r border-[#182238] bg-[#151c2e] text-white min-h-screen flex flex-col shrink-0">
-        {/* Brand Header */}
-        <div className="flex h-16 items-center px-6 border-b border-[#182238]">
-          <Link href="/" className="flex items-center space-x-3 group">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#d49b38] to-[#c48b28] flex items-center justify-center font-bold text-[#151c2e] shadow-md group-hover:scale-105 transition-transform">
-              AH
-            </div>
-            <div className="flex flex-col">
-              <span className="font-bold text-base tracking-tight text-white">AnveshakHub</span>
-              <span className="text-[10px] text-[#d49b38] font-medium tracking-wider uppercase">Enterprise</span>
-            </div>
-          </Link>
-        </div>
-
-        {/* Navigation Menu */}
-        <nav className="flex-1 space-y-1 p-3">
-          {filteredItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'flex items-center space-x-3 rounded-lg px-3 py-2.5 text-xs font-semibold transition-all',
-                  isActive
-                    ? 'bg-[#182238] text-white shadow-sm border-l-2 border-[#d49b38]'
-                    : 'text-[#94a3b8] hover:bg-[#182238]/60 hover:text-white',
-                )}
-              >
-                <Icon className={cn('h-4 w-4 shrink-0', isActive ? 'text-[#d49b38]' : 'text-[#94a3b8]')} />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Footer */}
-        <div className="p-4 border-t border-[#182238] text-xs text-[#94a3b8]">
-          <div className="font-semibold text-white">AnveshakHub v3.0 Master</div>
-          <div className="text-[11px] text-[#64748b] mt-0.5">Unified Enterprise System</div>
-        </div>
+      {/* 1. Desktop Fixed Sidebar (md: and up) */}
+      <aside className="hidden md:flex w-64 border-r border-[#182238] bg-[#151c2e] min-h-screen flex-col shrink-0">
+        <Sidebar />
       </aside>
 
-      {/* Main content area */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Top Nav — White with border */}
-        <header className="flex h-16 w-full items-center justify-between border-b border-[#E2E8F0] bg-white px-6 shadow-sm shrink-0">
-          <div className="flex items-center space-x-3 w-auto md:w-[480px]">
+      {/* 2. Mobile Slide-out Drawer (< md) */}
+      {mobileDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex md:hidden">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-[#0F172A]/70 backdrop-blur-sm transition-opacity"
+            onClick={() => setMobileDrawerOpen(false)}
+          />
+          {/* Drawer Content */}
+          <div className="relative flex w-72 max-w-full flex-col bg-[#151c2e] z-10 shadow-2xl">
+            <div className="absolute right-3 top-3.5 z-20">
+              <button
+                type="button"
+                onClick={() => setMobileDrawerOpen(false)}
+                className="rounded-lg p-2 text-[#94a3b8] hover:bg-[#182238] hover:text-white"
+                aria-label="Close Drawer Menu"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <Sidebar onItemClick={() => setMobileDrawerOpen(false)} />
+          </div>
+        </div>
+      )}
+
+      {/* 3. Main Application Column */}
+      <div className="flex flex-1 flex-col overflow-hidden min-w-0">
+        {/* Top Header */}
+        <header className="flex h-16 w-full items-center justify-between border-b border-[#E2E8F0] bg-white px-4 sm:px-6 shadow-sm shrink-0">
+          <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+            {/* Mobile Drawer Hamburger Button */}
+            <button
+              type="button"
+              onClick={() => setMobileDrawerOpen(true)}
+              className="flex md:hidden rounded-lg p-2 text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#d49b38]"
+              aria-label="Open Navigation Drawer"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+
             {/* Back & Home controls */}
-            <div className="flex items-center space-x-1.5 shrink-0">
+            <div className="flex items-center space-x-1 shrink-0">
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="flex items-center space-x-1 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-2.5 py-1.5 text-xs font-semibold text-[#64748B] hover:border-[#d49b38] hover:text-[#0F172A] transition-colors cursor-pointer"
-                title="Go to previous page"
-                aria-label="Go to previous page"
+                className="flex items-center space-x-1 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-2.5 py-1.5 text-xs font-semibold text-[#64748B] hover:border-[#d49b38] hover:text-[#0F172A] transition-colors"
+                title="Go Back"
               >
                 <ArrowLeft className="h-3.5 w-3.5 text-[#d49b38]" />
                 <span className="hidden sm:inline">Back</span>
@@ -111,37 +100,75 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
               <Link
                 href="/"
                 className="flex items-center space-x-1 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-2.5 py-1.5 text-xs font-semibold text-[#64748B] hover:border-[#d49b38] hover:text-[#0F172A] transition-colors"
-                title="Navigate to Home Page"
-                aria-label="Navigate to Home Page"
+                title="Home Landing"
               >
                 <Home className="h-3.5 w-3.5 text-[#d49b38]" />
                 <span className="hidden sm:inline">Home</span>
               </Link>
             </div>
 
-            <div className="relative w-full hidden sm:block">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#64748B]" />
-              <input
-                type="text"
-                placeholder="Global Search (organizations, personnel, documents)..."
-                className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] pl-9 pr-3 py-1.5 text-xs text-[#0F172A] focus:border-[#d49b38] focus:outline-none focus:ring-1 focus:ring-[#d49b38] focus:bg-white transition-colors"
-              />
+            {/* Dynamic Breadcrumbs */}
+            <div className="hidden lg:flex items-center space-x-1 text-xs text-[#64748B] truncate ml-2">
+              <ChevronRight className="h-3.5 w-3.5 text-[#CBD5E1] shrink-0" />
+              {pathSegments.length === 0 ? (
+                <span className="font-semibold text-[#0F172A]">Dashboard</span>
+              ) : (
+                pathSegments.map((segment, idx) => {
+                  const href = '/' + pathSegments.slice(0, idx + 1).join('/');
+                  const isLast = idx === pathSegments.length - 1;
+                  return (
+                    <React.Fragment key={href}>
+                      {idx > 0 && <ChevronRight className="h-3.5 w-3.5 text-[#CBD5E1] shrink-0" />}
+                      {isLast ? (
+                        <span className="font-bold text-[#0F172A] truncate">
+                          {getSegmentLabel(segment)}
+                        </span>
+                      ) : (
+                        <Link href={href} className="hover:text-[#d49b38] transition-colors truncate">
+                          {getSegmentLabel(segment)}
+                        </Link>
+                      )}
+                    </React.Fragment>
+                  );
+                })
+              )}
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
-            <Link href="/notifications" className="relative rounded-lg p-2 text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A] transition-colors" title="Notification Center">
+          {/* Right Header Section */}
+          <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
+            {/* Global Search Bar (Desktop) */}
+            <div className="relative hidden md:block w-56 lg:w-72">
+              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#64748B]" />
+              <input
+                type="text"
+                placeholder="Search projects, personnel..."
+                className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] pl-8 pr-3 py-1.5 text-xs text-[#0F172A] focus:border-[#d49b38] focus:outline-none focus:ring-1 focus:ring-[#d49b38]"
+              />
+            </div>
+
+            {/* Notifications */}
+            <Link
+              href="/notifications"
+              className="relative rounded-lg p-2 text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A] transition-colors"
+              title="Notifications"
+            >
               <Bell className="h-5 w-5" />
               <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#d49b38]" />
             </Link>
+
             <div className="h-5 w-px bg-[#E2E8F0]" />
+
+            {/* User Dropdown Menu */}
             <UserMenu />
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-6">
-          {children}
+        {/* Scrollable Page Content */}
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto max-w-7xl w-full">
+            {children}
+          </div>
         </main>
       </div>
     </div>

@@ -171,8 +171,7 @@ export default function AdminProblemStatementsPage() {
   if (!hasRole('ADMIN')) return null;
 
   return (
-    <AppShell>
-      <div className="space-y-6">
+    <div className="space-y-6">
 
         {/* Page Banner Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
@@ -486,8 +485,6 @@ export default function AdminProblemStatementsPage() {
             </div>
           </div>
         )}
-
       </div>
-    </AppShell>
   );
 }

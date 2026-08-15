@@ -2,12 +2,17 @@ import { Injectable, UnauthorizedException, Optional } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
+import * as jwt from 'jsonwebtoken';
 import { PrismaService } from '../../database/prisma.service';
 import { SupabaseService } from '../../common/supabase/supabase.service';
 
 const cookieExtractor = (req: Request): string | null => {
   if (req && req.cookies && req.cookies.access_token) {
     return req.cookies.access_token;
+  }
+  if (req && req.headers && req.headers.cookie) {
+    const match = req.headers.cookie.match(/access_token=([^;]+)/);
+    if (match) return match[1];
   }
   return null;
 };
@@ -24,15 +29,26 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         cookieExtractor,
       ]),
       ignoreExpiration: true,
-      secretOrKeyProvider: (req, rawJwtToken, done) => {
-        done(null, process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET || 'anveshak_super_secret_jwt_key_change_in_production_2026!');
-      },
+      secretOrKey: process.env.JWT_SECRET || 'anveshak_super_secret_jwt_key_change_in_production_2026!',
     });
   }
 
-  async validate(payload: { sub?: string; id?: string; email?: string }) {
-    const searchId = payload?.sub || payload?.id;
-    const searchEmail = payload?.email?.toLowerCase().trim();
+  async validate(payload: any) {
+    let searchId: string | undefined;
+    let searchEmail: string | undefined;
+
+    if (typeof payload === 'string') {
+      const decoded = jwt.decode(payload) as any;
+      searchId = decoded?.sub || decoded?.id;
+      searchEmail = decoded?.email?.toLowerCase().trim();
+    } else if (payload && typeof payload === 'object') {
+      searchId = payload.sub || payload.id;
+      searchEmail = payload.email?.toLowerCase().trim();
+    }
+
+    if (!searchId && !searchEmail) {
+      throw new UnauthorizedException('Invalid token payload');
+    }
 
     const user = await this.prisma.user.findFirst({
       where: {

@@ -1,13 +1,27 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '@/hooks/useAuth';
-import { LogOut, User, Shield } from 'lucide-react';
+import { LogOut, User } from 'lucide-react';
 import Link from 'next/link';
 
 export const UserMenu: React.FC = () => {
-  const { user, logout } = useAuthStore();
+  const { user, isInitializing, logout } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  if (!isHydrated || isInitializing) {
+    return (
+      <div className="flex items-center space-x-2.5 rounded-lg p-1.5">
+        <div className="h-8 w-8 rounded-lg bg-[#E2E8F0] animate-pulse" />
+        <div className="hidden h-4 w-24 rounded bg-[#E2E8F0] animate-pulse md:block" />
+      </div>
+    );
+  }
 
   if (!user) return null;
 

@@ -1,4 +1,5 @@
-import { Injectable, UnauthorizedException, BadRequestException, Optional, Logger } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, ConflictException, Logger, NotFoundException, Optional } from '@nestjs/common';
+import * as jwt from 'jsonwebtoken';
 import { PrismaService } from '../../database/prisma.service';
 import { SupabaseService } from '../../common/supabase/supabase.service';
 import { LoginDto } from './dto/login.dto';
@@ -92,9 +93,14 @@ export class AuthService {
       throw new UnauthorizedException(`Account status is ${user.status}. Access denied.`);
     }
 
-    // 3. Environment-driven fallback token if running in headless test mode without active Supabase server
+    // 3. Issue local JWT if Supabase token is not present
     if (!accessToken) {
-      accessToken = `supa_access_${user.id}_${Date.now()}`;
+      const jwtSecret = process.env.JWT_SECRET || 'anveshak_super_secret_jwt_key_change_in_production_2026!';
+      accessToken = jwt.sign(
+        { sub: user.id, id: user.id, email: user.email },
+        jwtSecret,
+        { expiresIn: '1d' },
+      );
       refreshToken = `supa_refresh_${user.id}_${Date.now()}`;
     }
 
