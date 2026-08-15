@@ -46,8 +46,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } catch (err) {
         console.error('Failed to clear session from localStorage:', err);
       }
+      set({ user: null, token: null, isAuthenticated: false, isInitializing: false });
+      window.location.href = '/';
     }
-    set({ user: null, token: null, isAuthenticated: false, isInitializing: false });
   },
   initializeSession: () => {
     if (typeof window === 'undefined') {

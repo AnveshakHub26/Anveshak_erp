@@ -45,7 +45,7 @@ interface ProblemStatementItem {
 
 export default function AdminProblemStatementsPage() {
   const router = useRouter();
-  const { hasRole } = usePermissions();
+  const { hasRole, isInitializing, user } = usePermissions();
 
   const [items, setItems] = useState<ProblemStatementItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -95,12 +95,17 @@ export default function AdminProblemStatementsPage() {
   }, [page, debouncedSearch, statusFilter]);
 
   useEffect(() => {
+    if (isInitializing) return;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
     if (hasRole('ADMIN')) {
       loadProblemStatements();
     } else {
       router.push('/unauthorized');
     }
-  }, [hasRole, router, loadProblemStatements]);
+  }, [isInitializing, user, hasRole, router, loadProblemStatements]);
 
   const handleDecision = async (decision: 'APPROVE' | 'REJECT' | 'REQUEST_CHANGES', reason?: string) => {
     if (!selectedItem) return;

@@ -50,7 +50,7 @@ interface OrganizationItem {
 
 export default function Adm03ApprovalsPage() {
   const router = useRouter();
-  const { hasRole } = usePermissions();
+  const { hasRole, isInitializing, user } = usePermissions();
 
   const [items, setItems] = useState<OrganizationItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -81,10 +81,15 @@ export default function Adm03ApprovalsPage() {
 
   // Check ADMIN Authorization
   useEffect(() => {
+    if (isInitializing) return;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
     if (!hasRole('ADMIN')) {
       router.push('/unauthorized');
     }
-  }, [hasRole, router]);
+  }, [isInitializing, user, hasRole, router]);
 
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
