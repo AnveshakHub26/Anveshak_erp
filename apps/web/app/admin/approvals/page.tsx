@@ -212,6 +212,27 @@ export default function Adm03ApprovalsPage() {
     }
   };
 
+  const handleDirectApprove = async (orgId: string, legalName: string) => {
+    setIsSubmittingDecision(true);
+    setSuccessMsg(null);
+    setError(null);
+    try {
+      const res = await apiRequest(`/organizations/${orgId}/decision`, {
+        method: 'PATCH',
+        body: JSON.stringify({ decision: 'APPROVE' }),
+      });
+      setSuccessMsg(
+        res.data?.message || `Organization "${legalName}" approved successfully. Approval confirmation email sent to applicant.`
+      );
+      setSelectedOrg(null);
+      loadApplications();
+    } catch (err: any) {
+      alert(err.message || 'Failed to approve organization.');
+    } finally {
+      setIsSubmittingDecision(false);
+    }
+  };
+
   const handleDeleteOrganization = async () => {
     if (!deleteModal.orgId) return;
     setIsDeleting(true);
@@ -666,10 +687,9 @@ export default function Adm03ApprovalsPage() {
 
                   <Button
                     variant="primary"
-                    onClick={() =>
-                      setDecisionModal({ isOpen: true, decision: 'APPROVE', reason: '' })
-                    }
-                    className="text-xs font-bold bg-[#10B981] hover:bg-[#059669] text-white whitespace-nowrap shrink-0"
+                    isLoading={isSubmittingDecision}
+                    onClick={() => handleDirectApprove(selectedOrg.id, selectedOrg.legalName)}
+                    className="text-xs font-bold bg-[#10B981] hover:bg-[#059669] text-white whitespace-nowrap shrink-0 cursor-pointer"
                   >
                     <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
                     Approve Application

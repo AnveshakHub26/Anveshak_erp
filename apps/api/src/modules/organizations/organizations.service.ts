@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException, Optional } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { SupabaseService } from '../../common/supabase/supabase.service';
+import { EmailService } from '../../common/email/email.service';
 import * as argon2 from 'argon2';
 import * as crypto from 'crypto';
 
@@ -9,6 +10,7 @@ export class OrganizationsService {
   constructor(
     private prisma: PrismaService,
     @Optional() private supabaseService?: SupabaseService,
+    @Optional() private emailService?: EmailService,
   ) {}
 
   private async generateOrgNumber(): Promise<string> {
@@ -391,30 +393,12 @@ export class OrganizationsService {
       return updatedOrg;
     });
 
-    // Dispatch Account Approval Email Notification
+    // Dispatch Account Approval Email Notification via Nodemailer SMTP Transport
     if (decision === 'APPROVE' && primaryOrgUser?.user?.email) {
       const recipientEmail = primaryOrgUser.user.email;
-      console.log(`
-      ========================================================================================
-      📧 [EMAIL SERVICE] ORGANIZATION ACCOUNT APPROVAL NOTIFICATION DISPATCHED
-      ========================================================================================
-      Recipient Email : ${recipientEmail}
-      Organization    : ${org.legalName} (${org.orgNumber})
-      Subject         : 🎉 Your AnveshakHub Enterprise ERP Account Has Been Approved!
-      
-      Dear ${org.legalName} Primary Contact,
-
-      We are pleased to inform you that your organization onboarding application (Ref: ${org.orgNumber})
-      has been verified and APPROVED by the AnveshakHub Administration Team.
-
-      Your enterprise account is now ACTIVE. You can log in to the portal immediately using the
-      email address (${recipientEmail}) and password you specified during registration.
-
-      Direct Portal Login: http://localhost:3000/login
-
-      Welcome to AnveshakHub Enterprise!
-      ========================================================================================
-      `);
+      if (this.emailService) {
+        await this.emailService.sendApprovalEmail(recipientEmail, org.legalName, org.orgNumber);
+      }
     }
 
     return {
