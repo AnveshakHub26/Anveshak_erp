@@ -324,33 +324,33 @@ export default function HROnboardPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto">
+    <div className="space-y-6 max-w-5xl mx-auto">
         {/* Navigation Breadcrumb & Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#182238] pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#E2E8F0] pb-5">
           <div>
             <Link
               href="/hr"
-              className="inline-flex items-center text-xs text-[#94a3b8] hover:text-white mb-2 transition-colors"
+              className="inline-flex items-center text-xs text-[#64748B] hover:text-[#d49b38] mb-1.5 transition-colors font-medium"
             >
               <ChevronLeft className="h-4 w-4 mr-1" /> Back to HR Directory
             </Link>
-            <h1 className="text-2xl font-bold tracking-tight text-white flex items-center space-x-3">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#0F172A] flex items-center space-x-3">
               <UserPlus className="h-6 w-6 text-[#d49b38]" />
               <span>Employee Workforce Onboarding</span>
             </h1>
-            <p className="text-xs text-[#94a3b8] mt-1">
+            <p className="text-xs text-[#64748B] mt-1">
               Onboard individual employees or provision bulk workforce joiners with automatic permanent ID generation
             </p>
           </div>
 
           {/* Mode Switcher Tabs */}
-          <div className="flex items-center space-x-1 rounded-xl bg-[#0b101b] p-1 border border-[#182238]">
+          <div className="flex items-center space-x-1 rounded-xl bg-[#F1F5F9] p-1 border border-[#E2E8F0]">
             <button
               onClick={() => setActiveTab('single')}
-              className={`flex items-center space-x-2 rounded-lg px-4 py-2 text-xs font-semibold transition-all ${
+              className={`flex items-center space-x-2 rounded-lg px-3.5 py-2 text-xs font-semibold transition-all ${
                 activeTab === 'single'
-                  ? 'bg-[#d49b38] text-[#151c2e] shadow-md'
-                  : 'text-[#94a3b8] hover:text-white'
+                  ? 'bg-[#151c2e] text-[#d49b38] shadow-sm'
+                  : 'text-[#64748B] hover:text-[#0F172A]'
               }`}
             >
               <UserPlus className="h-3.5 w-3.5" />
@@ -358,10 +358,10 @@ export default function HROnboardPage() {
             </button>
             <button
               onClick={() => setActiveTab('bulk')}
-              className={`flex items-center space-x-2 rounded-lg px-4 py-2 text-xs font-semibold transition-all ${
+              className={`flex items-center space-x-2 rounded-lg px-3.5 py-2 text-xs font-semibold transition-all ${
                 activeTab === 'bulk'
-                  ? 'bg-[#d49b38] text-[#151c2e] shadow-md'
-                  : 'text-[#94a3b8] hover:text-white'
+                  ? 'bg-[#151c2e] text-[#d49b38] shadow-sm'
+                  : 'text-[#64748B] hover:text-[#0F172A]'
               }`}
             >
               <FileSpreadsheet className="h-3.5 w-3.5" />
@@ -377,40 +377,40 @@ export default function HROnboardPage() {
           <div className="space-y-6">
             {/* Success State Screen */}
             {singleSuccess ? (
-              <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/20 p-8 text-center space-y-6 shadow-xl">
-                <div className="h-14 w-14 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/40">
+              <div className="rounded-xl border border-emerald-500/40 bg-emerald-50/60 p-8 text-center space-y-6 shadow-sm">
+                <div className="h-14 w-14 rounded-full bg-emerald-500/20 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-500/40">
                   <CheckCircle2 className="h-8 w-8" />
                 </div>
 
                 <div>
-                  <h2 className="text-xl font-bold text-white">Employee Onboarded & Account Provisioned!</h2>
-                  <p className="text-xs text-[#94a3b8] mt-1">
+                  <h2 className="text-xl font-bold text-[#0F172A]">Employee Onboarded & Account Provisioned!</h2>
+                  <p className="text-xs text-[#64748B] mt-1">
                     An activation invitation has been generated and dispatched to the official email.
                   </p>
                 </div>
 
-                <div className="max-w-md mx-auto rounded-xl border border-[#182238] bg-[#0b101b] p-5 text-left text-xs space-y-3 font-mono">
-                  <div className="flex justify-between border-b border-[#182238] pb-2">
-                    <span className="text-[#94a3b8]">Permanent Employee ID:</span>
+                <div className="max-w-md mx-auto rounded-xl border border-[#E2E8F0] bg-white p-5 text-left text-xs space-y-3 font-mono shadow-xs">
+                  <div className="flex justify-between border-b border-[#E2E8F0] pb-2">
+                    <span className="text-[#64748B]">Permanent Employee ID:</span>
                     <span className="font-bold text-[#d49b38] text-sm">{singleSuccess.employeeCode}</span>
                   </div>
-                  <div className="flex justify-between border-b border-[#182238] pb-2">
-                    <span className="text-[#94a3b8]">Employee Name:</span>
-                    <span className="text-white font-semibold">{singleSuccess.fullName}</span>
+                  <div className="flex justify-between border-b border-[#E2E8F0] pb-2">
+                    <span className="text-[#64748B]">Employee Name:</span>
+                    <span className="text-[#0F172A] font-semibold">{singleSuccess.fullName}</span>
                   </div>
-                  <div className="flex justify-between border-b border-[#182238] pb-2">
-                    <span className="text-[#94a3b8]">Work Email:</span>
-                    <span className="text-white">{singleSuccess.workEmail}</span>
+                  <div className="flex justify-between border-b border-[#E2E8F0] pb-2">
+                    <span className="text-[#64748B]">Work Email:</span>
+                    <span className="text-[#0F172A]">{singleSuccess.workEmail}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#94a3b8]">Provisioning Status:</span>
-                    <span className="text-emerald-400 font-semibold">{singleSuccess.provisioningStatus}</span>
+                    <span className="text-[#64748B]">Provisioning Status:</span>
+                    <span className="text-emerald-600 font-semibold">{singleSuccess.provisioningStatus}</span>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-center space-x-4 pt-4">
                   <Link href="/hr">
-                    <Button variant="outline" className="border-[#182238] bg-[#151c2e] text-white hover:bg-[#182238] text-xs">
+                    <Button variant="outline" className="border-[#E2E8F0] bg-white text-[#0F172A] hover:bg-[#F8FAFC] text-xs">
                       View HR Directory
                     </Button>
                   </Link>
@@ -427,8 +427,8 @@ export default function HROnboardPage() {
               </div>
             ) : (
               /* Wizard Steps Indicator */
-              <div className="rounded-xl border border-[#182238] bg-[#151c2e] p-6 shadow-sm space-y-6">
-                <div className="grid grid-cols-5 gap-2 border-b border-[#182238] pb-4">
+              <div className="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm space-y-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 border-b border-[#E2E8F0] pb-4">
                   {[
                     { num: 1, label: '1. Personal' },
                     { num: 2, label: '2. Professional' },
@@ -438,12 +438,12 @@ export default function HROnboardPage() {
                   ].map((s) => (
                     <div
                       key={s.num}
-                      className={`text-center py-2 text-xs font-semibold rounded-lg transition-colors ${
+                      className={`text-center py-2 px-2 text-xs font-semibold rounded-lg transition-colors ${
                         step === s.num
-                          ? 'bg-[#d49b38] text-[#151c2e]'
+                          ? 'bg-[#151c2e] text-[#d49b38] shadow-sm'
                           : step > s.num
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-[#0b101b] text-[#94a3b8]'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : 'bg-[#F8FAFC] text-[#64748B] border border-[#E2E8F0]'
                       }`}
                     >
                       {s.label}
@@ -452,7 +452,7 @@ export default function HROnboardPage() {
                 </div>
 
                 {singleError && (
-                  <Alert className="border-red-900/50 bg-red-950/30 text-red-400 text-xs">
+                  <Alert className="border-red-200 bg-red-50 text-red-700 text-xs">
                     <AlertCircle className="h-4 w-4 mr-2" />
                     <span>{singleError}</span>
                   </Alert>
@@ -461,83 +461,83 @@ export default function HROnboardPage() {
                 {/* STEP 1: Personal Information */}
                 {step === 1 && (
                   <div className="space-y-4 text-xs">
-                    <h3 className="text-sm font-semibold text-white">Step 1: Personal & Contact Information</h3>
+                    <h3 className="text-sm font-bold text-[#0F172A]">Step 1: Personal & Contact Information</h3>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-[#94a3b8] mb-1">First Name *</label>
+                        <label className="block text-[#64748B] font-medium mb-1">First Name *</label>
                         <input
                           type="text"
                           required
                           value={singleForm.firstName}
                           onChange={(e) => setSingleForm({ ...singleForm, firstName: e.target.value })}
                           placeholder="e.g. John"
-                          className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white focus:border-[#d49b38] focus:outline-none"
+                          className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-[#0F172A] placeholder-[#94a3b8] focus:border-[#d49b38] focus:bg-white focus:outline-none"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-[#94a3b8] mb-1">Last Name *</label>
+                        <label className="block text-[#64748B] font-medium mb-1">Last Name *</label>
                         <input
                           type="text"
                           required
                           value={singleForm.lastName}
                           onChange={(e) => setSingleForm({ ...singleForm, lastName: e.target.value })}
                           placeholder="e.g. Doe"
-                          className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white focus:border-[#d49b38] focus:outline-none"
+                          className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-[#0F172A] placeholder-[#94a3b8] focus:border-[#d49b38] focus:bg-white focus:outline-none"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-[#94a3b8] mb-1">Official Work Email *</label>
+                        <label className="block text-[#64748B] font-medium mb-1">Official Work Email *</label>
                         <input
                           type="email"
                           required
                           value={singleForm.workEmail}
                           onChange={(e) => setSingleForm({ ...singleForm, workEmail: e.target.value })}
                           placeholder="john.doe@anveshak.com"
-                          className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white focus:border-[#d49b38] focus:outline-none"
+                          className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-[#0F172A] placeholder-[#94a3b8] focus:border-[#d49b38] focus:bg-white focus:outline-none"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-[#94a3b8] mb-1">Personal Email (Optional)</label>
+                        <label className="block text-[#64748B] font-medium mb-1">Personal Email (Optional)</label>
                         <input
                           type="email"
                           value={singleForm.personalEmail}
                           onChange={(e) => setSingleForm({ ...singleForm, personalEmail: e.target.value })}
                           placeholder="john.personal@gmail.com"
-                          className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white focus:border-[#d49b38] focus:outline-none"
+                          className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-[#0F172A] placeholder-[#94a3b8] focus:border-[#d49b38] focus:bg-white focus:outline-none"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-[#94a3b8] mb-1">Phone Number</label>
+                        <label className="block text-[#64748B] font-medium mb-1">Phone Number</label>
                         <input
                           type="text"
                           value={singleForm.phone}
                           onChange={(e) => setSingleForm({ ...singleForm, phone: e.target.value })}
                           placeholder="+91 98765 43210"
-                          className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white focus:border-[#d49b38] focus:outline-none"
+                          className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-[#0F172A] placeholder-[#94a3b8] focus:border-[#d49b38] focus:bg-white focus:outline-none"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-[#94a3b8] mb-1">Date of Birth</label>
+                        <label className="block text-[#64748B] font-medium mb-1">Date of Birth</label>
                         <input
                           type="date"
                           value={singleForm.dateOfBirth}
                           onChange={(e) => setSingleForm({ ...singleForm, dateOfBirth: e.target.value })}
-                          className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white focus:border-[#d49b38] focus:outline-none"
+                          className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-[#0F172A] focus:border-[#d49b38] focus:bg-white focus:outline-none"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-[#94a3b8] mb-1">Gender</label>
+                        <label className="block text-[#64748B] font-medium mb-1">Gender</label>
                         <select
                           value={singleForm.gender}
                           onChange={(e) => setSingleForm({ ...singleForm, gender: e.target.value })}
-                          className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white focus:border-[#d49b38] focus:outline-none"
+                          className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-[#0F172A] focus:border-[#d49b38] focus:bg-white focus:outline-none"
                         >
                           <option value="Male">Male</option>
                           <option value="Female">Female</option>
@@ -546,13 +546,13 @@ export default function HROnboardPage() {
                       </div>
 
                       <div>
-                        <label className="block text-[#94a3b8] mb-1">Residential Address</label>
+                        <label className="block text-[#64748B] font-medium mb-1">Residential Address</label>
                         <input
                           type="text"
                           value={singleForm.address}
                           onChange={(e) => setSingleForm({ ...singleForm, address: e.target.value })}
                           placeholder="City, Country"
-                          className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white focus:border-[#d49b38] focus:outline-none"
+                          className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-[#0F172A] placeholder-[#94a3b8] focus:border-[#d49b38] focus:bg-white focus:outline-none"
                         />
                       </div>
                     </div>
@@ -573,18 +573,18 @@ export default function HROnboardPage() {
                 {/* STEP 2: Professional Information */}
                 {step === 2 && (
                   <div className="space-y-4 text-xs">
-                    <h3 className="text-sm font-semibold text-white">Step 2: Professional Role & Classification</h3>
+                    <h3 className="text-sm font-bold text-[#0F172A]">Step 2: Professional Role & Classification</h3>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-[#94a3b8] mb-1">Professional Role *</label>
+                        <label className="block text-[#64748B] font-medium mb-1">Professional Role *</label>
                         <input
                           type="text"
                           required
                           value={singleForm.professionalRole}
                           onChange={(e) => setSingleForm({ ...singleForm, professionalRole: e.target.value })}
                           placeholder="e.g. Professor, PhD Scholar, Developer, Researcher, Engineer, Scientist"
-                          className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white focus:border-[#d49b38] focus:outline-none"
+                          className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-[#0F172A] placeholder-[#94a3b8] focus:border-[#d49b38] focus:bg-white focus:outline-none"
                         />
                         <div className="text-[10px] text-[#64748b] mt-1">
                           Presets: Professor, PhD Scholar, Developer, Researcher, Engineer, Scientist
@@ -592,35 +592,35 @@ export default function HROnboardPage() {
                       </div>
 
                       <div>
-                        <label className="block text-[#94a3b8] mb-1">Department *</label>
+                        <label className="block text-[#64748B] font-medium mb-1">Department *</label>
                         <input
                           type="text"
                           required
                           value={singleForm.department}
                           onChange={(e) => setSingleForm({ ...singleForm, department: e.target.value })}
                           placeholder="e.g. Research & Development, Engineering, IT"
-                          className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white focus:border-[#d49b38] focus:outline-none"
+                          className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-[#0F172A] placeholder-[#94a3b8] focus:border-[#d49b38] focus:bg-white focus:outline-none"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-[#94a3b8] mb-1">Designation *</label>
+                        <label className="block text-[#64748B] font-medium mb-1">Designation *</label>
                         <input
                           type="text"
                           required
                           value={singleForm.designation}
                           onChange={(e) => setSingleForm({ ...singleForm, designation: e.target.value })}
                           placeholder="e.g. Lead Scientist, Senior Software Developer"
-                          className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white focus:border-[#d49b38] focus:outline-none"
+                          className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-[#0F172A] placeholder-[#94a3b8] focus:border-[#d49b38] focus:bg-white focus:outline-none"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-[#94a3b8] mb-1">Employee Category *</label>
+                        <label className="block text-[#64748B] font-medium mb-1">Employee Category *</label>
                         <select
                           value={singleForm.category}
                           onChange={(e) => setSingleForm({ ...singleForm, category: e.target.value as any })}
-                          className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white focus:border-[#d49b38] focus:outline-none"
+                          className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-[#0F172A] focus:border-[#d49b38] focus:bg-white focus:outline-none"
                         >
                           <option value="EXPERT">EXPERT (Domain Specialist)</option>
                           <option value="INTERN">INTERN (Trainee/Scholar)</option>
@@ -630,11 +630,11 @@ export default function HROnboardPage() {
                       </div>
 
                       <div>
-                        <label className="block text-[#94a3b8] mb-1">Employment Type *</label>
+                        <label className="block text-[#64748B] font-medium mb-1">Employment Type *</label>
                         <select
                           value={singleForm.employmentType}
                           onChange={(e) => setSingleForm({ ...singleForm, employmentType: e.target.value as any })}
-                          className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white focus:border-[#d49b38] focus:outline-none"
+                          className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-[#0F172A] focus:border-[#d49b38] focus:bg-white focus:outline-none"
                         >
                           <option value="PERMANENT">PERMANENT</option>
                           <option value="TEMPORARY">TEMPORARY</option>
@@ -645,13 +645,13 @@ export default function HROnboardPage() {
                       </div>
 
                       <div>
-                        <label className="block text-[#94a3b8] mb-1">Joining Date *</label>
+                        <label className="block text-[#64748B] font-medium mb-1">Joining Date *</label>
                         <input
                           type="date"
                           required
                           value={singleForm.joiningDate}
                           onChange={(e) => setSingleForm({ ...singleForm, joiningDate: e.target.value })}
-                          className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white focus:border-[#d49b38] focus:outline-none"
+                          className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-[#0F172A] focus:border-[#d49b38] focus:bg-white focus:outline-none"
                         />
                       </div>
                     </div>
@@ -660,7 +660,7 @@ export default function HROnboardPage() {
                       <Button
                         variant="outline"
                         onClick={() => setStep(1)}
-                        className="border-[#182238] bg-[#0b101b] text-[#94a3b8] hover:text-white"
+                        className="border-[#E2E8F0] bg-[#F8FAFC] text-[#64748B] hover:text-[#0F172A]"
                       >
                         <ChevronLeft className="h-4 w-4 mr-1" /> Previous
                       </Button>
@@ -679,14 +679,14 @@ export default function HROnboardPage() {
                 {/* STEP 3: Skills & Technologies */}
                 {step === 3 && (
                   <div className="space-y-6 text-xs">
-                    <h3 className="text-sm font-semibold text-white">Step 3: Core Skills & Technologies</h3>
-                    <p className="text-[#94a3b8]">
+                    <h3 className="text-sm font-bold text-[#0F172A]">Step 3: Core Skills & Technologies</h3>
+                    <p className="text-[#64748B]">
                       These competency tags will be used by Project Managers for automated resource matching & project team assignment.
                     </p>
 
                     {/* Skills Tag Input */}
                     <div>
-                      <label className="block text-[#94a3b8] mb-1">Domain Skills & Competencies</label>
+                      <label className="block text-[#64748B] font-medium mb-1">Domain Skills & Competencies</label>
                       <div className="flex gap-2 mb-2">
                         <input
                           type="text"
@@ -694,9 +694,9 @@ export default function HROnboardPage() {
                           onChange={(e) => setNewSkill(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
                           placeholder="e.g. Thermal Coatings, Finite Element Analysis, Project Management"
-                          className="flex-1 rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white focus:border-[#d49b38] focus:outline-none"
+                          className="flex-1 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-[#0F172A] placeholder-[#94a3b8] focus:border-[#d49b38] focus:bg-white focus:outline-none"
                         />
-                        <Button type="button" onClick={addSkill} className="bg-[#182238] text-white hover:bg-[#202c48]">
+                        <Button type="button" onClick={addSkill} className="bg-[#151c2e] text-white hover:bg-[#182238]">
                           <Plus className="h-4 w-4 mr-1" /> Add
                         </Button>
                       </div>
@@ -704,10 +704,10 @@ export default function HROnboardPage() {
                         {skills.map((s) => (
                           <span
                             key={s}
-                            className="inline-flex items-center rounded-md bg-blue-500/10 border border-blue-500/30 px-2.5 py-1 text-blue-400"
+                            className="inline-flex items-center rounded-md bg-blue-50 border border-blue-200 px-2.5 py-1 text-blue-700 font-medium"
                           >
                             {s}
-                            <button onClick={() => removeSkill(s)} className="ml-1.5 hover:text-red-400">
+                            <button onClick={() => removeSkill(s)} className="ml-1.5 hover:text-red-600">
                               <X className="h-3 w-3" />
                             </button>
                           </span>
@@ -717,7 +717,7 @@ export default function HROnboardPage() {
 
                     {/* Technologies Tag Input */}
                     <div>
-                      <label className="block text-[#94a3b8] mb-1">Technologies & Tools</label>
+                      <label className="block text-[#64748B] font-medium mb-1">Technologies & Tools</label>
                       <div className="flex gap-2 mb-2">
                         <input
                           type="text"
@@ -725,9 +725,9 @@ export default function HROnboardPage() {
                           onChange={(e) => setNewTech(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTech())}
                           placeholder="e.g. ANSYS, Python, React, MATLAB"
-                          className="flex-1 rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white focus:border-[#d49b38] focus:outline-none"
+                          className="flex-1 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-[#0F172A] placeholder-[#94a3b8] focus:border-[#d49b38] focus:bg-white focus:outline-none"
                         />
-                        <Button type="button" onClick={addTech} className="bg-[#182238] text-white hover:bg-[#202c48]">
+                        <Button type="button" onClick={addTech} className="bg-[#151c2e] text-white hover:bg-[#182238]">
                           <Plus className="h-4 w-4 mr-1" /> Add
                         </Button>
                       </div>
@@ -735,10 +735,10 @@ export default function HROnboardPage() {
                         {technologies.map((t) => (
                           <span
                             key={t}
-                            className="inline-flex items-center rounded-md bg-purple-500/10 border border-purple-500/30 px-2.5 py-1 text-purple-400"
+                            className="inline-flex items-center rounded-md bg-purple-50 border border-purple-200 px-2.5 py-1 text-purple-700 font-medium"
                           >
                             {t}
-                            <button onClick={() => removeTech(t)} className="ml-1.5 hover:text-red-400">
+                            <button onClick={() => removeTech(t)} className="ml-1.5 hover:text-red-600">
                               <X className="h-3 w-3" />
                             </button>
                           </span>
@@ -750,7 +750,7 @@ export default function HROnboardPage() {
                       <Button
                         variant="outline"
                         onClick={() => setStep(2)}
-                        className="border-[#182238] bg-[#0b101b] text-[#94a3b8] hover:text-white"
+                        className="border-[#E2E8F0] bg-[#F8FAFC] text-[#64748B] hover:text-[#0F172A]"
                       >
                         <ChevronLeft className="h-4 w-4 mr-1" /> Previous
                       </Button>
@@ -767,14 +767,14 @@ export default function HROnboardPage() {
                 {/* STEP 4: NDA & Governance */}
                 {step === 4 && (
                   <div className="space-y-4 text-xs">
-                    <h3 className="text-sm font-semibold text-white">Step 4: NDA Governance & Legal Status</h3>
+                    <h3 className="text-sm font-bold text-[#0F172A]">Step 4: NDA Governance & Legal Status</h3>
 
                     <div>
-                      <label className="block text-[#94a3b8] mb-1">Non-Disclosure Agreement (NDA) Status</label>
+                      <label className="block text-[#64748B] font-medium mb-1">Non-Disclosure Agreement (NDA) Status</label>
                       <select
                         value={singleForm.ndaStatus}
                         onChange={(e) => setSingleForm({ ...singleForm, ndaStatus: e.target.value as any })}
-                        className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white focus:border-[#d49b38] focus:outline-none"
+                        className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-[#0F172A] focus:border-[#d49b38] focus:bg-white focus:outline-none"
                       >
                         <option value="PENDING">PENDING (Electronic Invite to be sent)</option>
                         <option value="SIGNED_PHYSICAL">SIGNED PHYSICALLY (Hardcopy signed in office)</option>
@@ -783,7 +783,7 @@ export default function HROnboardPage() {
                       </select>
                     </div>
 
-                    <div className="rounded-lg border border-[#182238] bg-[#0b101b] p-4 text-[11px] text-[#94a3b8]">
+                    <div className="rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] p-4 text-[11px] text-[#64748B]">
                       <ShieldCheck className="h-5 w-5 text-[#d49b38] mb-2" />
                       <p>
                         HR can record physical paper signatures or dispatch an electronic NDA invitation. Signed documents will be linked directly to the employee profile.
@@ -794,7 +794,7 @@ export default function HROnboardPage() {
                       <Button
                         variant="outline"
                         onClick={() => setStep(3)}
-                        className="border-[#182238] bg-[#0b101b] text-[#94a3b8] hover:text-white"
+                        className="border-[#E2E8F0] bg-[#F8FAFC] text-[#64748B] hover:text-[#0F172A]"
                       >
                         <ChevronLeft className="h-4 w-4 mr-1" /> Previous
                       </Button>
@@ -811,41 +811,41 @@ export default function HROnboardPage() {
                 {/* STEP 5: Review & Submit */}
                 {step === 5 && (
                   <div className="space-y-6 text-xs">
-                    <h3 className="text-sm font-semibold text-white">Step 5: Review Summary & Submit</h3>
+                    <h3 className="text-sm font-bold text-[#0F172A]">Step 5: Review Summary & Submit</h3>
 
-                    <div className="rounded-xl border border-[#182238] bg-[#0b101b] p-5 space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
+                    <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-5 space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <span className="text-[#94a3b8] block">Full Name:</span>
-                          <span className="font-semibold text-white">{singleForm.firstName} {singleForm.lastName}</span>
+                          <span className="text-[#64748B] block">Full Name:</span>
+                          <span className="font-semibold text-[#0F172A]">{singleForm.firstName} {singleForm.lastName}</span>
                         </div>
                         <div>
-                          <span className="text-[#94a3b8] block">Official Work Email:</span>
-                          <span className="font-semibold text-white">{singleForm.workEmail}</span>
+                          <span className="text-[#64748B] block">Official Work Email:</span>
+                          <span className="font-semibold text-[#0F172A]">{singleForm.workEmail}</span>
                         </div>
                         <div>
-                          <span className="text-[#94a3b8] block">Professional Role:</span>
-                          <span className="font-semibold text-white">{singleForm.professionalRole}</span>
+                          <span className="text-[#64748B] block">Professional Role:</span>
+                          <span className="font-semibold text-[#0F172A]">{singleForm.professionalRole}</span>
                         </div>
                         <div>
-                          <span className="text-[#94a3b8] block">Department & Designation:</span>
-                          <span className="font-semibold text-white">{singleForm.designation} ({singleForm.department})</span>
+                          <span className="text-[#64748B] block">Department & Designation:</span>
+                          <span className="font-semibold text-[#0F172A]">{singleForm.designation} ({singleForm.department})</span>
                         </div>
                         <div>
-                          <span className="text-[#94a3b8] block">Category & Type:</span>
+                          <span className="text-[#64748B] block">Category & Type:</span>
                           <span className="font-semibold text-[#d49b38]">{singleForm.category} — {singleForm.employmentType}</span>
                         </div>
                         <div>
-                          <span className="text-[#94a3b8] block">NDA Status:</span>
-                          <span className="font-semibold text-emerald-400">{singleForm.ndaStatus}</span>
+                          <span className="text-[#64748B] block">NDA Status:</span>
+                          <span className="font-semibold text-emerald-600">{singleForm.ndaStatus}</span>
                         </div>
                       </div>
 
-                      <div className="pt-2 border-t border-[#182238]">
-                        <span className="text-[#94a3b8] block mb-1">Skills:</span>
+                      <div className="pt-2 border-t border-[#E2E8F0]">
+                        <span className="text-[#64748B] block mb-1 font-medium">Skills:</span>
                         <div className="flex flex-wrap gap-1.5">
                           {skills.map((s) => (
-                            <span key={s} className="bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded text-[10px]">
+                            <span key={s} className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[10px] font-medium border border-blue-200">
                               {s}
                             </span>
                           ))}
@@ -858,14 +858,14 @@ export default function HROnboardPage() {
                         variant="outline"
                         onClick={() => setStep(4)}
                         disabled={submittingSingle}
-                        className="border-[#182238] bg-[#0b101b] text-[#94a3b8] hover:text-white"
+                        className="border-[#E2E8F0] bg-[#F8FAFC] text-[#64748B] hover:text-[#0F172A]"
                       >
                         <ChevronLeft className="h-4 w-4 mr-1" /> Edit Information
                       </Button>
                       <Button
                         onClick={handleSingleSubmit}
                         disabled={submittingSingle}
-                        className="bg-[#d49b38] hover:bg-[#c48b28] text-[#151c2e] font-bold text-xs shadow-lg"
+                        className="bg-[#d49b38] hover:bg-[#c48b28] text-[#151c2e] font-bold text-xs shadow-md"
                       >
                         {submittingSingle ? (
                           <>
@@ -891,30 +891,30 @@ export default function HROnboardPage() {
         {activeTab === 'bulk' && (
           <div className="space-y-6">
             {bulkSuccess ? (
-              <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/20 p-6 space-y-4 shadow-xl text-xs">
-                <div className="flex items-center space-x-3 text-emerald-400 font-bold text-base border-b border-emerald-500/30 pb-3">
+              <div className="rounded-xl border border-emerald-500/40 bg-emerald-50/60 p-6 space-y-4 shadow-sm text-xs">
+                <div className="flex items-center space-x-3 text-emerald-700 font-bold text-base border-b border-emerald-500/30 pb-3">
                   <CheckCircle2 className="h-6 w-6" />
                   <span>Bulk Onboarding Completed Successfully!</span>
                 </div>
-                <p className="text-[#94a3b8]">
+                <p className="text-[#64748B]">
                   Total {bulkSuccess.length} employee accounts provisioned atomically with unique sequential EMP-YYYY-NNNNNN IDs.
                 </p>
 
-                <div className="overflow-x-auto rounded-lg border border-[#182238] bg-[#0b101b]">
+                <div className="overflow-x-auto rounded-lg border border-[#E2E8F0] bg-white">
                   <table className="w-full text-left font-mono">
-                    <thead className="bg-[#151c2e] text-[#94a3b8] text-[10px] uppercase">
+                    <thead className="bg-[#F8FAFC] text-[#64748B] text-[10px] uppercase">
                       <tr>
                         <th className="px-4 py-2">Assigned Employee Code</th>
                         <th className="px-4 py-2">Work Email</th>
                         <th className="px-4 py-2">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#182238] text-white text-[11px]">
+                    <tbody className="divide-y divide-[#E2E8F0] text-[#0F172A] text-[11px]">
                       {bulkSuccess.map((item, idx) => (
                         <tr key={idx}>
                           <td className="px-4 py-2 font-bold text-[#d49b38]">{item.employeeCode}</td>
                           <td className="px-4 py-2">{item.workEmail}</td>
-                          <td className="px-4 py-2 text-emerald-400">{item.status}</td>
+                          <td className="px-4 py-2 text-emerald-600 font-semibold">{item.status}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -930,11 +930,11 @@ export default function HROnboardPage() {
                 </div>
               </div>
             ) : (
-              <div className="rounded-xl border border-[#182238] bg-[#151c2e] p-6 shadow-sm space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#182238] pb-4">
+              <div className="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#E2E8F0] pb-4">
                   <div>
-                    <h2 className="text-sm font-semibold text-white">Bulk Employee Provisioning Portal</h2>
-                    <p className="text-xs text-[#94a3b8] mt-0.5">
+                    <h2 className="text-sm font-bold text-[#0F172A]">Bulk Employee Provisioning Portal</h2>
+                    <p className="text-xs text-[#64748B] mt-0.5">
                       Upload a formatted CSV file to onboard up to 50 employees atomically.
                     </p>
                   </div>
@@ -942,16 +942,16 @@ export default function HROnboardPage() {
                     variant="outline"
                     size="sm"
                     onClick={downloadCsvTemplate}
-                    className="border-[#182238] bg-[#0b101b] text-[#d49b38] hover:bg-[#182238] text-xs"
+                    className="border-[#E2E8F0] bg-[#F8FAFC] text-[#d49b38] hover:bg-white text-xs font-semibold"
                   >
                     <Download className="h-4 w-4 mr-2" /> Download CSV Template
                   </Button>
                 </div>
 
                 {/* File Dropzone */}
-                <div className="rounded-xl border-2 border-dashed border-[#182238] bg-[#0b101b] p-8 text-center space-y-3 hover:border-[#d49b38]/50 transition-colors">
+                <div className="rounded-xl border-2 border-dashed border-[#E2E8F0] bg-[#F8FAFC] p-8 text-center space-y-3 hover:border-[#d49b38] transition-colors">
                   <Upload className="h-8 w-8 mx-auto text-[#d49b38]" />
-                  <div className="text-xs text-white font-medium">
+                  <div className="text-xs text-[#0F172A] font-semibold">
                     {csvFile ? csvFile.name : 'Select or Drop CSV File here'}
                   </div>
                   <input
@@ -962,7 +962,7 @@ export default function HROnboardPage() {
                     id="csv-file-input"
                   />
                   <label htmlFor="csv-file-input">
-                    <Button type="button" size="sm" className="bg-[#182238] text-white hover:bg-[#202c48] text-xs">
+                    <Button type="button" size="sm" className="bg-[#151c2e] text-white hover:bg-[#182238] text-xs">
                       Browse File
                     </Button>
                   </label>
@@ -970,7 +970,7 @@ export default function HROnboardPage() {
 
                 {/* Validation Errors Box */}
                 {bulkErrors.length > 0 && (
-                  <Alert className="border-red-900/50 bg-red-950/30 text-red-400 text-xs">
+                  <Alert className="border-red-200 bg-red-50 text-red-700 text-xs">
                     <AlertCircle className="h-4 w-4 mr-2" />
                     <div className="space-y-1">
                       <div className="font-semibold">Batch Validation Failed — Please resolve before submission:</div>
@@ -986,16 +986,16 @@ export default function HROnboardPage() {
                 {/* Preview Table */}
                 {bulkRows.length > 0 && (
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between text-xs text-white font-semibold">
+                    <div className="flex items-center justify-between text-xs text-[#0F172A] font-bold">
                       <span>Batch Preview ({bulkRows.length} Joiners)</span>
-                      <span className="text-[#94a3b8] font-normal text-[11px]">
+                      <span className="text-[#64748B] font-normal text-[11px]">
                         Valid rows ready for atomic creation
                       </span>
                     </div>
 
-                    <div className="overflow-x-auto rounded-lg border border-[#182238] bg-[#0b101b]">
+                    <div className="overflow-x-auto rounded-lg border border-[#E2E8F0] bg-white">
                       <table className="w-full text-left text-xs">
-                        <thead className="bg-[#151c2e] text-[#94a3b8] text-[10px] uppercase">
+                        <thead className="bg-[#F8FAFC] text-[#64748B] text-[10px] uppercase border-b border-[#E2E8F0]">
                           <tr>
                             <th className="px-3 py-2">#</th>
                             <th className="px-3 py-2">Name</th>
@@ -1006,10 +1006,10 @@ export default function HROnboardPage() {
                             <th className="px-3 py-2">Type</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#182238] text-white text-[11px]">
+                        <tbody className="divide-y divide-[#E2E8F0] text-[#0F172A] text-[11px]">
                           {bulkRows.map((r, i) => (
-                            <tr key={i} className="hover:bg-[#182238]/40">
-                              <td className="px-3 py-2 text-[#94a3b8]">{i + 1}</td>
+                            <tr key={i} className="hover:bg-[#F8FAFC]">
+                              <td className="px-3 py-2 text-[#64748B]">{i + 1}</td>
                               <td className="px-3 py-2 font-medium">{r.firstName} {r.lastName}</td>
                               <td className="px-3 py-2 font-mono text-[#d49b38]">{r.workEmail}</td>
                               <td className="px-3 py-2">{r.professionalRole}</td>
@@ -1026,7 +1026,7 @@ export default function HROnboardPage() {
                       <Button
                         onClick={handleBulkSubmit}
                         disabled={submittingBulk || bulkErrors.length > 0}
-                        className="bg-[#d49b38] hover:bg-[#c48b28] text-[#151c2e] font-bold text-xs shadow-lg"
+                        className="bg-[#d49b38] hover:bg-[#c48b28] text-[#151c2e] font-bold text-xs shadow-md"
                       >
                         {submittingBulk ? (
                           <>

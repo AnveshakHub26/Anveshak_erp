@@ -238,14 +238,14 @@ export default function HRPage() {
         ) : metrics ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Total Workforce */}
-            <Card>
-              <CardContent className="p-5">
+            <Card className="overflow-hidden">
+              <CardContent className="p-4 sm:p-5 flex flex-col justify-between h-full min-h-[110px]">
                 <div className="flex items-center justify-between text-xs text-[#64748B]">
-                  <span className="font-semibold uppercase tracking-wider">Total Workforce</span>
-                  <Users className="h-4 w-4 text-[#d49b38]" />
+                  <span className="font-semibold uppercase tracking-wider truncate">Total Workforce</span>
+                  <Users className="h-4 w-4 text-[#d49b38] shrink-0 ml-1" />
                 </div>
-                <div className="mt-2 text-2xl sm:text-3xl font-extrabold text-[#0F172A]">{metrics.totalEmployees}</div>
-                <div className="mt-2 flex items-center justify-between text-[11px]">
+                <div className="my-1.5 text-2xl sm:text-3xl font-extrabold text-[#0F172A]">{metrics.totalEmployees}</div>
+                <div className="flex items-center justify-between text-[11px] pt-1 border-t border-[#F1F5F9]">
                   <span className="text-[#2F6F52] font-semibold">Assigned: {metrics.allocationBreakdown.assigned}</span>
                   <span className="text-[#64748B]">Unassigned: {metrics.allocationBreakdown.unassigned}</span>
                 </div>
@@ -253,17 +253,17 @@ export default function HRPage() {
             </Card>
 
             {/* Category Breakdown */}
-            <Card>
-              <CardContent className="p-5">
+            <Card className="overflow-hidden">
+              <CardContent className="p-4 sm:p-5 flex flex-col justify-between h-full min-h-[110px]">
                 <div className="flex items-center justify-between text-xs text-[#64748B]">
-                  <span className="font-semibold uppercase tracking-wider">Category Breakdown</span>
-                  <GraduationCap className="h-4 w-4 text-blue-600" />
+                  <span className="font-semibold uppercase tracking-wider truncate">Category Breakdown</span>
+                  <GraduationCap className="h-4 w-4 text-blue-600 shrink-0 ml-1" />
                 </div>
-                <div className="mt-2 flex items-baseline space-x-2">
+                <div className="my-1.5 flex items-baseline space-x-2">
                   <span className="text-2xl sm:text-3xl font-extrabold text-[#0F172A]">{metrics.categoryBreakdown.experts}</span>
-                  <span className="text-xs text-blue-600 font-bold">Experts</span>
+                  <span className="text-xs text-blue-600 font-bold uppercase">Experts</span>
                 </div>
-                <div className="mt-2 flex items-center justify-between text-[11px] text-[#64748B]">
+                <div className="flex items-center justify-between text-[11px] text-[#64748B] pt-1 border-t border-[#F1F5F9]">
                   <span>Interns: {metrics.categoryBreakdown.interns}</span>
                   <span>Staff: {metrics.categoryBreakdown.staffExecs}</span>
                 </div>
@@ -271,17 +271,17 @@ export default function HRPage() {
             </Card>
 
             {/* Employment Types */}
-            <Card>
-              <CardContent className="p-5">
+            <Card className="overflow-hidden">
+              <CardContent className="p-4 sm:p-5 flex flex-col justify-between h-full min-h-[110px]">
                 <div className="flex items-center justify-between text-xs text-[#64748B]">
-                  <span className="font-semibold uppercase tracking-wider">Employment Types</span>
-                  <Briefcase className="h-4 w-4 text-purple-600" />
+                  <span className="font-semibold uppercase tracking-wider truncate">Employment Types</span>
+                  <Briefcase className="h-4 w-4 text-purple-600 shrink-0 ml-1" />
                 </div>
-                <div className="mt-2 flex items-baseline space-x-2">
+                <div className="my-1.5 flex items-baseline space-x-2">
                   <span className="text-2xl sm:text-3xl font-extrabold text-[#0F172A]">{metrics.typeBreakdown.permanent}</span>
-                  <span className="text-xs text-purple-600 font-bold">Permanent</span>
+                  <span className="text-xs text-purple-600 font-bold uppercase">Permanent</span>
                 </div>
-                <div className="mt-2 flex items-center justify-between text-[11px] text-[#64748B]">
+                <div className="flex items-center justify-between text-[11px] text-[#64748B] pt-1 border-t border-[#F1F5F9]">
                   <span>Temp: {metrics.typeBreakdown.temporary}</span>
                   <span>Probation: {metrics.typeBreakdown.probationary}</span>
                 </div>
@@ -289,17 +289,17 @@ export default function HRPage() {
             </Card>
 
             {/* Active Status */}
-            <Card>
-              <CardContent className="p-5">
+            <Card className="overflow-hidden">
+              <CardContent className="p-4 sm:p-5 flex flex-col justify-between h-full min-h-[110px]">
                 <div className="flex items-center justify-between text-xs text-[#64748B]">
-                  <span className="font-semibold uppercase tracking-wider">Active Status</span>
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  <span className="font-semibold uppercase tracking-wider truncate">Active Status</span>
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 ml-1" />
                 </div>
-                <div className="mt-2 flex items-baseline space-x-2">
+                <div className="my-1.5 flex items-baseline space-x-2">
                   <span className="text-2xl sm:text-3xl font-extrabold text-[#0F172A]">{metrics.statusBreakdown.active}</span>
-                  <span className="text-xs text-emerald-600 font-bold">Active</span>
+                  <span className="text-xs text-emerald-600 font-bold uppercase">Active</span>
                 </div>
-                <div className="mt-2 flex items-center justify-between text-[11px] text-[#64748B]">
+                <div className="flex items-center justify-between text-[11px] text-[#64748B] pt-1 border-t border-[#F1F5F9]">
                   <span>Onboarding: {metrics.statusBreakdown.onboarding}</span>
                   <span>Offboarded: {metrics.statusBreakdown.resigned + metrics.statusBreakdown.terminated}</span>
                 </div>
