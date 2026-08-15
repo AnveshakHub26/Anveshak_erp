@@ -11,6 +11,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         defaultOptions: {
           queries: {
             staleTime: 1000 * 60 * 5, // 5 minutes cache
+            refetchOnWindowFocus: false, // Prevent window focus refetch storms
+            refetchOnMount: false, // Prevent mounting refetch storms
+            refetchOnReconnect: false, // Prevent network reconnect refetch storms
             retry: 1,
           },
         },

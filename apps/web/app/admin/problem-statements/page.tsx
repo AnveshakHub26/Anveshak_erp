@@ -52,6 +52,7 @@ export default function AdminProblemStatementsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +64,13 @@ export default function AdminProblemStatementsPage() {
   const [changeReason, setChangeReason] = useState('');
   const [activeActionModal, setActiveActionModal] = useState<'REJECT' | 'REQUEST_CHANGES' | null>(null);
 
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 350);
+    return () => clearTimeout(handler);
+  }, [search]);
+
   const loadProblemStatements = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -70,7 +78,7 @@ export default function AdminProblemStatementsPage() {
       const params = new URLSearchParams();
       params.set('page', page.toString());
       params.set('limit', '10');
-      if (search.trim()) params.set('search', search.trim());
+      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
       if (statusFilter) params.set('status', statusFilter);
 
       const res = await apiRequest(`/admin/problem-statements?${params.toString()}`);
@@ -84,7 +92,7 @@ export default function AdminProblemStatementsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, search, statusFilter]);
+  }, [page, debouncedSearch, statusFilter]);
 
   useEffect(() => {
     if (hasRole('ADMIN')) {
