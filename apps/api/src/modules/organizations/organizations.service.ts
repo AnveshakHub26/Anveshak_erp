@@ -393,12 +393,13 @@ export class OrganizationsService {
       return updatedOrg;
     });
 
-    // Dispatch Account Approval Email Notification via Nodemailer SMTP Transport
-    if (decision === 'APPROVE' && primaryOrgUser?.user?.email) {
-      const recipientEmail = primaryOrgUser.user.email;
-      if (this.emailService) {
-        await this.emailService.sendApprovalEmail(recipientEmail, org.legalName, org.orgNumber);
-      }
+    // Dispatch Account Approval Email Notification via centralized EmailService (asynchronously queued)
+    if (decision === 'APPROVE' && primaryOrgUser?.user?.email && this.emailService) {
+      await this.emailService.sendOrganizationApprovalEmail(
+        primaryOrgUser.user.email,
+        org.legalName,
+        org.orgNumber,
+      );
     }
 
     return {

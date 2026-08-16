@@ -348,6 +348,36 @@ model Notification {
 }
 
 // ==========================================
+// EMAIL OUTBOX & DELIVERY QUEUE FOUNDATION
+// ==========================================
+
+model EmailLog {
+  id             String    @id @default(uuid())
+  idempotencyKey String?   @unique @map("idempotency_key")
+  category       String    @map("category")
+  recipient      String    @map("recipient")
+  subject        String    @map("subject")
+  bodyHtml       String    @map("body_html") @db.Text
+  bodyText       String?   @map("body_text") @db.Text
+  provider       String    @map("provider")
+  status         String    @map("status") // QUEUED, PROCESSING, SENT, FAILED, RETRYING
+  attempts       Int       @default(0)
+  maxAttempts    Int       @default(3) @map("max_attempts")
+  lastError      String?   @map("last_error") @db.Text
+  messageId      String?   @map("message_id")
+  metadata       Json?     @map("metadata")
+  nextAttemptAt  DateTime? @map("next_attempt_at")
+  sentAt         DateTime? @map("sent_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@index([status, nextAttemptAt])
+  @@index([recipient])
+  @@index([category])
+  @@map("email_logs")
+}
+
+// ==========================================
 // AUDIT LOG FOUNDATION (IMMUTABLE)
 // ==========================================
 

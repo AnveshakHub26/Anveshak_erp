@@ -1,40 +1,27 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
+import { EmailQueueService } from './services/email-queue.service';
+import { TransactionalEmailCategory } from './enums/email-category.enum';
+import { EmailOptions } from './interfaces/email-provider.interface';
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private transporter: nodemailer.Transporter | null = null;
 
-  constructor() {
-    this.initTransporter();
+  constructor(private readonly queueService: EmailQueueService) {}
+
+  /**
+   * Generic entry point for enqueuing transactional emails.
+   */
+  async sendTransactionalEmail(options: EmailOptions) {
+    return this.queueService.enqueueEmail(options);
   }
 
-  private async initTransporter() {
-    const smtpHost = process.env.SMTP_HOST;
-    const smtpUser = process.env.SMTP_USER;
-    const smtpPass = process.env.SMTP_PASS;
-    const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
-
-    if (smtpHost && smtpHost !== 'localhost' && smtpUser && smtpPass) {
-      this.transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: smtpPort === 465,
-        auth: { user: smtpUser, pass: smtpPass },
-        tls: { rejectUnauthorized: false },
-      });
-      this.logger.log(`📧 SMTP Transporter configured for ${smtpHost}:${smtpPort}`);
-    } else {
-      this.logger.warn(`⚠️ No external SMTP credentials in environment. Fallback enabled.`);
-    }
-  }
-
-  async sendApprovalEmail(toEmail: string, orgName: string, orgNumber: string) {
-    const fromAddress = process.env.SMTP_FROM || `"AnveshakHub Enterprise ERP" <anveshakhub26@gmail.com>`;
+  /**
+   * Category Helper 1: Organization Onboarding Approval Email
+   */
+  async sendOrganizationApprovalEmail(toEmail: string, orgName: string, orgNumber: string) {
     const loginUrl = process.env.APP_URL ? `${process.env.APP_URL}/login` : 'http://localhost:3000/login';
-
-    const subject = `🎉 Your AnveshakHub Enterprise Account Has Been Approved! (${orgNumber})`;
+    const idempotencyKey = `org-approval-${orgNumber}`;
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -67,7 +54,7 @@ export class EmailService {
               <p style="margin:0 0 8px 0; font-size: 12px; color: #64748b; font-weight: bold;">YOUR ACCOUNT LOGIN DETAILS</p>
               <p style="margin: 4px 0;"><strong>Primary Contact Email:</strong> ${toEmail}</p>
               <p style="margin: 4px 0;"><strong>Account Status:</strong> <span style="color: #10B981; font-weight: bold;">ACTIVE</span></p>
-              <p style="margin: 4px 0;"><strong>Password:</strong> Use the secure password you specified during registration.</p>
+              <p style="margin: 4px 0;"><strong>Password:</strong> Use the secure password specified during registration.</p>
             </div>
 
             <p>You can now sign in to access your organization dashboard, manage enterprise profiles, and collaborate across modules.</p>
@@ -76,73 +63,149 @@ export class EmailService {
           </div>
           <div class="footer">
             <p>AnveshakHub Enterprise Platform • Bridging Innovation, Enterprise & Academia</p>
-            <p>This is an automated system notification. If you have questions, please contact support.</p>
+            <p>This is an automated system notification.</p>
           </div>
         </div>
       </body>
       </html>
     `;
 
-    // 1. Check Resend HTTP API Key
-    const resendApiKey = process.env.RESEND_API_KEY;
-    if (resendApiKey) {
-      try {
-        const res = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${resendApiKey}`,
-          },
-          body: JSON.stringify({
-            from: process.env.SMTP_FROM || 'AnveshakHub ERP <onboarding@resend.dev>',
-            to: [toEmail],
-            subject,
-            html: htmlContent,
-          }),
-        });
-        const resData = await res.json();
-        if (res.ok) {
-          this.logger.log(`📧 Approval email delivered via Resend API to ${toEmail} (ID: ${resData.id})`);
-          return { success: true, messageId: resData.id };
-        } else {
-          this.logger.warn(`Resend API response error: ${JSON.stringify(resData)}`);
-        }
-      } catch (err: any) {
-        this.logger.error(`Resend API error: ${err.message}`);
-      }
-    }
+    return this.sendTransactionalEmail({
+      to: toEmail,
+      subject: `🎉 Your AnveshakHub Enterprise Account Has Been Approved! (${orgNumber})`,
+      html: htmlContent,
+      category: TransactionalEmailCategory.ORGANIZATION_APPROVAL,
+      idempotencyKey,
+      metadata: { orgNumber, orgName },
+    });
+  }
 
-    // 2. SMTP Transporter
-    try {
-      let activeTransporter = this.transporter;
-      if (!activeTransporter) {
-        const testAccount = await nodemailer.createTestAccount();
-        activeTransporter = nodemailer.createTransport({
-          host: 'smtp.ethereal.email',
-          port: 587,
-          secure: false,
-          auth: { user: testAccount.user, pass: testAccount.pass },
-        });
-      }
+  /**
+   * Category Helper 2: Password Reset Email
+   */
+  async sendPasswordResetEmail(toEmail: string, resetToken: string) {
+    const resetUrl = process.env.APP_URL ? `${process.env.APP_URL}/reset-password?token=${resetToken}` : `http://localhost:3000/reset-password?token=${resetToken}`;
+    
+    return this.sendTransactionalEmail({
+      to: toEmail,
+      subject: `🔐 Password Reset Request — AnveshakHub ERP`,
+      html: `<p>Click here to reset your password: <a href="${resetUrl}">${resetUrl}</a></p>`,
+      category: TransactionalEmailCategory.PASSWORD_RESET,
+      metadata: { resetToken },
+    });
+  }
 
-      const info = await activeTransporter.sendMail({
-        from: fromAddress,
-        to: toEmail,
-        subject,
-        html: htmlContent,
-        text: `Welcome to AnveshakHub Enterprise ERP! Your organization application (${orgNumber}) for ${orgName} has been APPROVED. You can now log in at ${loginUrl} using email: ${toEmail} and the password specified during registration.`,
-      });
+  /**
+   * Category Helper 3: Account Onboarding Email
+   */
+  async sendAccountOnboardingEmail(toEmail: string, userName: string) {
+    return this.sendTransactionalEmail({
+      to: toEmail,
+      subject: `👋 Welcome to AnveshakHub Enterprise ERP, ${userName}!`,
+      html: `<p>Hello ${userName}, welcome to AnveshakHub Enterprise ERP.</p>`,
+      category: TransactionalEmailCategory.ACCOUNT_ONBOARDING,
+      metadata: { userName },
+    });
+  }
 
-      const previewUrl = nodemailer.getTestMessageUrl(info);
-      this.logger.log(`📧 Approval email dispatched to ${toEmail}. Message ID: ${info.messageId}`);
-      if (previewUrl) {
-        this.logger.log(`🔗 Ethereal Live Email Preview URL: ${previewUrl}`);
-      }
+  /**
+   * Category Helper 4: Project Notification Email
+   */
+  async sendProjectNotificationEmail(toEmail: string, projectTitle: string, message: string) {
+    return this.sendTransactionalEmail({
+      to: toEmail,
+      subject: `📁 Project Update: ${projectTitle}`,
+      html: `<p>${message}</p>`,
+      category: TransactionalEmailCategory.PROJECT_NOTIFICATION,
+      metadata: { projectTitle },
+    });
+  }
 
-      return { success: true, messageId: info.messageId, previewUrl: previewUrl || undefined };
-    } catch (err: any) {
-      this.logger.error(`Failed to dispatch approval email to ${toEmail}: ${err.message}`);
-      return { success: false, error: err.message };
-    }
+  /**
+   * Category Helper 5: Meeting Notification Email
+   */
+  async sendMeetingNotificationEmail(toEmail: string, meetingSubject: string, scheduledAt: string) {
+    return this.sendTransactionalEmail({
+      to: toEmail,
+      subject: `📅 Meeting Scheduled: ${meetingSubject}`,
+      html: `<p>You have a meeting scheduled for: ${scheduledAt}</p>`,
+      category: TransactionalEmailCategory.MEETING_NOTIFICATION,
+      metadata: { meetingSubject, scheduledAt },
+    });
+  }
+
+  /**
+   * Category Helper 6: Deliverable Notification Email
+   */
+  async sendDeliverableNotificationEmail(toEmail: string, deliverableTitle: string, status: string) {
+    return this.sendTransactionalEmail({
+      to: toEmail,
+      subject: `📦 Deliverable Update: ${deliverableTitle} (${status})`,
+      html: `<p>Deliverable <strong>${deliverableTitle}</strong> status is now: <strong>${status}</strong>.</p>`,
+      category: TransactionalEmailCategory.DELIVERABLE_NOTIFICATION,
+      metadata: { deliverableTitle, status },
+    });
+  }
+
+  /**
+   * Category Helper 7: Approval Decision Email
+   */
+  async sendApprovalDecisionEmail(toEmail: string, requestType: string, decision: string, reason?: string) {
+    return this.sendTransactionalEmail({
+      to: toEmail,
+      subject: `📋 Approval Decision: ${requestType} - ${decision}`,
+      html: `<p>Your request for ${requestType} was <strong>${decision}</strong>.${reason ? `<br>Reason: ${reason}` : ''}</p>`,
+      category: TransactionalEmailCategory.APPROVAL_DECISION,
+      metadata: { requestType, decision, reason },
+    });
+  }
+
+  /**
+   * Category Helper 8: Finance Notification Email
+   */
+  async sendFinanceNotificationEmail(toEmail: string, subject: string, detailsHtml: string) {
+    return this.sendTransactionalEmail({
+      to: toEmail,
+      subject: `💰 Finance Alert: ${subject}`,
+      html: detailsHtml,
+      category: TransactionalEmailCategory.FINANCE_NOTIFICATION,
+    });
+  }
+
+  /**
+   * Category Helper 9: Purchase Notification Email
+   */
+  async sendPurchaseNotificationEmail(toEmail: string, subject: string, detailsHtml: string) {
+    return this.sendTransactionalEmail({
+      to: toEmail,
+      subject: `🛒 Purchase Order Alert: ${subject}`,
+      html: detailsHtml,
+      category: TransactionalEmailCategory.PURCHASE_NOTIFICATION,
+    });
+  }
+
+  /**
+   * Category Helper 10: Sales Notification Email
+   */
+  async sendSalesNotificationEmail(toEmail: string, subject: string, detailsHtml: string) {
+    return this.sendTransactionalEmail({
+      to: toEmail,
+      subject: `📊 Sales Alert: ${subject}`,
+      html: detailsHtml,
+      category: TransactionalEmailCategory.SALES_NOTIFICATION,
+    });
+  }
+
+  /**
+   * Category Helper 11: System & Security Alert Email
+   */
+  async sendSecurityAlertEmail(toEmail: string, alertTitle: string, detailsHtml: string) {
+    return this.sendTransactionalEmail({
+      to: toEmail,
+      subject: `⚠️ Security Alert: ${alertTitle}`,
+      html: detailsHtml,
+      category: TransactionalEmailCategory.SYSTEM_SECURITY_ALERT,
+      metadata: { alertTitle },
+    });
   }
 }

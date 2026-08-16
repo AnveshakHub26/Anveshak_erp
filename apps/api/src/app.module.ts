@@ -22,6 +22,8 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 
+import { EmailModule } from './common/email/email.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['../../.env', '../.env', '.env', '.env.local'] }),
@@ -33,6 +35,7 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
     ]),
     PrismaModule,
     SupabaseModule,
+    EmailModule,
     AuthModule,
     UsersModule,
     RolesModule,
