@@ -497,6 +497,17 @@ export class OrganizationsService {
     }
 
     const userIdsToDelete = org.organizationUsers.map((ou) => ou.userId);
+    const primaryOrgUser = org.organizationUsers.find((ou) => ou.orgRole === 'PRIMARY_CONTACT') || org.organizationUsers[0];
+    const primaryContactEmail = primaryOrgUser?.user?.email;
+
+    if (primaryContactEmail && this.emailService) {
+      await this.emailService.sendOrganizationDeletedEmail(
+        primaryContactEmail,
+        org.legalName,
+        org.orgNumber,
+        'Application record deleted by platform administrator',
+      );
+    }
 
     await this.prisma.$transaction(async (tx) => {
       // 1. Delete documents attached to this organization
