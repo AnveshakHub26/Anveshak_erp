@@ -1,4 +1,4 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { Injectable, Optional, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { EmailService } from '../../common/email/email.service';
 
@@ -23,6 +23,9 @@ export class SystemService {
    * Enqueues a single test email through EmailService -> EmailQueueService -> EmailLog outbox.
    */
   async sendTestEmail(targetRecipient?: string) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new ForbiddenException('Development email test endpoint is disabled in production environments.');
+    }
     const recipient = targetRecipient?.trim() || process.env.EMAIL_TEST_RECIPIENT || 'sppranav2005@gmail.com';
     const alertTitle = 'Development Email Pipeline Verification';
     const timestamp = new Date().toISOString();

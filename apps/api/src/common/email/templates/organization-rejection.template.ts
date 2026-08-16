@@ -1,7 +1,10 @@
-import { renderBaseEmailTemplate } from './base.template';
+import { renderBaseEmailTemplate, escapeHtml } from './base.template';
 
 export function renderOrganizationRejectionTemplate(orgName: string, orgNumber: string, reason?: string) {
-  const subject = `Update Regarding Your AnveshakHub Application (${orgNumber})`;
+  const safeOrgName = escapeHtml(orgName);
+  const safeOrgNumber = escapeHtml(orgNumber);
+  const safeReason = reason ? escapeHtml(reason) : '';
+  const subject = `Update Regarding Your AnveshakHub Application (${safeOrgNumber})`;
 
   const html = renderBaseEmailTemplate({
     title: 'Organization Application Decision',
@@ -10,9 +13,9 @@ export function renderOrganizationRejectionTemplate(orgName: string, orgNumber: 
     badgeTextColor: '#c5221f',
     contentHtml: `
       <h2>Application Status Update</h2>
-      <p>Thank you for submitting your organization onboarding application (Reference: <strong>${orgNumber}</strong>) for <strong>${orgName}</strong>.</p>
+      <p>Thank you for submitting your organization onboarding application (Reference: <strong>${safeOrgNumber}</strong>) for <strong>${safeOrgName}</strong>.</p>
       <p>After reviewing your application details, our administration team is unable to approve your application at this time.</p>
-      ${reason ? `<div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; margin: 20px 0; color: #991b1b;"><strong style="font-size: 12px; display: block; margin-bottom: 4px;">REASON / FEEDBACK:</strong>${reason}</div>` : ''}
+      ${safeReason ? `<div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; margin: 20px 0; color: #991b1b;"><strong style="font-size: 12px; display: block; margin-bottom: 4px;">REASON / FEEDBACK:</strong>${safeReason}</div>` : ''}
       <p>If you believe this decision was made in error or if you have updated credentials to provide, please contact system support.</p>
     `,
   });

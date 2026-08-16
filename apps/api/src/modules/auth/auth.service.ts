@@ -214,13 +214,16 @@ export class AuthService {
    * Password Reset: Validates token expiration & single-use state, updates credentials across authorities
    */
   async resetPassword(tokenOrUserId: string, newPass: string) {
-    // 1. Query user by token or user ID
+    if (!tokenOrUserId || typeof tokenOrUserId !== 'string' || !tokenOrUserId.trim()) {
+      throw new BadRequestException('Invalid or missing password reset token.');
+    }
+
+    // 1. Query user by password reset token or user ID
     const user = await this.prisma.user.findFirst({
       where: {
         OR: [
-          { passwordResetToken: tokenOrUserId },
-          { id: tokenOrUserId },
-          { email: tokenOrUserId.toLowerCase().trim() },
+          { passwordResetToken: tokenOrUserId.trim() },
+          { id: tokenOrUserId.trim() },
         ],
       },
     });

@@ -1,7 +1,8 @@
-import { renderBaseEmailTemplate } from './base.template';
+import { renderBaseEmailTemplate, escapeHtml } from './base.template';
 
 export function renderSecurityAlertTemplate(alertTitle: string, detailsHtml: string) {
-  const subject = `⚠️ Security Alert: ${alertTitle}`;
+  const safeTitle = escapeHtml(alertTitle);
+  const subject = `⚠️ Security Alert: ${safeTitle}`;
 
   const html = renderBaseEmailTemplate({
     title: 'Security Alert',
@@ -9,7 +10,7 @@ export function renderSecurityAlertTemplate(alertTitle: string, detailsHtml: str
     badgeBgColor: '#fef2f2',
     badgeTextColor: '#991b1b',
     contentHtml: `
-      <h2>Security Notice: ${alertTitle}</h2>
+      <h2>Security Notice: ${safeTitle}</h2>
       <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; margin: 20px 0; color: #991b1b;">
         ${detailsHtml}
       </div>

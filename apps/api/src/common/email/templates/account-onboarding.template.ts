@@ -1,7 +1,9 @@
-import { renderBaseEmailTemplate } from './base.template';
+import { renderBaseEmailTemplate, escapeHtml } from './base.template';
 
 export function renderAccountOnboardingTemplate(userName: string, loginUrl: string, roleName?: string) {
-  const subject = `👋 Welcome to AnveshakHub Enterprise ERP, ${userName}!`;
+  const safeName = escapeHtml(userName);
+  const safeRole = roleName ? escapeHtml(roleName) : '';
+  const subject = `👋 Welcome to AnveshakHub Enterprise ERP, ${safeName}!`;
 
   const html = renderBaseEmailTemplate({
     title: 'Welcome to AnveshakHub ERP',
@@ -9,8 +11,8 @@ export function renderAccountOnboardingTemplate(userName: string, loginUrl: stri
     badgeBgColor: '#e0e7ff',
     badgeTextColor: '#3730a3',
     contentHtml: `
-      <h2>Welcome aboard, ${userName}!</h2>
-      <p>Your AnveshakHub Enterprise account has been initialized${roleName ? ` with the role <strong>${roleName}</strong>` : ''}.</p>
+      <h2>Welcome aboard, ${safeName}!</h2>
+      <p>Your AnveshakHub Enterprise account has been initialized${safeRole ? ` with the role <strong>${safeRole}</strong>` : ''}.</p>
       <p>You can now sign in to access your modules, view assigned projects, and collaborate with your team.</p>
     `,
     actionUrl: loginUrl,

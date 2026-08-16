@@ -8,15 +8,25 @@ export interface BaseTemplateOptions {
   actionText?: string;
 }
 
+export function escapeHtml(str: string): string {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 export function renderBaseEmailTemplate(options: BaseTemplateOptions): string {
   const badgeBg = options.badgeBgColor || '#e6f4ea';
   const badgeColor = options.badgeTextColor || '#137333';
   const badge = options.badgeText
-    ? `<div><span style="display: inline-block; background-color: ${badgeBg}; color: ${badgeColor}; font-weight: 600; padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-top: 10px;">${options.badgeText}</span></div>`
+    ? `<div><span style="display: inline-block; background-color: ${badgeBg}; color: ${badgeColor}; font-weight: 600; padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-top: 10px;">${escapeHtml(options.badgeText)}</span></div>`
     : '';
 
   const actionButton = options.actionUrl && options.actionText
-    ? `<a href="${options.actionUrl}" style="display: block; width: 100%; text-align: center; background-color: #151c2e; color: #ffffff !important; font-weight: bold; padding: 14px 0; border-radius: 8px; text-decoration: none; margin-top: 24px; font-size: 14px;">${options.actionText}</a>`
+    ? `<a href="${options.actionUrl}" style="display: block; width: 100%; text-align: center; background-color: #151c2e; color: #ffffff !important; font-weight: bold; padding: 14px 0; border-radius: 8px; text-decoration: none; margin-top: 24px; font-size: 14px;">${escapeHtml(options.actionText)}</a>`
     : '';
 
   return `
@@ -25,7 +35,7 @@ export function renderBaseEmailTemplate(options: BaseTemplateOptions): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${options.title}</title>
+  <title>${escapeHtml(options.title)}</title>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; color: #0f172a; }
     .card { max-width: 580px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 32px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
