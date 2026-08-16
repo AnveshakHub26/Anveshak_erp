@@ -24,13 +24,12 @@ const normalizeRoles = (rawRoles: any[]): string[] => {
   if (!Array.isArray(rawRoles)) return [];
   return rawRoles
     .map((r: any) => {
-      if (typeof r === 'string') return r;
-      if (r && typeof r === 'object') {
-        if (typeof r.name === 'string') return r.name;
-        if (typeof r.code === 'string') return r.code;
-        if (r.role && typeof r.role === 'object') return r.role.name || r.role.code || '';
+      let val = '';
+      if (typeof r === 'string') val = r;
+      else if (r && typeof r === 'object') {
+        val = r.code || r.name || r.role?.code || r.role?.name || '';
       }
-      return '';
+      return typeof val === 'string' ? val.toUpperCase() : '';
     })
     .filter(Boolean);
 };

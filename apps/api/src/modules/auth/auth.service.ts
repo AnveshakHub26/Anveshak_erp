@@ -119,7 +119,7 @@ export class AuthService {
     }
 
     // Extract roles & permissions
-    const roles = user.userRoles.map((ur) => ur.role.name || ur.role.code);
+    const roles = user.userRoles.map((ur) => (ur.role.code || ur.role.name || '').toUpperCase());
     const permissionsSet = new Set<string>();
     user.userRoles.forEach((ur) => {
       ur.role.rolePermissions.forEach((rp) => {
