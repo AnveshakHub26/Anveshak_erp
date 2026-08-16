@@ -7,6 +7,9 @@ import { Response } from 'express';
 
 import * as argon2 from 'argon2';
 
+import { EmailService } from '../../common/email/email.service';
+import * as crypto from 'crypto';
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -14,6 +17,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     @Optional() private supabaseService?: SupabaseService,
+    @Optional() private emailService?: EmailService,
   ) {}
 
   /**
@@ -48,23 +52,19 @@ export class AuthService {
               password: loginDto.password,
             });
             if (createdSupaUser) {
-              supabaseUserId = createdSupaUser.id;
-              const retry = await this.supabaseService.signInWithPassword(email, loginDto.password);
-              if (retry.data?.session) {
-                accessToken = retry.data.session.access_token;
-                refreshToken = retry.data.session.refresh_token;
+              const retryLogin = await this.supabaseService.signInWithPassword(email, loginDto.password);
+              if (retryLogin.data?.session) {
+                supabaseUserId = retryLogin.data.user.id;
+                accessToken = retryLogin.data.session.access_token;
+                refreshToken = retryLogin.data.session.refresh_token;
               }
             }
           }
         }
-
-        if (!accessToken && !supabaseUserId) {
-          throw new UnauthorizedException('Invalid email or password credentials');
-        }
       } else {
         supabaseUserId = data.user.id;
-        accessToken = data.session?.access_token || null;
-        refreshToken = data.session?.refresh_token || null;
+        accessToken = data.session.access_token;
+        refreshToken = data.session.refresh_token;
       }
     }
 
@@ -99,50 +99,47 @@ export class AuthService {
     }
 
     if (user.status !== 'ACTIVE') {
-      throw new UnauthorizedException(`Account status is ${user.status}. Access denied.`);
+      throw new UnauthorizedException('Account registration pending approval or deactivated.');
     }
 
-    // 3. Issue local JWT if Supabase token is not present
-    if (!accessToken) {
-      const jwtSecret = process.env.JWT_SECRET || 'anveshak_super_secret_jwt_key_change_in_production_2026!';
+    if (!accessToken && user.passwordHash) {
+      const isValid = await argon2.verify(user.passwordHash, loginDto.password);
+      if (!isValid) {
+        throw new UnauthorizedException('Invalid email or password credentials');
+      }
       accessToken = jwt.sign(
-        { sub: user.id, id: user.id, email: user.email },
-        jwtSecret,
+        { sub: user.id, email: user.email },
+        process.env.JWT_SECRET || 'anveshak_secret',
         { expiresIn: '1d' },
       );
-      refreshToken = `supa_refresh_${user.id}_${Date.now()}`;
     }
 
-    // 4. Update last login timestamp in ERP Database
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    });
+    if (!accessToken) {
+      throw new UnauthorizedException('Invalid email or password credentials');
+    }
 
-    // 5. Extract Roles & Permissions
-    const roles = user.userRoles.map((ur) => ur.role.code);
+    // Extract roles & permissions
+    const roles = user.userRoles.map((ur) => ur.role.name || ur.role.code);
     const permissionsSet = new Set<string>();
     user.userRoles.forEach((ur) => {
       ur.role.rolePermissions.forEach((rp) => {
-        permissionsSet.add(rp.permission.code);
+        permissionsSet.add(rp.permission.code || `${rp.permission.resource}:${rp.permission.action}`);
       });
     });
 
-    // 6. Set Secure HttpOnly Cookies carrying Supabase Auth tokens
     if (response) {
-      const isProduction = process.env.NODE_ENV === 'production';
       response.cookie('access_token', accessToken, {
         httpOnly: true,
-        secure: isProduction,
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 24 * 60 * 60 * 1000, // 1 day
+        maxAge: 24 * 60 * 60 * 1000,
       });
       if (refreshToken) {
         response.cookie('refresh_token', refreshToken, {
           httpOnly: true,
-          secure: isProduction,
+          secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
-          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+          maxAge: 7 * 24 * 60 * 60 * 1000,
         });
       }
     }
@@ -177,15 +174,33 @@ export class AuthService {
   }
 
   /**
-   * Password Recovery: Uses official Supabase Auth recovery API flow
+   * Password Recovery: Generates single-use reset token and enqueues async EmailLog job
    */
   async forgotPassword(email: string) {
     const user = await this.prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
-    if (user && this.supabaseService?.isOperational) {
-      try {
-        await this.supabaseService.resetPasswordForEmail(user.email);
-      } catch (err: any) {
-        this.logger.warn(`Supabase Auth forgotPassword warning: ${err.message}`);
+    if (user) {
+      if (this.supabaseService?.isOperational) {
+        try {
+          await this.supabaseService.resetPasswordForEmail(user.email);
+        } catch (err: any) {
+          this.logger.warn(`Supabase Auth forgotPassword warning: ${err.message}`);
+        }
+      }
+
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour validity
+
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          passwordResetToken: resetToken,
+          passwordResetExpires: resetExpires,
+          passwordResetUsed: false,
+        },
+      });
+
+      if (this.emailService) {
+        await this.emailService.sendPasswordResetEmail(user.email, resetToken);
       }
     }
 
@@ -196,22 +211,30 @@ export class AuthService {
   }
 
   /**
-   * Password Reset: Updates Supabase Auth password & synchronizes ERP mustChangePassword flag
+   * Password Reset: Validates token expiration & single-use state, updates credentials across authorities
    */
   async resetPassword(tokenOrUserId: string, newPass: string) {
     // 1. Query user by token or user ID
     const user = await this.prisma.user.findFirst({
       where: {
         OR: [
+          { passwordResetToken: tokenOrUserId },
           { id: tokenOrUserId },
           { email: tokenOrUserId.toLowerCase().trim() },
-          { passwordResetToken: tokenOrUserId },
         ],
       },
     });
 
     if (!user) {
-      throw new BadRequestException('Invalid or expired password reset request');
+      throw new BadRequestException('Invalid or expired password reset token.');
+    }
+
+    if (user.passwordResetExpires && new Date(user.passwordResetExpires) < new Date()) {
+      throw new BadRequestException('Password reset token has expired. Please request a new reset link.');
+    }
+
+    if (user.passwordResetUsed) {
+      throw new BadRequestException('Password reset token has already been used.');
     }
 
     // 2. Update single password authority in Supabase Auth
@@ -223,10 +246,12 @@ export class AuthService {
       }
     }
 
-    // 3. Clear ERP mandatory password change requirement & reset metadata
+    // 3. Update local Argon2 password hash & clear reset token state
+    const passwordHash = await argon2.hash(newPass);
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
+        passwordHash,
         mustChangePassword: false,
         passwordResetUsed: true,
         passwordResetToken: null,

@@ -2,9 +2,15 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException,
 import { PrismaService } from '../../database/prisma.service';
 import { Prisma } from '@prisma/client';
 
+import { Optional } from '@nestjs/common';
+import { EmailService } from '../../common/email/email.service';
+
 @Injectable()
 export class IndustryService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Optional() private emailService?: EmailService,
+  ) {}
 
   private async generatePsCode(): Promise<string> {
     const count = await this.prisma.problemStatement.count();

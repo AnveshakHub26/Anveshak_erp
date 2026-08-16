@@ -81,12 +81,27 @@ export class EmailQueueService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Processes QUEUED and RETRYING email jobs with exponential backoff & metadata persistence.
+   * Employs atomic status claiming and stuck job recovery for multi-worker concurrency safety.
    */
   async processQueue() {
     if (this.isProcessing) return;
     this.isProcessing = true;
 
     try {
+      // 1. Stuck Job Recovery: Reset jobs stuck in PROCESSING > 5 minutes back to RETRYING
+      const stuckThreshold = new Date(Date.now() - 5 * 60 * 1000);
+      await this.prisma.emailLog.updateMany({
+        where: {
+          status: 'PROCESSING',
+          updatedAt: { lte: stuckThreshold },
+        },
+        data: {
+          status: 'RETRYING',
+          lastError: 'Job processing lease expired (worker crash recovery)',
+        },
+      });
+
+      // 2. Fetch pending jobs ready for dispatch
       const now = new Date();
       const pendingJobs = await this.prisma.emailLog.findMany({
         where: {
@@ -98,8 +113,18 @@ export class EmailQueueService implements OnModuleInit, OnModuleDestroy {
       });
 
       for (const job of pendingJobs) {
-        await this.dispatchJob(job);
+        // Atomic status claim check to prevent race condition across multiple worker nodes
+        const claimed = await this.prisma.emailLog.updateMany({
+          where: { id: job.id, status: job.status },
+          data: { status: 'PROCESSING', attempts: job.attempts + 1 },
+        });
+
+        if (claimed.count > 0) {
+          await this.dispatchJob(job);
+        }
       }
+    } catch (err: any) {
+      this.logger.error(`Error processing email queue: ${err.message}`);
     } finally {
       this.isProcessing = false;
     }
@@ -108,12 +133,6 @@ export class EmailQueueService implements OnModuleInit, OnModuleDestroy {
   private async dispatchJob(job: any) {
     const provider = this.providerFactory.getProvider();
     const currentAttempt = job.attempts + 1;
-
-    // Mark as PROCESSING
-    await this.prisma.emailLog.update({
-      where: { id: job.id },
-      data: { status: 'PROCESSING', attempts: currentAttempt },
-    });
 
     const result = await provider.sendEmail({
       to: job.recipient,

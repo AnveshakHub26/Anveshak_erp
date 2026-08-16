@@ -22,9 +22,15 @@ import {
   UpdateProjectResourceLinkInput,
 } from '@anveshak/validation';
 
+import { Optional } from '@nestjs/common';
+import { EmailService } from '../../common/email/email.service';
+
 @Injectable()
 export class ProjectsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly emailService?: EmailService,
+  ) {}
 
   /**
    * Enterprise Projects List View with server-side multi-tenant organization boundary isolation

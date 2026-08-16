@@ -393,13 +393,16 @@ export class OrganizationsService {
       return updatedOrg;
     });
 
-    // Dispatch Account Approval Email Notification via centralized EmailService (asynchronously queued)
-    if (decision === 'APPROVE' && primaryOrgUser?.user?.email && this.emailService) {
-      await this.emailService.sendOrganizationApprovalEmail(
-        primaryOrgUser.user.email,
-        org.legalName,
-        org.orgNumber,
-      );
+    // Dispatch Transactional Email Notification via centralized EmailService (asynchronously queued)
+    if (primaryOrgUser?.user?.email && this.emailService) {
+      const recipientEmail = primaryOrgUser.user.email;
+      if (decision === 'APPROVE') {
+        await this.emailService.sendOrganizationApprovalEmail(recipientEmail, org.legalName, org.orgNumber);
+      } else if (decision === 'REJECT') {
+        await this.emailService.sendOrganizationRejectionEmail(recipientEmail, org.legalName, org.orgNumber, reason);
+      } else if (decision === 'REQUEST_CHANGES') {
+        await this.emailService.sendOrganizationChangesRequestedEmail(recipientEmail, org.legalName, org.orgNumber, reason);
+      }
     }
 
     return {

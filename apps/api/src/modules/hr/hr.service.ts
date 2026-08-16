@@ -12,11 +12,14 @@ import { Prisma } from '@prisma/client';
 import { CreateEmployeeInput, UpdateEmployeeInput, RehireEmployeeInput } from '@anveshak/validation';
 import * as crypto from 'crypto';
 
+import { EmailService } from '../../common/email/email.service';
+
 @Injectable()
 export class HRService {
   constructor(
     private prisma: PrismaService,
     @Optional() private supabaseService?: SupabaseService,
+    @Optional() private emailService?: EmailService,
   ) {}
 
   /**
@@ -365,6 +368,15 @@ export class HRService {
 
       return newEmp;
     });
+
+    // Dispatch Onboarding Email Notification via centralized EmailService (asynchronously queued)
+    if (this.emailService && employee.workEmail) {
+      await this.emailService.sendAccountOnboardingEmail(
+        employee.workEmail,
+        employee.fullName,
+        employee.category,
+      );
+    }
 
     // SECURITY: Do NOT return raw activationToken in production CRUD responses.
     return {
