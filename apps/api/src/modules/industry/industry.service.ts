@@ -410,13 +410,49 @@ export class IndustryService {
       throw new ForbiddenException('Cannot submit problem statement without an approved organization context.');
     }
 
-    const bv = await this.prisma.businessVertical.findUnique({
-      where: { id: data.bvId },
+    let bv = await this.prisma.businessVertical.findFirst({
+      where: {
+        OR: [
+          { id: data.bvId },
+          { code: data.bvId.toUpperCase() },
+          { code: data.bvId },
+        ],
+      },
     });
+
     if (!bv) {
-      throw new BadRequestException(`Business Vertical with ID '${data.bvId}' does not exist.`);
+      // Auto-ensure default master business verticals exist
+      const verticals = [
+        { code: 'BV-01', name: 'Research-led Projects', sortOrder: 1 },
+        { code: 'BV-02', name: 'IP and Knowledge Management', sortOrder: 2 },
+        { code: 'BV-03', name: 'Startup Ecosystem', sortOrder: 3 },
+        { code: 'BV-04', name: 'Consulting', sortOrder: 4 },
+        { code: 'BV-05', name: 'Design and Development', sortOrder: 5 },
+        { code: 'BV-06', name: 'Upskilling and Workshops', sortOrder: 6 },
+      ];
+
+      for (const v of verticals) {
+        await this.prisma.businessVertical.upsert({
+          where: { code: v.code },
+          update: {},
+          create: { ...v, active: true },
+        });
+      }
+
+      const formattedCode = `BV-0${data.bvId.replace(/\D/g, '')}`;
+      bv = await this.prisma.businessVertical.findFirst({
+        where: {
+          OR: [
+            { id: data.bvId },
+            { code: data.bvId.toUpperCase() },
+            { code: formattedCode },
+            { active: true },
+          ],
+        },
+      });
     }
 
+    const effectiveBvId = bv ? bv.id : data.bvId;
     const code = await this.generatePsCode();
     const status = data.isDraft ? 'DRAFT' : 'SUBMITTED';
 
@@ -426,7 +462,7 @@ export class IndustryService {
           code,
           organizationId: organization.id,
           createdById: user.id,
-          bvId: data.bvId,
+          bvId: effectiveBvId,
           title: data.title.trim(),
           department: data.department?.trim() || null,
           category: data.category?.trim() || null,

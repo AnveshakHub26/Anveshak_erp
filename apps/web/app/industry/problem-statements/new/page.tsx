@@ -27,12 +27,12 @@ import { Label } from '@/components/ui/label';
 
 // Official AnveshakHub Business Verticals fallback list
 const DEFAULT_BUSINESS_VERTICALS = [
-  { id: 'bv-01', code: 'BV-01', name: 'Research-led Projects' },
-  { id: 'bv-02', code: 'BV-02', name: 'IP and Knowledge Management' },
-  { id: 'bv-03', code: 'BV-03', name: 'Startup Ecosystem' },
-  { id: 'bv-04', code: 'BV-04', name: 'Consulting' },
-  { id: 'bv-05', code: 'BV-05', name: 'Design and Development' },
-  { id: 'bv-06', code: 'BV-06', name: 'Upskilling and Workshops' },
+  { id: 'BV-01', code: 'BV-01', name: 'Research-led Projects' },
+  { id: 'BV-02', code: 'BV-02', name: 'IP and Knowledge Management' },
+  { id: 'BV-03', code: 'BV-03', name: 'Startup Ecosystem' },
+  { id: 'BV-04', code: 'BV-04', name: 'Consulting' },
+  { id: 'BV-05', code: 'BV-05', name: 'Design and Development' },
+  { id: 'BV-06', code: 'BV-06', name: 'Upskilling and Workshops' },
 ];
 
 const STANDARD_DEPARTMENTS = [
@@ -67,7 +67,7 @@ export default function NewProblemStatementPage() {
   // Form State
   const [formData, setFormData] = useState({
     title: '',
-    bvId: 'bv-01',
+    bvId: 'BV-01',
     customBvName: '',
     department: 'Research & Development (R&D)',
     customDepartment: '',
