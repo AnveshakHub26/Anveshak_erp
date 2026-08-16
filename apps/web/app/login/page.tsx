@@ -39,13 +39,27 @@ export default function Fnd02LoginPage() {
         body: JSON.stringify({ email: data.email.trim(), password: data.password }),
       });
       if (response && response.user) {
-        setAuth(response.user, response.accessToken || null);
-        const roles: string[] = response.user?.roles?.map((r: any) => r.name) || [];
-        if (roles.includes('ADMIN')) router.push('/admin');
-        else if (response.user?.mustChangePassword) router.push('/reset-password?reason=mandatory');
-        else if (roles.includes('HR')) router.push('/hr');
-        else if (roles.includes('FINANCE')) router.push('/finance');
-        else router.push('/projects');
+        const rawRoles = response.user?.roles || [];
+        const roles: string[] = Array.isArray(rawRoles)
+          ? rawRoles.map((r: any) => (typeof r === 'string' ? r : r?.name || r?.code || '')).filter(Boolean)
+          : [];
+        const normalizedUser = {
+          ...response.user,
+          roles,
+        };
+        setAuth(normalizedUser, response.accessToken || null);
+
+        if (response.user?.mustChangePassword) {
+          router.push('/reset-password?reason=mandatory');
+        } else if (roles.includes('ADMIN')) {
+          router.push('/admin/approvals');
+        } else if (roles.includes('HR')) {
+          router.push('/hr');
+        } else if (roles.includes('ORG_USER')) {
+          router.push('/industry');
+        } else {
+          router.push('/projects');
+        }
       }
     } catch (err: any) {
       if (err.status === 403) {
