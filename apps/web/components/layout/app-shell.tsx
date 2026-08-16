@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Sidebar } from './sidebar';
 import { UserMenu } from './user-menu';
+import { useAuthStore } from '@/hooks/useAuth';
 import {
   Menu,
   X,
@@ -13,12 +14,48 @@ import {
   Bell,
   Search,
   ChevronRight,
+  ShieldCheck,
 } from 'lucide-react';
 
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
   const router = useRouter();
+  const { isAuthenticated, isInitializing } = useAuthStore();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+
+  // Auto-close mobile drawer on route change
+  useEffect(() => {
+    setMobileDrawerOpen(false);
+  }, [pathname]);
+
+  // Protected route guard: Redirect to /login if unauthenticated after initialization
+  useEffect(() => {
+    if (!isInitializing && !isAuthenticated) {
+      router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
+    }
+  }, [isInitializing, isAuthenticated, pathname, router]);
+
+  // Show a sleek enterprise loading screen while initializing session
+  if (isInitializing) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-[#151c2e] text-white">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#d49b38] to-[#c48b28] flex items-center justify-center font-extrabold text-[#151c2e] text-xl shadow-lg animate-pulse">
+            AH
+          </div>
+          <div className="space-y-1 text-center">
+            <h3 className="text-sm font-bold tracking-wide">AnveshakHub Enterprise ERP</h3>
+            <p className="text-xs text-[#94a3b8]">Verifying secure session tokens...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If unauthenticated, return empty container while router redirects
+  if (!isAuthenticated) {
+    return null;
+  }
 
   // Generate dynamic breadcrumbs from path
   const pathSegments = pathname.split('/').filter(Boolean);
@@ -51,7 +88,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         <div className="fixed inset-0 z-50 flex md:hidden">
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-[#0F172A]/70 backdrop-blur-sm transition-opacity"
+            className="fixed inset-0 bg-[#0F172A]/70 backdrop-blur-xs transition-opacity"
             onClick={() => setMobileDrawerOpen(false)}
           />
           {/* Drawer Content */}
@@ -74,7 +111,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       {/* 3. Main Application Column */}
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         {/* Top Header */}
-        <header className="flex h-16 w-full items-center justify-between border-b border-[#E2E8F0] bg-white px-4 sm:px-6 shadow-sm shrink-0">
+        <header className="flex h-16 w-full items-center justify-between border-b border-[#E2E8F0] bg-white px-4 sm:px-6 shadow-xs shrink-0">
           <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
             {/* Mobile Drawer Hamburger Button */}
             <button
@@ -165,8 +202,8 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         </header>
 
         {/* Scrollable Page Content */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          <div className="mx-auto max-w-7xl w-full">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 min-w-0">
+          <div className="mx-auto max-w-7xl w-full min-w-0">
             {children}
           </div>
         </main>

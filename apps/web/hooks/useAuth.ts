@@ -34,6 +34,18 @@ const normalizeRoles = (rawRoles: any[]): string[] => {
     .filter(Boolean);
 };
 
+export function getDefaultRedirectForUser(user: UserProfile | null): string {
+  if (!user) return '/login';
+  const roles = normalizeRoles(user.roles);
+  if (roles.includes('ADMIN')) return '/admin/approvals';
+  if (roles.includes('HR')) return '/hr';
+  if (roles.includes('ORG_USER')) return '/industry';
+  if (roles.includes('PM') || roles.includes('EXPERT') || roles.includes('INTERN') || roles.includes('STAFF') || roles.includes('EXECUTIVE')) {
+    return '/employee/dashboard';
+  }
+  return '/projects';
+}
+
 const getInitialState = () => {
   return { user: null, token: null, isAuthenticated: false, isInitializing: true };
 };

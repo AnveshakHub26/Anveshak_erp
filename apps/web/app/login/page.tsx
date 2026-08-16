@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LoginSchema, LoginInput } from '@anveshak/validation';
 import { apiRequest } from '@/lib/api-client';
-import { useAuthStore } from '@/hooks/useAuth';
+import { useAuthStore, getDefaultRedirectForUser } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PublicShell } from '@/components/layout/public-shell';
@@ -15,11 +15,19 @@ import { Eye, EyeOff, Lock, Mail, ShieldCheck } from 'lucide-react';
 
 export default function Fnd02LoginPage() {
   const router = useRouter();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const { user, isAuthenticated, isInitializing, setAuth } = useAuthStore();
 
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // If user is already authenticated, redirect to their home workspace
+  useEffect(() => {
+    if (!isInitializing && isAuthenticated && user) {
+      const dest = getDefaultRedirectForUser(user);
+      router.replace(dest);
+    }
+  }, [isInitializing, isAuthenticated, user, router]);
 
   const {
     register,
@@ -51,14 +59,9 @@ export default function Fnd02LoginPage() {
 
         if (response.user?.mustChangePassword) {
           router.push('/reset-password?reason=mandatory');
-        } else if (roles.includes('ADMIN')) {
-          router.push('/admin/approvals');
-        } else if (roles.includes('HR')) {
-          router.push('/hr');
-        } else if (roles.includes('ORG_USER')) {
-          router.push('/industry');
         } else {
-          router.push('/projects');
+          const destination = getDefaultRedirectForUser(normalizedUser);
+          router.push(destination);
         }
       }
     } catch (err: any) {
@@ -115,6 +118,10 @@ export default function Fnd02LoginPage() {
                     className="pl-10"
                     error={errors.email?.message}
                     {...register('email')}
+                    onChange={(e) => {
+                      if (serverError) setServerError(null);
+                      register('email').onChange(e);
+                    }}
                   />
                 </div>
                 {errors.email?.message && (
@@ -142,6 +149,10 @@ export default function Fnd02LoginPage() {
                     className="pl-10 pr-10"
                     error={errors.password?.message}
                     {...register('password')}
+                    onChange={(e) => {
+                      if (serverError) setServerError(null);
+                      register('password').onChange(e);
+                    }}
                   />
                   <button
                     type="button"
