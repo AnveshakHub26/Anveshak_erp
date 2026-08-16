@@ -20,13 +20,30 @@ interface AuthState {
   initializeSession: () => void;
 }
 
+const normalizeRoles = (rawRoles: any[]): string[] => {
+  if (!Array.isArray(rawRoles)) return [];
+  return rawRoles
+    .map((r: any) => {
+      if (typeof r === 'string') return r;
+      if (r && typeof r === 'object') {
+        if (typeof r.name === 'string') return r.name;
+        if (typeof r.code === 'string') return r.code;
+        if (r.role && typeof r.role === 'object') return r.role.name || r.role.code || '';
+      }
+      return '';
+    })
+    .filter(Boolean);
+};
+
 const getInitialState = () => {
   return { user: null, token: null, isAuthenticated: false, isInitializing: true };
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   ...getInitialState(),
-  setAuth: (user, token) => {
+  setAuth: (rawUser, token) => {
+    const roles = normalizeRoles(rawUser?.roles);
+    const user = { ...rawUser, roles };
     const currentToken = token ?? get().token ?? (typeof window !== 'undefined' ? localStorage.getItem('token') : null) ?? '';
     if (typeof window !== 'undefined') {
       try {
@@ -60,6 +77,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const storedUserRaw = localStorage.getItem('user');
       if (storedToken && storedUserRaw) {
         const parsedUser = JSON.parse(storedUserRaw);
+        if (parsedUser) {
+          parsedUser.roles = normalizeRoles(parsedUser.roles);
+          localStorage.setItem('user', JSON.stringify(parsedUser));
+        }
         set({ user: parsedUser, token: storedToken, isAuthenticated: true, isInitializing: false });
       } else {
         set({ user: null, token: null, isAuthenticated: false, isInitializing: false });

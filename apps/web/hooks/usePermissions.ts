@@ -12,7 +12,13 @@ export function usePermissions() {
     return userRolesRaw
       .map((r) => {
         if (typeof r === 'string') return r;
-        if (r && typeof r === 'object' && typeof r.name === 'string') return r.name;
+        if (r && typeof r === 'object') {
+          if (typeof r.name === 'string') return r.name;
+          if (typeof r.code === 'string') return r.code;
+          if (r.role && typeof r.role === 'object') {
+            return r.role.name || r.role.code || '';
+          }
+        }
         return '';
       })
       .filter(Boolean);
