@@ -55,6 +55,8 @@ model User {
   reviewedDeliverables        ProjectDeliverable[]         @relation("DeliverableReviewers")
   createdMeetings             ProjectMeeting[]             @relation("MeetingCreators")
   createdResourceLinks        ProjectResourceLink[]       @relation("ResourceLinkCreators")
+  createdSupportQueries       SupportQuery[]              @relation("CreatedSupportQueries")
+  queryMessages               SupportQueryMessage[]       @relation("QueryMessageSenders")
 
   @@map("users")
 }
@@ -158,6 +160,7 @@ model Organization {
   organizationUsers       OrganizationUser[]
   problemStatements       ProblemStatement[]
   projects                Project[]
+  supportQueries          SupportQuery[]
   employees               Employee[]
 
   @@map("organizations")
@@ -181,24 +184,34 @@ enum ProblemStatementStatus {
 }
 
 model ProblemStatement {
-  id               String                 @id @default(uuid())
-  code             String                 @unique // e.g. PS-2026-0001
-  organizationId   String                 @map("organization_id")
-  createdById      String                 @map("created_by_id")
-  bvId             String                 @map("bv_id")
-  title            String
-  description      String                 @db.Text
-  category         String?
-  budgetEstimate   String?                @map("budget_estimate")
-  expectedTimeline String?                @map("expected_timeline")
-  status           ProblemStatementStatus @default(DRAFT)
-  createdAt        DateTime               @default(now()) @map("created_at")
-  updatedAt        DateTime               @updatedAt @map("updated_at")
+  id                 String                 @id @default(uuid())
+  code               String                 @unique // e.g. PS-2026-0001
+  organizationId     String                 @map("organization_id")
+  createdById        String                 @map("created_by_id")
+  bvId               String                 @map("bv_id")
+  title              String
+  description        String                 @db.Text
+  category           String?
+  department         String?
+  priority           String?                @default("MEDIUM")
+  currentSituation   String?                @db.Text @map("current_situation")
+  existingProcess    String?                @db.Text @map("existing_process")
+  currentTechnology  String?                @db.Text @map("current_technology")
+  businessImpact     String?                @db.Text @map("business_impact")
+  desiredSolution    String?                @db.Text @map("desired_solution")
+  expectedBenefits   String?                @db.Text @map("expected_benefits")
+  successCriteria    String?                @db.Text @map("success_criteria")
+  budgetEstimate     String?                @map("budget_estimate")
+  expectedTimeline   String?                @map("expected_timeline")
+  status             ProblemStatementStatus @default(DRAFT)
+  createdAt          DateTime               @default(now()) @map("created_at")
+  updatedAt          DateTime               @updatedAt @map("updated_at")
 
-  organization     Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdBy        User                   @relation("CreatedProblemStatements", fields: [createdById], references: [id], onDelete: Cascade)
-  businessVertical BusinessVertical       @relation(fields: [bvId], references: [id], onDelete: Cascade)
+  organization     Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy        User                @relation("CreatedProblemStatements", fields: [createdById], references: [id], onDelete: Cascade)
+  businessVertical BusinessVertical    @relation(fields: [bvId], references: [id], onDelete: Cascade)
   project          Project?
+  supportQueries   SupportQuery[]
 
   @@index([organizationId])
   @@index([status])
@@ -245,6 +258,7 @@ model Project {
   deliverables         ProjectDeliverable[]
   meetings             ProjectMeeting[]
   resourceLinks        ProjectResourceLink[]
+  supportQueries       SupportQuery[]
 
   @@index([organizationId])
   @@index([status])
@@ -799,6 +813,70 @@ model ProjectResourceLink {
   @@index([resourceType])
   @@map("project_resource_links")
 }
+
+// ==========================================
+// CLIENT SUPPORT & QUERIES FOUNDATION
+// ==========================================
+
+enum QueryStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_FOR_CLIENT
+  RESOLVED
+  CLOSED
+}
+
+enum QueryPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model SupportQuery {
+  id               String        @id @default(uuid())
+  queryNumber      String        @unique @map("query_number") // e.g. QRY-2026-000001
+  organizationId   String        @map("organization_id")
+  createdById      String        @map("created_by_id")
+  subject          String
+  category         String
+  priority         QueryPriority @default(MEDIUM)
+  description      String        @db.Text
+  relatedProjectId String?       @map("related_project_id")
+  relatedProblemId String?       @map("related_problem_id")
+  status           QueryStatus   @default(OPEN)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy      User                @relation("CreatedSupportQueries", fields: [createdById], references: [id], onDelete: Cascade)
+  relatedProject Project?            @relation(fields: [relatedProjectId], references: [id], onDelete: SetNull)
+  relatedProblem ProblemStatement?   @relation(fields: [relatedProblemId], references: [id], onDelete: SetNull)
+  messages       SupportQueryMessage[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([createdById])
+  @@map("support_queries")
+}
+
+model SupportQueryMessage {
+  id         String   @id @default(uuid())
+  queryId    String   @map("query_id")
+  senderId   String   @map("sender_id")
+  senderName String   @map("sender_name")
+  senderRole String   @map("sender_role") // ORG_USER, ADMIN, SUPPORT
+  message    String   @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  query  SupportQuery @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  sender User         @relation("QueryMessageSenders", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([queryId])
+  @@index([senderId])
+  @@map("support_query_messages")
+}
+
 
 
 

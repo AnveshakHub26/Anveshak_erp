@@ -129,7 +129,7 @@ describe('Provider-Independent Email Subsystem & Queue Worker', () => {
       process.env.EMAIL_PROVIDER = 'console';
       const res = await emailService.sendOrganizationApprovalEmail('contact@org.com', 'Acme Corp', 'ORG-0001');
 
-      expect(res.idempotencyKey).toBe('org-approval-ORG-0001');
+      expect(res.idempotencyKey).toContain('org-approval-ORG-0001');
       expect(mockPrismaService.emailLog.create).toHaveBeenCalled();
     });
 

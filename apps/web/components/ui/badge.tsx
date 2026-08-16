@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 
 export interface BadgeProps {
-  variant?: 'neutral' | 'success' | 'warning' | 'error' | 'info';
+  variant?: 'neutral' | 'success' | 'warning' | 'error' | 'info' | 'outline';
   children: React.ReactNode;
   className?: string;
 }
@@ -14,13 +14,14 @@ export const Badge: React.FC<BadgeProps> = ({ variant = 'neutral', children, cla
     warning: 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]',
     error: 'bg-[#FDF2F2] text-[#B42318] border-[#FECACA]',
     info: 'bg-[#F0F6FA] text-[#356A95] border-[#CBD5E1]',
+    outline: 'bg-transparent text-slate-700 border-slate-300',
   };
 
   return (
     <span
       className={cn(
         'inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tracking-wider uppercase',
-        styles[variant],
+        styles[variant] || styles.neutral,
         className,
       )}
     >

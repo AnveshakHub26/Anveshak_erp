@@ -1,418 +1,291 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { usePermissions } from '@/hooks/usePermissions';
-import { apiRequest } from '@/lib/api-client';
-import { AppShell } from '@/components/layout/app-shell';
-import { Button } from '@/components/ui/button';
-import { Alert } from '@/components/ui/alert';
+import { api } from '@/lib/api-client';
 import {
   FolderGit2,
-  Building2,
-  Calendar,
   CheckCircle2,
+  Calendar,
+  FileSpreadsheet,
+  ArrowLeft,
   Clock,
-  Video,
-  PackageCheck,
-  Paperclip,
-  Users,
-  RefreshCw,
+  Download,
   AlertCircle,
-  FileText,
-  Plus,
+  Video,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-interface ProjectDetailData {
-  project: {
-    id: string;
-    projectCode: string;
-    title: string;
-    description?: string;
-    status: string;
-    overallProgressPct: number;
-    startDate: string;
-    expectedEndDate?: string;
-    clientOrganizationName: string;
-    teamHeadcount: number;
-  };
-  milestones: any[];
-  deliverables: any[];
-  meetings: any[];
-  resourceLinks: any[];
-}
-
-export default function IndustryProjectDetailPage() {
+export default function IndustryProjectWorkspacePage() {
   const params = useParams();
   const router = useRouter();
-  const projectId = params?.id as string;
-  const { hasAnyRole } = usePermissions();
+  const id = params?.id as string;
 
-  const [data, setData] = useState<ProjectDetailData | null>(null);
+  const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'milestones' | 'deliverables' | 'meetings' | 'resources'>('overview');
-
-  // Request Meeting Modal State
-  const [showRequestModal, setShowRequestModal] = useState(false);
-  const [reqTitle, setReqTitle] = useState('');
-  const [reqDesc, setReqDesc] = useState('');
-  const [reqStart, setReqStart] = useState('');
-  const [reqEnd, setReqEnd] = useState('');
-  const [submittingReq, setSubmittingReq] = useState(false);
-  const [reqError, setReqError] = useState<string | null>(null);
-
-  const fetchProjectDetail = useCallback(async () => {
-    if (!projectId) return;
-    setLoading(true);
-    setErrorMsg(null);
-    try {
-      const res = await apiRequest<{ success: boolean; data: ProjectDetailData }>(`/api/v1/industry/projects/${projectId}`);
-      if (res.data) setData(res.data);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to load project workspace.');
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const isAllowed = hasAnyRole(['ORG_USER', 'ADMIN']);
-    if (!isAllowed) {
-      router.push('/unauthorized');
-      return;
-    }
-    fetchProjectDetail();
-  }, [hasAnyRole, router, fetchProjectDetail]);
+    if (id) fetchProject();
+  }, [id]);
 
-  const handleRequestMeeting = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!projectId) return;
-    setSubmittingReq(true);
-    setReqError(null);
+  const fetchProject = async () => {
     try {
-      const res = await fetch(`/api/v1/industry/projects/${projectId}/meetings/request`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: reqTitle,
-          description: reqDesc || undefined,
-          startDateTime: reqStart,
-          endDateTime: reqEnd,
-        }),
-      });
-      const resData = await res.json();
-      if (!res.ok) throw new Error(resData.message || 'Failed to submit meeting request');
-
-      setShowRequestModal(false);
-      setReqTitle('');
-      setReqDesc('');
-      setReqStart('');
-      setReqEnd('');
-      fetchProjectDetail();
+      setLoading(true);
+      const res = await api.get(`/industry/projects/${id}`);
+      if (res.data?.success) {
+        setProject(res.data.data);
+      } else {
+        setError(res.data?.message || 'Failed to load project.');
+      }
     } catch (err: any) {
-      setReqError(err.message);
+      setError(err.response?.data?.message || err.message || 'An error occurred.');
     } finally {
-      setSubmittingReq(false);
+      setLoading(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex h-96 items-center justify-center">
-        <RefreshCw className="h-8 w-8 animate-spin text-[#d49b38]" />
+      <div className="p-8 max-w-6xl mx-auto space-y-6">
+        <div className="h-24 bg-slate-100 animate-pulse rounded-2xl" />
+        <div className="h-96 bg-slate-100 animate-pulse rounded-2xl" />
       </div>
     );
   }
 
-  if (!data?.project) {
+  if (error || !project) {
     return (
-      <div className="p-12 text-center text-[#94a3b8]">
-        <AlertCircle className="h-10 w-10 mx-auto text-amber-400 mb-3" />
-        <p className="font-semibold text-[#f8fafc]">Project Not Found or Access Restricted</p>
-        <Link href="/industry">
-          <Button size="sm" className="mt-4 bg-[#d49b38] text-slate-950 font-bold">Back to Industry Portal</Button>
-        </Link>
+      <div className="p-8 max-w-xl mx-auto">
+        <Card className="border-red-200 bg-red-50/50">
+          <CardContent className="p-6 text-center space-y-3">
+            <AlertCircle className="h-8 w-8 text-red-600 mx-auto" />
+            <h2 className="text-base font-bold text-red-900">Project Workspace Error</h2>
+            <p className="text-xs text-red-700">{error || 'Project not found.'}</p>
+            <Button variant="outline" onClick={() => router.push('/industry/projects')} className="text-xs">
+              Back to Projects List
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  const p = data.project;
+  const { projectCode, title, description, status, timeline, budget, businessVertical, problemStatement, milestones, deliverables, meetings, documents } = project;
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-        {/* Workspace Banner */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#151c2e] p-6 rounded-2xl border border-[#182238] shadow-xl">
-          <div>
+    <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-6">
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-[#151c2e] via-[#1e293b] to-[#2a364f] p-6 md:p-8 rounded-2xl text-white shadow-xl space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2 text-xs text-slate-300 font-semibold">
+            <Link href="/industry" className="hover:text-white">Industry Portal</Link>
+            <span>/</span>
+            <Link href="/industry/projects" className="hover:text-white">Projects</Link>
+            <span>/</span>
+            <span className="font-mono text-white font-bold">{projectCode}</span>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => router.push('/industry/projects')} className="text-xs border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800">
+            <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to Projects
+          </Button>
+        </div>
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
             <div className="flex items-center space-x-3">
-              <span className="font-mono text-sm font-bold text-[#d49b38] px-2.5 py-1 bg-[#0b101b] rounded border border-[#182238]">
-                {p.projectCode}
+              <span className="font-mono text-xs font-bold text-[#d49b38] bg-[#d49b38]/20 px-2.5 py-0.5 rounded border border-[#d49b38]/30">
+                {projectCode}
               </span>
-              <h1 className="text-xl font-bold text-white">{p.title}</h1>
+              <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/40 text-[10px] font-bold">
+                {status}
+              </Badge>
             </div>
-            <p className="text-xs text-[#94a3b8] mt-1.5 flex items-center gap-2">
-              <span>Client: {p.clientOrganizationName}</span>
-              <span>•</span>
-              <span>Team: {p.teamHeadcount} Members</span>
-              <span>•</span>
-              <span className="text-emerald-400 font-mono font-bold">{p.overallProgressPct}% Completed</span>
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={() => setShowRequestModal(true)}
-              className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium"
-            >
-              + Request Meeting
-            </Button>
+            <h1 className="text-2xl font-black text-white">{title}</h1>
+            <p className="text-xs text-slate-300 max-w-3xl line-clamp-2">{description}</p>
           </div>
         </div>
+      </div>
 
-        {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
+      {/* Tabs Navigation */}
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="bg-slate-100 p-1 rounded-xl">
+          <TabsTrigger value="overview" className="text-xs font-bold px-4 py-2">Overview</TabsTrigger>
+          <TabsTrigger value="milestones" className="text-xs font-bold px-4 py-2">Milestones ({milestones?.length || 0})</TabsTrigger>
+          <TabsTrigger value="deliverables" className="text-xs font-bold px-4 py-2">Deliverables ({deliverables?.length || 0})</TabsTrigger>
+          <TabsTrigger value="meetings" className="text-xs font-bold px-4 py-2">Meetings ({meetings?.length || 0})</TabsTrigger>
+          <TabsTrigger value="documents" className="text-xs font-bold px-4 py-2">Documents ({documents?.length || 0})</TabsTrigger>
+        </TabsList>
 
-        {/* Tab Navigation */}
-        <div className="flex border-b border-[#182238] space-x-6 text-xs font-semibold overflow-x-auto">
-          {['overview', 'milestones', 'deliverables', 'meetings', 'resources'].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab as any)}
-              className={`pb-3 border-b-2 uppercase tracking-wider transition-colors whitespace-nowrap ${
-                activeTab === tab ? 'border-[#d49b38] text-[#d49b38] font-bold' : 'border-transparent text-[#94a3b8] hover:text-white'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
+        {/* Tab 1: Overview */}
+        <TabsContent value="overview">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-2 space-y-6">
+              <Card className="border-slate-200/80 bg-white">
+                <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+                  <CardTitle className="text-sm font-bold text-slate-900">Project Scope & Objectives</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 text-xs text-slate-700 space-y-4">
+                  <p className="whitespace-pre-wrap leading-relaxed">{description}</p>
 
-        {/* TAB 1: OVERVIEW */}
-        {activeTab === 'overview' && (
-          <div className="space-y-6">
-            <div className="p-5 bg-[#151c2e] rounded-xl border border-[#182238] space-y-4">
-              <h3 className="text-sm font-semibold text-white border-b border-[#182238] pb-3">Project Executive Overview</h3>
-              {p.description && <p className="text-xs text-[#94a3b8] leading-relaxed">{p.description}</p>}
+                  {problemStatement && (
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Derived Problem Statement</span>
+                      <div className="font-bold text-slate-900 mt-1">{problemStatement.title} ({problemStatement.code})</div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                <div className="p-4 bg-[#0b101b] rounded-lg border border-[#182238] space-y-1">
-                  <span className="text-[10px] text-[#64748b] uppercase font-bold">Overall Progress</span>
-                  <div className="text-xl font-bold text-cyan-400 font-mono">{p.overallProgressPct}%</div>
-                </div>
-                <div className="p-4 bg-[#0b101b] rounded-lg border border-[#182238] space-y-1">
-                  <span className="text-[10px] text-[#64748b] uppercase font-bold">Milestones Progress</span>
-                  <div className="text-xl font-bold text-emerald-400 font-mono">
-                    {data.milestones.filter((m) => m.status === 'COMPLETED').length} / {data.milestones.length} Completed
+            {/* Meta Card */}
+            <div className="space-y-6">
+              <Card className="border-slate-200/80 bg-white">
+                <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+                  <CardTitle className="text-xs font-bold uppercase text-slate-500">Project Details</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 space-y-3 text-xs">
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Vertical</span>
+                    <div className="font-bold text-slate-800">{businessVertical?.name || 'N/A'}</div>
                   </div>
-                </div>
-                <div className="p-4 bg-[#0b101b] rounded-lg border border-[#182238] space-y-1">
-                  <span className="text-[10px] text-[#64748b] uppercase font-bold">Assigned Team Headcount</span>
-                  <div className="text-xl font-bold text-purple-400 font-mono">{p.teamHeadcount} Members</div>
-                </div>
-              </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Timeline</span>
+                    <div className="font-semibold text-slate-800">{timeline || 'TBD'}</div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Budget</span>
+                    <div className="font-semibold text-slate-800">{budget || 'TBD'}</div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
-        )}
+        </TabsContent>
 
-        {/* TAB 2: MILESTONES */}
-        {activeTab === 'milestones' && (
-          <div className="space-y-4">
-            <div className="p-4 bg-[#151c2e] rounded-xl border border-[#182238]">
-              <h3 className="text-sm font-semibold text-white">Client-Visible Milestones ({data.milestones.length})</h3>
-            </div>
-
-            <div className="space-y-3">
-              {data.milestones.map((m) => {
-                const isOverdue = m.dueDate && m.status !== 'COMPLETED' && new Date(m.dueDate).getTime() < new Date().getTime();
-                return (
-                  <div key={m.id} className="p-4 bg-[#151c2e] rounded-xl border border-[#182238] flex items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-mono text-xs text-[#d49b38] font-bold">#{m.sequence}</span>
-                        <h4 className="text-sm font-semibold text-white">{m.title}</h4>
+        {/* Tab 2: Milestones */}
+        <TabsContent value="milestones">
+          <Card className="border-slate-200/80 bg-white">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+              <CardTitle className="text-sm font-bold text-slate-900">Client Milestone Roadmap</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {!milestones || milestones.length === 0 ? (
+                <p className="text-xs text-slate-500">No client milestones defined yet.</p>
+              ) : (
+                <div className="space-y-4">
+                  {milestones.map((m: any) => (
+                    <div key={m.id} className="p-4 border border-slate-200 rounded-xl bg-slate-50/50 flex items-center justify-between gap-4">
+                      <div>
+                        <span className="font-mono text-[10px] font-bold text-slate-400">Milestone #{m.sequence}</span>
+                        <h4 className="text-sm font-bold text-slate-900">{m.title}</h4>
+                        <p className="text-xs text-slate-500 mt-0.5">{m.description}</p>
                       </div>
-                      {m.description && <p className="text-xs text-[#94a3b8]">{m.description}</p>}
+                      <Badge className="text-[10px] font-bold">{m.status || 'PLANNED'}</Badge>
                     </div>
-
-                    <div className="text-right space-y-1 text-xs">
-                      <span className={`px-2 py-0.5 rounded font-medium text-[10px] border uppercase ${m.status === 'COMPLETED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-500/10 text-slate-400 border-slate-500/20'}`}>
-                        {m.status}
-                      </span>
-                      <div className={`font-mono text-[11px] ${isOverdue ? 'text-rose-400 font-bold' : 'text-[#94a3b8]'}`}>
-                        Due: {new Date(m.dueDate).toLocaleDateString()} {isOverdue && '⚠️'}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: APPROVED DELIVERABLES */}
-        {activeTab === 'deliverables' && (
-          <div className="space-y-4">
-            <div className="p-4 bg-[#151c2e] rounded-xl border border-[#182238]">
-              <h3 className="text-sm font-semibold text-white">Approved Client Deliverables ({data.deliverables.length})</h3>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {data.deliverables.map((d) => (
-                <div key={d.id} className="p-5 bg-[#151c2e] rounded-xl border border-[#182238] space-y-3">
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase font-semibold">
-                    APPROVED
-                  </span>
-                  <h4 className="text-sm font-semibold text-white">{d.title}</h4>
-                  {d.description && <p className="text-xs text-[#94a3b8]">{d.description}</p>}
-                </div>
-              ))}
-              {data.deliverables.length === 0 && (
-                <div className="col-span-full p-8 text-center bg-[#151c2e] rounded-xl border border-[#182238] text-xs text-[#64748b]">
-                  No approved client deliverables available yet.
+                  ))}
                 </div>
               )}
-            </div>
-          </div>
-        )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-        {/* TAB 4: MEETINGS */}
-        {activeTab === 'meetings' && (
-          <div className="space-y-4">
-            <div className="p-4 bg-[#151c2e] rounded-xl border border-[#182238] flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-white">Client Meetings ({data.meetings.length})</h3>
-              <Button onClick={() => setShowRequestModal(true)} size="sm" className="bg-blue-600 text-white text-xs">
-                + Request Meeting
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {data.meetings.map((m) => (
-                <div key={m.id} className="p-5 bg-[#151c2e] rounded-xl border border-[#182238] space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium">
-                      {m.meetingProvider}
-                    </span>
-                    <span className="text-[10px] uppercase font-bold text-emerald-400">{m.status}</span>
-                  </div>
-                  <h4 className="text-sm font-semibold text-white">{m.title}</h4>
-                  <div className="text-xs text-[#94a3b8] font-mono">
-                    {new Date(m.startDateTime).toLocaleString()}
-                  </div>
-                  <div className="pt-2">
-                    <a
-                      href={m.meetingUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-medium inline-block"
-                    >
-                      Join Meeting ↗
-                    </a>
-                  </div>
+        {/* Tab 3: Deliverables */}
+        <TabsContent value="deliverables">
+          <Card className="border-slate-200/80 bg-white">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+              <CardTitle className="text-sm font-bold text-slate-900">Project Deliverables</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {!deliverables || deliverables.length === 0 ? (
+                <p className="text-xs text-slate-500">No deliverables uploaded for review yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {deliverables.map((d: any) => (
+                    <div key={d.id} className="p-4 border border-slate-200 rounded-xl flex items-center justify-between gap-4">
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900">{d.title}</h4>
+                        <p className="text-xs text-slate-500">{d.description}</p>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => router.push('/industry/deliverables')} className="text-xs font-semibold">
+                        Review
+                      </Button>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-        {/* TAB 5: SHARED RESOURCES */}
-        {activeTab === 'resources' && (
-          <div className="space-y-4">
-            <div className="p-4 bg-[#151c2e] rounded-xl border border-[#182238]">
-              <h3 className="text-sm font-semibold text-white">Shared Project Resources ({data.resourceLinks.length})</h3>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {data.resourceLinks.map((link) => (
-                <div key={link.id} className="p-4 bg-[#151c2e] rounded-xl border border-[#182238] space-y-2">
-                  <h4 className="text-xs font-semibold text-white">{link.title}</h4>
-                  {link.description && <p className="text-[11px] text-[#94a3b8]">{link.description}</p>}
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-medium text-emerald-400 hover:text-emerald-300 transition block pt-1"
-                  >
-                    Open Shared Resource ↗
-                  </a>
+        {/* Tab 4: Meetings */}
+        <TabsContent value="meetings">
+          <Card className="border-slate-200/80 bg-white">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+              <CardTitle className="text-sm font-bold text-slate-900">Project Meetings & Alignment Calls</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {!meetings || meetings.length === 0 ? (
+                <p className="text-xs text-slate-500">No meetings scheduled for this project.</p>
+              ) : (
+                <div className="space-y-3">
+                  {meetings.map((m: any) => (
+                    <div key={m.id} className="p-4 border border-slate-200 rounded-xl flex items-center justify-between gap-4">
+                      <div>
+                        <span className="text-xs text-slate-500">{new Date(m.startDateTime).toLocaleString()}</span>
+                        <h4 className="text-sm font-bold text-slate-900">{m.title}</h4>
+                      </div>
+                      {m.meetingUrl && m.meetingUrl.startsWith('http') && (
+                        <a href={m.meetingUrl} target="_blank" rel="noopener noreferrer">
+                          <Button size="sm" className="bg-blue-600 text-white text-xs font-bold">
+                            <Video className="mr-1.5 h-3.5 w-3.5" /> Join Call
+                          </Button>
+                        </a>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-        {/* REQUEST MEETING MODAL */}
-        {showRequestModal && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-[#151c2e] border border-[#182238] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-              <h3 className="text-base font-semibold text-white">Request Client Meeting</h3>
-              {reqError && <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-xs text-rose-400">{reqError}</div>}
-
-              <form onSubmit={handleRequestMeeting} className="space-y-3">
-                <div>
-                  <label className="text-xs font-medium text-[#94a3b8] block mb-1">Meeting Title</label>
-                  <input
-                    required
-                    type="text"
-                    value={reqTitle}
-                    onChange={(e) => setReqTitle(e.target.value)}
-                    placeholder="e.g. Milestone Validation Review"
-                    className="w-full bg-[#0b101b] border border-[#182238] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-                  />
+        {/* Tab 5: Documents */}
+        <TabsContent value="documents">
+          <Card className="border-slate-200/80 bg-white">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+              <CardTitle className="text-sm font-bold text-slate-900">Project Technical Documents</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {!documents || documents.length === 0 ? (
+                <p className="text-xs text-slate-500">No project documents uploaded yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {documents.map((doc: any) => (
+                    <div key={doc.id} className="p-4 border border-slate-200 rounded-xl flex items-center justify-between">
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-900">{doc.type || 'Document'}</h4>
+                        <span className="text-[10px] text-slate-500 font-mono">{doc.storageKey}</span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(`http://localhost:4000/api/v1/documents/file-stream?key=${encodeURIComponent(doc.storageKey)}`, '_blank')}
+                        className="text-xs font-semibold"
+                      >
+                        <Download className="mr-1 h-3.5 w-3.5" /> Download
+                      </Button>
+                    </div>
+                  ))}
                 </div>
-
-                <div>
-                  <label className="text-xs font-medium text-[#94a3b8] block mb-1">Agenda / Description</label>
-                  <textarea
-                    rows={2}
-                    value={reqDesc}
-                    onChange={(e) => setReqDesc(e.target.value)}
-                    placeholder="Preferred discussion topics..."
-                    className="w-full bg-[#0b101b] border border-[#182238] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-medium text-[#94a3b8] block mb-1">Preferred Start Date &amp; Time</label>
-                  <input
-                    required
-                    type="datetime-local"
-                    value={reqStart}
-                    onChange={(e) => setReqStart(e.target.value)}
-                    className="w-full bg-[#0b101b] border border-[#182238] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-medium text-[#94a3b8] block mb-1">Preferred End Date &amp; Time</label>
-                  <input
-                    required
-                    type="datetime-local"
-                    value={reqEnd}
-                    onChange={(e) => setReqEnd(e.target.value)}
-                    className="w-full bg-[#0b101b] border border-[#182238] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-3 pt-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowRequestModal(false)}
-                    className="px-4 py-2 bg-slate-800 text-[#94a3b8] text-xs font-medium rounded-lg hover:bg-slate-700 transition"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    disabled={submittingReq}
-                    type="submit"
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-lg transition disabled:opacity-50"
-                  >
-                    {submittingReq ? 'Submitting...' : 'Submit Request'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-      </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

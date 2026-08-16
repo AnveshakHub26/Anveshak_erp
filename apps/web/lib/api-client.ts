@@ -118,3 +118,38 @@ export async function apiRequest<T = any>(
 
   return executeApiRequest<T>(endpoint, options);
 }
+
+// Axios-compatible helper object for quick API requests
+export const api = {
+  get: async (endpoint: string, config?: { params?: Record<string, any> }) => {
+    let url = endpoint;
+    if (config?.params) {
+      const q = new URLSearchParams();
+      Object.entries(config.params).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== '') q.append(k, String(v));
+      });
+      const queryStr = q.toString();
+      if (queryStr) url += (url.includes('?') ? '&' : '?') + queryStr;
+    }
+    const data = await apiRequest(url, { method: 'GET' });
+    return { data };
+  },
+  post: async (endpoint: string, body?: any) => {
+    const data = await apiRequest(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(body || {}),
+    });
+    return { data };
+  },
+  patch: async (endpoint: string, body?: any) => {
+    const data = await apiRequest(endpoint, {
+      method: 'PATCH',
+      body: JSON.stringify(body || {}),
+    });
+    return { data };
+  },
+  delete: async (endpoint: string) => {
+    const data = await apiRequest(endpoint, { method: 'DELETE' });
+    return { data };
+  },
+};
