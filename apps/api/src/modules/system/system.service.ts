@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { EmailService } from '../../common/email/email.service';
 
 export interface SearchResultItem {
   id: string;
@@ -12,7 +13,36 @@ export interface SearchResultItem {
 
 @Injectable()
 export class SystemService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Optional() private emailService?: EmailService,
+  ) {}
+
+  /**
+   * Controlled development-only ADMIN email verification handler.
+   * Enqueues a single test email through EmailService -> EmailQueueService -> EmailLog outbox.
+   */
+  async sendTestEmail(targetRecipient?: string) {
+    const recipient = targetRecipient?.trim() || process.env.EMAIL_TEST_RECIPIENT || 'sppranav2005@gmail.com';
+    const alertTitle = 'Development Email Pipeline Verification';
+    const timestamp = new Date().toISOString();
+    const detailsHtml = `<p>This is a controlled end-to-end test verifying the AnveshakHub Enterprise ERP email outbox pipeline.</p><p><strong>Dispatched At:</strong> ${timestamp}</p>`;
+
+    if (!this.emailService) {
+      throw new Error('EmailService is not available.');
+    }
+
+    const result = await this.emailService.sendSecurityAlertEmail(recipient, alertTitle, detailsHtml);
+
+    return {
+      success: true,
+      message: `Test email job enqueued successfully for [${recipient}].`,
+      jobId: result.jobId,
+      idempotencyKey: result.idempotencyKey,
+      recipient,
+      provider: process.env.EMAIL_PROVIDER || 'console',
+    };
+  }
 
   async createSupportRequest(data: {
     category: string;

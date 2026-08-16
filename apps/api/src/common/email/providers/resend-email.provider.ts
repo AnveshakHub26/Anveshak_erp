@@ -16,6 +16,10 @@ export class ResendEmailProvider implements EmailProvider {
       };
     }
 
+    // Resend account without verified domain requires onboarding@resend.dev sender
+    const defaultFrom = process.env.RESEND_FROM || 'AnveshakHub ERP <onboarding@resend.dev>';
+    const sender = (options.from && !options.from.includes('anveshakhub.com')) ? options.from : defaultFrom;
+
     try {
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -24,7 +28,7 @@ export class ResendEmailProvider implements EmailProvider {
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          from: options.from || process.env.SMTP_FROM || 'AnveshakHub ERP <onboarding@resend.dev>',
+          from: sender,
           to: Array.isArray(options.to) ? options.to : [options.to],
           subject: options.subject,
           html: options.html,
@@ -34,6 +38,7 @@ export class ResendEmailProvider implements EmailProvider {
 
       const data = await res.json();
       if (res.ok) {
+        this.logger.log(`[ResendEmailProvider] Dispatched email to [${options.to}] (Message ID: ${data.id})`);
         return {
           success: true,
           messageId: data.id,
@@ -41,13 +46,16 @@ export class ResendEmailProvider implements EmailProvider {
           rawResponse: data,
         };
       } else {
+        const errorMsg = data.message ? `${data.name || 'Error'}: ${data.message}` : JSON.stringify(data);
+        this.logger.error(`[ResendEmailProvider] Delivery error: ${errorMsg}`);
         return {
           success: false,
           provider: this.name,
-          error: data.message || JSON.stringify(data),
+          error: errorMsg,
         };
       }
     } catch (err: any) {
+      this.logger.error(`[ResendEmailProvider] Network error: ${err.message}`);
       return {
         success: false,
         provider: this.name,

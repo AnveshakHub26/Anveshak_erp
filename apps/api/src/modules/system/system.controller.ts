@@ -30,6 +30,16 @@ export class SystemController {
     return this.systemService.checkHealth();
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Post('admin/test-email')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'ADM-09 Controlled ADMIN-only test email verification handler' })
+  async sendTestEmail(@Body('recipientEmail') recipientEmail?: string) {
+    const data = await this.systemService.sendTestEmail(recipientEmail);
+    return { success: true, data };
+  }
+
   @Public()
   @Post('admin/support')
   @ApiOperation({ summary: 'FND-11 Submit persistent contact admin & support request ticket' })
