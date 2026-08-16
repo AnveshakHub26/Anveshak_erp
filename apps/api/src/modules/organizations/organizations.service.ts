@@ -2,6 +2,8 @@ import { Injectable, NotFoundException, ConflictException, BadRequestException, 
 import { PrismaService } from '../../database/prisma.service';
 import { SupabaseService } from '../../common/supabase/supabase.service';
 import { EmailService } from '../../common/email/email.service';
+import { TransactionalEmailCategory } from '../../common/email/enums/email-category.enum';
+import { renderBaseEmailTemplate, escapeHtml } from '../../common/email/templates/base.template';
 import * as argon2 from 'argon2';
 import * as crypto from 'crypto';
 
@@ -161,6 +163,33 @@ export class OrganizationsService {
 
       return { user, organization };
     });
+
+    // Dispatch instant registration submission confirmation email to primary contact
+    if (this.emailService && result.user?.email) {
+      await this.emailService.sendTransactionalEmail({
+        to: result.user.email,
+        subject: `📋 Organization Application Received — ${result.organization.orgNumber}`,
+        html: renderBaseEmailTemplate({
+          title: 'Application Submission Received',
+          badgeText: 'APPLICATION SUBMITTED',
+          badgeBgColor: '#feefc3',
+          badgeTextColor: '#b06000',
+          contentHtml: `
+            <h2>Application Submission Received, ${escapeHtml(result.organization.legalName)}!</h2>
+            <p>Thank you for submitting your organization onboarding application to AnveshakHub Enterprise ERP (Reference Number: <strong>${escapeHtml(result.organization.orgNumber)}</strong>).</p>
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+              <p style="margin: 4px 0;"><strong>Primary Contact Email:</strong> ${escapeHtml(result.user.email)}</p>
+              <p style="margin: 4px 0;"><strong>Application Status:</strong> <span style="color: #b06000; font-weight: bold;">SUBMITTED (UNDER REVIEW)</span></p>
+              <p style="margin: 4px 0;"><strong>Next Steps:</strong> Platform administrators will review your corporate credentials and uploaded documents. Once verified, you will receive an approval email and can log in using your registered email and password.</p>
+            </div>
+          `,
+        }),
+        text: `Application Received for ${result.organization.legalName} (${result.organization.orgNumber})\n\nStatus: SUBMITTED (UNDER REVIEW).\nAdministrators will review your application. Upon approval, log in with email: ${result.user.email}`,
+        category: TransactionalEmailCategory.APPROVAL_DECISION,
+        idempotencyKey: `org-received-${result.organization.orgNumber}`,
+        metadata: { orgNumber: result.organization.orgNumber, legalName: result.organization.legalName },
+      });
+    }
 
     return {
       orgNumber: result.organization.orgNumber,

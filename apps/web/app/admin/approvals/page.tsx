@@ -167,11 +167,20 @@ export default function Adm03ApprovalsPage() {
   const handleDownloadDocument = async (docId: string) => {
     try {
       const res = await apiRequest(`/documents/${docId}/download-url`);
-      if (res && res.data) {
-        window.open(res.data, '_blank');
+      const url = res?.data?.downloadUrl || (typeof res?.data === 'string' ? res.data : null);
+      if (url) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        alert('Download URL could not be generated from API response.');
       }
-    } catch {
-      alert('Could not generate presigned download URL for document.');
+    } catch (err: any) {
+      alert(err?.message || 'Could not generate presigned download URL for document.');
     }
   };
 
