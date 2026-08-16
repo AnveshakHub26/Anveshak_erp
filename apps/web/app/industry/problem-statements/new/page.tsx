@@ -16,6 +16,7 @@ import {
   AlertCircle,
   Building2,
   Info,
+  PenTool,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -24,10 +25,41 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 
+// Official AnveshakHub Business Verticals fallback list
+const DEFAULT_BUSINESS_VERTICALS = [
+  { id: 'bv-01', code: 'BV-01', name: 'Research-led Projects' },
+  { id: 'bv-02', code: 'BV-02', name: 'IP and Knowledge Management' },
+  { id: 'bv-03', code: 'BV-03', name: 'Startup Ecosystem' },
+  { id: 'bv-04', code: 'BV-04', name: 'Consulting' },
+  { id: 'bv-05', code: 'BV-05', name: 'Design and Development' },
+  { id: 'bv-06', code: 'BV-06', name: 'Upskilling and Workshops' },
+];
+
+const STANDARD_DEPARTMENTS = [
+  'Research & Development (R&D)',
+  'Quality Assurance (QA)',
+  'Operations & Production',
+  'Technology & Engineering',
+  'Product Development',
+  'Strategy & Governance',
+  'Supply Chain & Logistics',
+];
+
+const STANDARD_CATEGORIES = [
+  'Computer Vision & AI',
+  'Predictive Maintenance',
+  'Process Automation',
+  'Deep Tech & Hardware',
+  'Data Analytics & Cloud Systems',
+  'IP & Patent Strategy',
+  'Quality & Defect Testing',
+  'Workforce Upskilling',
+];
+
 export default function NewProblemStatementPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
-  const [bvs, setBvs] = useState<any[]>([]);
+  const [bvs, setBvs] = useState<any[]>(DEFAULT_BUSINESS_VERTICALS);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,10 +67,14 @@ export default function NewProblemStatementPage() {
   // Form State
   const [formData, setFormData] = useState({
     title: '',
-    bvId: '',
-    department: '',
-    category: '',
+    bvId: 'bv-01',
+    customBvName: '',
+    department: 'Research & Development (R&D)',
+    customDepartment: '',
+    category: 'Computer Vision & AI',
+    customCategory: '',
     priority: 'MEDIUM',
+    customPriority: '',
     currentSituation: '',
     description: '',
     existingProcess: '',
@@ -57,15 +93,17 @@ export default function NewProblemStatementPage() {
 
   const fetchBusinessVerticals = async () => {
     try {
-      const res = await api.get('/organizations/business-verticals');
-      if (res.data?.success) {
-        setBvs(res.data.data || []);
-        if (res.data.data.length > 0) {
-          setFormData((prev) => ({ ...prev, bvId: res.data.data[0].id }));
-        }
+      const res = await api.get('/business-verticals');
+      if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        setBvs(res.data.data);
+        setFormData((prev) => ({ ...prev, bvId: res.data.data[0].id }));
+      } else {
+        setBvs(DEFAULT_BUSINESS_VERTICALS);
+        setFormData((prev) => ({ ...prev, bvId: DEFAULT_BUSINESS_VERTICALS[0].id }));
       }
     } catch (err) {
-      console.error('Failed to load business verticals', err);
+      console.warn('Using default business verticals fallback', err);
+      setBvs(DEFAULT_BUSINESS_VERTICALS);
     }
   };
 
@@ -82,6 +120,22 @@ export default function NewProblemStatementPage() {
       }
       if (!formData.bvId) {
         setError('Please select a Business Vertical.');
+        return false;
+      }
+      if (formData.bvId === 'OTHER' && !formData.customBvName.trim()) {
+        setError('Please specify your custom Business Vertical name.');
+        return false;
+      }
+      if (formData.department === 'OTHER' && !formData.customDepartment.trim()) {
+        setError('Please specify your custom Department name.');
+        return false;
+      }
+      if (formData.category === 'OTHER' && !formData.customCategory.trim()) {
+        setError('Please specify your custom Problem Category name.');
+        return false;
+      }
+      if (formData.priority === 'OTHER' && !formData.customPriority.trim()) {
+        setError('Please specify your custom Priority Level.');
         return false;
       }
     } else if (currentStep === 2) {
@@ -104,6 +158,10 @@ export default function NewProblemStatementPage() {
     setStep((s) => Math.max(s - 1, 1));
   };
 
+  const getEffectiveValue = (selected: string, customVal: string) => {
+    return selected === 'OTHER' ? customVal.trim() : selected;
+  };
+
   const handleSubmit = async (isDraft: boolean) => {
     if (!isDraft && !validateStep(step)) return;
 
@@ -111,8 +169,28 @@ export default function NewProblemStatementPage() {
       setSubmitting(true);
       setError(null);
 
+      // Determine effective business vertical, department, category, and priority
+      const effectiveBvId = formData.bvId === 'OTHER' ? bvs[0]?.id : formData.bvId;
+      const effectiveDepartment = getEffectiveValue(formData.department, formData.customDepartment);
+      const effectiveCategory = getEffectiveValue(formData.category, formData.customCategory);
+      const effectivePriority = getEffectiveValue(formData.priority, formData.customPriority);
+
       const payload = {
-        ...formData,
+        title: formData.title,
+        bvId: effectiveBvId,
+        department: effectiveDepartment,
+        category: effectiveCategory,
+        priority: effectivePriority,
+        currentSituation: formData.currentSituation,
+        description: formData.description,
+        existingProcess: formData.existingProcess,
+        currentTechnology: formData.currentTechnology,
+        businessImpact: formData.businessImpact,
+        desiredSolution: formData.desiredSolution,
+        expectedBenefits: formData.expectedBenefits,
+        successCriteria: formData.successCriteria,
+        expectedTimeline: formData.expectedTimeline,
+        budgetEstimate: formData.budgetEstimate,
         isDraft,
       };
 
@@ -202,58 +280,143 @@ export default function NewProblemStatementPage() {
                 />
               </div>
 
+              {/* Business Vertical */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-slate-700">Business Vertical *</Label>
-                  <Select value={formData.bvId} onValueChange={(val) => handleInputChange('bvId', val)}>
-                    <SelectTrigger className="text-xs">
-                      <SelectValue placeholder="Select Vertical" />
-                    </SelectTrigger>
+                  <Select
+                    value={formData.bvId}
+                    onValueChange={(val) => handleInputChange('bvId', val)}
+                    placeholder="Select Vertical"
+                  >
                     <SelectContent>
                       {bvs.map((bv) => (
                         <SelectItem key={bv.id} value={bv.id}>
-                          {bv.name} ({bv.code})
+                          {bv.name} {bv.code ? `(${bv.code})` : ''}
                         </SelectItem>
                       ))}
+                      <SelectItem value="OTHER">✍️ Other / Write Your Own Vertical...</SelectItem>
                     </SelectContent>
                   </Select>
+
+                  {/* Custom Business Vertical Input */}
+                  {formData.bvId === 'OTHER' && (
+                    <div className="pt-2 animate-in fade-in-0">
+                      <Label className="text-xs font-bold text-[#d49b38] flex items-center gap-1 mb-1">
+                        <PenTool className="h-3 w-3" /> Specify Custom Business Vertical *
+                      </Label>
+                      <Input
+                        placeholder="Type your custom Business Vertical name..."
+                        value={formData.customBvName}
+                        onChange={(e) => handleInputChange('customBvName', e.target.value)}
+                        className="text-xs border-[#d49b38] focus:ring-[#d49b38]"
+                      />
+                    </div>
+                  )}
                 </div>
 
+                {/* Department / Function */}
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-slate-700">Department / Function</Label>
-                  <Input
-                    placeholder="e.g. Quality Assurance, R&D, Operations"
+                  <Select
                     value={formData.department}
-                    onChange={(e) => handleInputChange('department', e.target.value)}
-                    className="text-xs"
-                  />
+                    onValueChange={(val) => handleInputChange('department', val)}
+                    placeholder="Select Department"
+                  >
+                    <SelectContent>
+                      {STANDARD_DEPARTMENTS.map((dept) => (
+                        <SelectItem key={dept} value={dept}>
+                          {dept}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="OTHER">✍️ Other / Write Your Own Department...</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Custom Department Input */}
+                  {formData.department === 'OTHER' && (
+                    <div className="pt-2 animate-in fade-in-0">
+                      <Label className="text-xs font-bold text-[#d49b38] flex items-center gap-1 mb-1">
+                        <PenTool className="h-3 w-3" /> Specify Custom Department / Function *
+                      </Label>
+                      <Input
+                        placeholder="e.g. Avionics R&D, Shopfloor Operations..."
+                        value={formData.customDepartment}
+                        onChange={(e) => handleInputChange('customDepartment', e.target.value)}
+                        className="text-xs border-[#d49b38] focus:ring-[#d49b38]"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
+              {/* Category & Priority */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Problem Category */}
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-slate-700">Problem Category</Label>
-                  <Input
-                    placeholder="e.g. Computer Vision, Predictive Maintenance, Process Automation"
+                  <Select
                     value={formData.category}
-                    onChange={(e) => handleInputChange('category', e.target.value)}
-                    className="text-xs"
-                  />
+                    onValueChange={(val) => handleInputChange('category', val)}
+                    placeholder="Select Category"
+                  >
+                    <SelectContent>
+                      {STANDARD_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="OTHER">✍️ Other / Write Your Own Category...</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Custom Category Input */}
+                  {formData.category === 'OTHER' && (
+                    <div className="pt-2 animate-in fade-in-0">
+                      <Label className="text-xs font-bold text-[#d49b38] flex items-center gap-1 mb-1">
+                        <PenTool className="h-3 w-3" /> Specify Custom Problem Category *
+                      </Label>
+                      <Input
+                        placeholder="e.g. High-Voltage Power Grid Inspection..."
+                        value={formData.customCategory}
+                        onChange={(e) => handleInputChange('customCategory', e.target.value)}
+                        className="text-xs border-[#d49b38] focus:ring-[#d49b38]"
+                      />
+                    </div>
+                  )}
                 </div>
 
+                {/* Priority Level */}
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-slate-700">Priority Level</Label>
-                  <Select value={formData.priority} onValueChange={(val) => handleInputChange('priority', val)}>
-                    <SelectTrigger className="text-xs">
-                      <SelectValue placeholder="Select Priority" />
-                    </SelectTrigger>
+                  <Select
+                    value={formData.priority}
+                    onValueChange={(val) => handleInputChange('priority', val)}
+                    placeholder="Select Priority"
+                  >
                     <SelectContent>
                       <SelectItem value="LOW">Low</SelectItem>
                       <SelectItem value="MEDIUM">Medium</SelectItem>
                       <SelectItem value="HIGH">High</SelectItem>
                       <SelectItem value="CRITICAL">Critical</SelectItem>
+                      <SelectItem value="OTHER">✍️ Other / Write Custom Priority...</SelectItem>
                     </SelectContent>
                   </Select>
+
+                  {/* Custom Priority Input */}
+                  {formData.priority === 'OTHER' && (
+                    <div className="pt-2 animate-in fade-in-0">
+                      <Label className="text-xs font-bold text-[#d49b38] flex items-center gap-1 mb-1">
+                        <PenTool className="h-3 w-3" /> Specify Custom Priority Level *
+                      </Label>
+                      <Input
+                        placeholder="e.g. Urgent Board Mandate..."
+                        value={formData.customPriority}
+                        onChange={(e) => handleInputChange('customPriority', e.target.value)}
+                        className="text-xs border-[#d49b38] focus:ring-[#d49b38]"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -426,12 +589,33 @@ export default function NewProblemStatementPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">Business Vertical</span>
+                    <div className="text-xs font-semibold text-slate-800">
+                      {formData.bvId === 'OTHER'
+                        ? formData.customBvName
+                        : bvs.find((b) => b.id === formData.bvId)?.name || 'Default Vertical'}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">Department</span>
+                    <div className="text-xs font-semibold text-slate-800">
+                      {getEffectiveValue(formData.department, formData.customDepartment)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
                     <span className="text-[10px] font-bold text-slate-500 uppercase">Category</span>
-                    <div className="text-xs font-semibold text-slate-800">{formData.category || 'General'}</div>
+                    <div className="text-xs font-semibold text-slate-800">
+                      {getEffectiveValue(formData.category, formData.customCategory)}
+                    </div>
                   </div>
                   <div>
                     <span className="text-[10px] font-bold text-slate-500 uppercase">Priority</span>
-                    <div className="text-xs font-semibold text-slate-800">{formData.priority}</div>
+                    <div className="text-xs font-semibold text-slate-800">
+                      {getEffectiveValue(formData.priority, formData.customPriority)}
+                    </div>
                   </div>
                 </div>
 
