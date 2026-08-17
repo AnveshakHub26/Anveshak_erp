@@ -117,7 +117,7 @@ export default function AdminWorkshopsPage() {
     registrationUrl: '',
     location: '',
     capacity: '',
-    status: 'DRAFT',
+    status: 'PUBLISHED',
     isPublic: true,
     registrationDeadline: '',
     bannerUrl: '',
@@ -177,7 +177,7 @@ export default function AdminWorkshopsPage() {
       registrationUrl: '',
       location: '',
       capacity: '',
-      status: 'DRAFT',
+      status: 'PUBLISHED',
       isPublic: true,
       registrationDeadline: '',
       bannerUrl: '',
@@ -215,13 +215,14 @@ export default function AdminWorkshopsPage() {
   };
 
   // Submit Modal Handler
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, overrideStatus?: 'DRAFT' | 'PUBLISHED') => {
     e.preventDefault();
     setSubmitting(true);
     setErrorMsg(null);
     try {
       const payload: any = {
         ...formState,
+        status: overrideStatus ?? formState.status,
         capacity: formState.capacity ? parseInt(formState.capacity, 10) : undefined,
       };
 
@@ -236,7 +237,11 @@ export default function AdminWorkshopsPage() {
           method: 'POST',
           body: JSON.stringify(payload),
         });
-        setActionSuccess('New workshop created successfully.');
+        setActionSuccess(
+          overrideStatus === 'DRAFT'
+            ? 'Workshop saved as Draft. It is NOT visible to the public yet.'
+            : 'Workshop published! It is now live on the public catalog.'
+        );
       }
 
       setShowModal(false);
@@ -483,11 +488,16 @@ export default function AdminWorkshopsPage() {
                                 ? 'bg-purple-50 text-purple-700 border border-purple-200'
                                 : w.status === 'CANCELLED'
                                 ? 'bg-red-50 text-red-700 border border-red-200'
-                                : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                : 'bg-amber-50 text-amber-800 border border-amber-300'
                             }`}
                           >
                             {w.status}
                           </span>
+                          {w.status === 'DRAFT' && (
+                            <div className="text-[10px] text-amber-700 font-semibold mt-0.5">
+                              ⚠ Hidden from public
+                            </div>
+                          )}
                         </td>
 
                         {/* Actions */}
@@ -791,21 +801,34 @@ export default function AdminWorkshopsPage() {
                 </div>
 
                 {/* MODAL FOOTER */}
-                <div className="flex justify-end space-x-2 pt-4 border-t border-slate-200">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowModal(false)}
-                    className="border-slate-300 text-slate-700"
-                  >
-                    Cancel
-                  </Button>
+                <div className="flex flex-col sm:flex-row justify-between gap-2 pt-4 border-t border-slate-200">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowModal(false)}
+                      className="border-slate-300 text-slate-700 text-xs"
+                    >
+                      Cancel
+                    </Button>
+                    {!editingId && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={submitting}
+                        onClick={(e) => handleSubmit(e as any, 'DRAFT')}
+                        className="border-amber-300 text-amber-800 bg-amber-50 hover:bg-amber-100 text-xs"
+                      >
+                        {submitting ? 'Saving...' : 'Save as Draft'}
+                      </Button>
+                    )}
+                  </div>
                   <Button
                     type="submit"
                     disabled={submitting}
-                    className="bg-[#d49b38] hover:bg-[#b8832a] text-[#0F172A] font-bold"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm"
                   >
-                    {submitting ? 'Saving...' : editingId ? 'Update Workshop' : 'Create Workshop'}
+                    {submitting ? 'Saving...' : editingId ? '💾 Update Workshop' : '🚀 Publish Workshop'}
                   </Button>
                 </div>
               </form>
