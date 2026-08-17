@@ -135,9 +135,12 @@ export default function HRPage() {
       }>(`/hr/employees?${query.toString()}`);
 
       if (res.data) {
-        setEmployees(res.data.items || []);
-        setTotalItems(res.data.total || 0);
-        setTotalPages(res.data.totalPages || 1);
+        const list = res.data.items || (Array.isArray((res.data as any).data) ? (res.data as any).data : []);
+        const total = res.data.total ?? (res.data as any).meta?.total ?? list.length;
+        const totalPages = res.data.totalPages ?? (res.data as any).meta?.totalPages ?? 1;
+        setEmployees(list);
+        setTotalItems(total);
+        setTotalPages(totalPages);
       }
     } catch (err: any) {
       if (err.status === 0 || err.code === 'NETWORK_ERROR') {

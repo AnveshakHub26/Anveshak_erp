@@ -188,7 +188,12 @@ export class HRService {
     ]);
 
     return {
+      items: data,
       data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
       meta: {
         total,
         page,
