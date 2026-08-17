@@ -23,11 +23,25 @@ import {
   Activity,
   BarChart3,
   Check,
+  Calendar,
+  Video,
+  ExternalLink,
+  Clock,
 } from 'lucide-react';
+import { apiRequest } from '@/lib/api-client';
 
 export default function Fnd01LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedBvSearch, setSelectedBvSearch] = useState('');
+  const [upcomingWorkshops, setUpcomingWorkshops] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    apiRequest<{ success: boolean; data: any[] }>('/api/v1/workshops/public?type=UPCOMING')
+      .then((res) => {
+        if (res.data) setUpcomingWorkshops(res.data.slice(0, 3));
+      })
+      .catch(() => {});
+  }, []);
 
   const currentYear = new Date().getFullYear();
 
@@ -178,6 +192,13 @@ export default function Fnd01LandingPage() {
 
           {/* Desktop Navigation CTAs */}
           <div className="hidden items-center space-x-3 md:flex">
+            <Link
+              href="/workshops"
+              className="rounded-lg border border-[#d49b38]/40 bg-[#182238] px-3.5 py-2 text-xs font-semibold text-[#d49b38] hover:border-[#d49b38] hover:bg-[#182238]/90 transition-all flex items-center space-x-1.5"
+            >
+              <Calendar className="h-3.5 w-3.5" />
+              <span>Workshops</span>
+            </Link>
             <Link
               href="/register"
               className="rounded-lg border border-[#d49b38]/40 bg-[#182238] px-4 py-2 text-xs font-semibold text-white hover:border-[#d49b38] transition-all"
@@ -381,6 +402,97 @@ export default function Fnd01LandingPage() {
             </div>
           </div>
         </section>
+
+        {/* 3.5 FEATURED UPCOMING WORKSHOPS */}
+        {upcomingWorkshops.length > 0 && (
+          <section className="py-12 md:py-16 bg-[#F1F5F9] border-b border-[#E2E8F0]">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+              <div className="mb-8 flex flex-col justify-between md:flex-row md:items-end border-b border-[#E2E8F0] pb-5">
+                <div>
+                  <div className="inline-flex items-center space-x-2 text-xs font-semibold text-[#d49b38] uppercase tracking-wider mb-1">
+                    <Calendar className="h-4 w-4" />
+                    <span>Technical Skilling & Learning</span>
+                  </div>
+                  <h2 className="text-2xl font-bold text-[#0F172A] sm:text-3xl">
+                    Featured Upcoming Workshops
+                  </h2>
+                  <p className="mt-1 text-xs text-[#64748B]">
+                    Participate in industry-led technical sessions, hands-on masterclasses, and executive skilling.
+                  </p>
+                </div>
+
+                <Link
+                  href="/workshops"
+                  className="mt-4 md:mt-0 inline-flex items-center space-x-1.5 text-xs font-bold text-[#d49b38] hover:text-[#b8832a] transition-colors"
+                >
+                  <span>View All Workshops</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {upcomingWorkshops.map((w) => (
+                  <div
+                    key={w.id}
+                    className="flex flex-col justify-between rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm hover:border-[#d49b38] transition-all"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="rounded-full bg-amber-50 text-[#8B5E14] border border-amber-200 px-2.5 py-0.5 text-[10px] font-bold">
+                          {w.category}
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                          {w.mode}
+                        </span>
+                      </div>
+
+                      <h3 className="text-base font-bold text-[#0F172A] mb-2 line-clamp-2">{w.title}</h3>
+                      <p className="text-xs text-[#64748B] leading-relaxed mb-4 line-clamp-2">{w.shortDescription}</p>
+
+                      <div className="space-y-1.5 text-[11px] text-[#475569] border-t border-[#F1F5F9] pt-3">
+                        <div className="flex items-center space-x-2">
+                          <Calendar className="h-3.5 w-3.5 text-[#d49b38]" />
+                          <span>{new Date(w.date).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Clock className="h-3.5 w-3.5 text-slate-400" />
+                          <span>{w.startTime} - {w.endTime}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 pt-3 border-t border-[#E2E8F0] flex items-center justify-between gap-2">
+                      <Link
+                        href={`/workshops/${w.id}`}
+                        className="text-xs font-semibold text-slate-700 hover:text-[#d49b38] transition-colors"
+                      >
+                        View Details →
+                      </Link>
+
+                      {w.registrationUrl ? (
+                        <a
+                          href={w.registrationUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center rounded-lg bg-gradient-to-r from-[#d49b38] to-[#c48b28] px-3 py-1.5 text-xs font-bold text-[#151c2e] hover:opacity-95 shadow-xs"
+                        >
+                          Register <ExternalLink className="h-3 w-3 ml-1" />
+                        </a>
+                      ) : (
+                        <Link
+                          href={`/workshops/${w.id}`}
+                          className="inline-flex items-center rounded-lg bg-[#151c2e] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#182238]"
+                        >
+                          Learn More
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* 4. CORE SERVICE OFFERINGS (RESEARCH AS A SERVICE) */}
         <section className="py-12 md:py-16 bg-white border-b border-[#E2E8F0]">

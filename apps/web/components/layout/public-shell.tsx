@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { ArrowLeft, Home } from 'lucide-react';
+import { ArrowLeft, Home, Calendar } from 'lucide-react';
 
 interface PublicShellProps {
   children: React.ReactNode;
@@ -76,6 +76,13 @@ export function PublicShell({ children }: PublicShellProps) {
 
           {/* Desktop Nav CTAs */}
           <div className="hidden items-center space-x-3 md:flex">
+            <Link
+              href="/workshops"
+              className="rounded-lg border border-[#d49b38]/40 bg-[#182238] px-3.5 py-2 text-xs font-semibold text-[#d49b38] hover:border-[#d49b38] hover:bg-[#182238]/90 transition-all flex items-center space-x-1.5"
+            >
+              <Calendar className="h-3.5 w-3.5" />
+              <span>Workshops</span>
+            </Link>
             <Link
               href="/register"
               className="rounded-lg border border-[#d49b38]/40 bg-[#182238] px-4 py-2 text-xs font-semibold text-white hover:border-[#d49b38] transition-all"
