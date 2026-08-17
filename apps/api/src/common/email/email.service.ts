@@ -138,12 +138,18 @@ export class EmailService {
   }
 
   /**
-   * Category Helper 3: Account Onboarding Email
+   * Category Helper 3: Account Onboarding Email with Credentials
    */
-  async sendAccountOnboardingEmail(toEmail: string, userName: string, roleName?: string) {
+  async sendAccountOnboardingEmail(
+    toEmail: string,
+    userName: string,
+    password?: string,
+    employeeCode?: string,
+    roleName?: string,
+  ) {
     const loginUrl = process.env.APP_URL ? `${process.env.APP_URL}/login` : 'http://localhost:3000/login';
-    const idempotencyKey = `onboard-${toEmail.toLowerCase().trim()}`;
-    const tpl = renderAccountOnboardingTemplate(userName, loginUrl, roleName);
+    const idempotencyKey = `onboard-${toEmail.toLowerCase().trim()}-${Date.now()}`;
+    const tpl = renderAccountOnboardingTemplate(userName, loginUrl, toEmail, password, employeeCode, roleName);
 
     return this.sendTransactionalEmail({
       to: toEmail,
@@ -152,7 +158,7 @@ export class EmailService {
       text: tpl.text,
       category: TransactionalEmailCategory.ACCOUNT_ONBOARDING,
       idempotencyKey,
-      metadata: { userName, roleName },
+      metadata: { userName, roleName, employeeCode },
     });
   }
 

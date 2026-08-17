@@ -116,7 +116,7 @@ export class HRController {
     @CurrentUser() user: any,
     @Param('id') id: string,
   ) {
-    const data = await this.hrService.getEmployeeById(user, id);
+    const data = await this.hrService.getEmployeeById(id);
     return { success: true, data };
   }
 

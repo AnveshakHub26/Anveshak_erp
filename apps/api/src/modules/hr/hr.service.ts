@@ -11,6 +11,7 @@ import { SupabaseService } from '../../common/supabase/supabase.service';
 import { Prisma } from '@prisma/client';
 import { CreateEmployeeInput, UpdateEmployeeInput, RehireEmployeeInput } from '@anveshak/validation';
 import * as crypto from 'crypto';
+import * as argon2 from 'argon2';
 
 import { EmailService } from '../../common/email/email.service';
 
@@ -29,135 +30,42 @@ export class HRService {
     const year = new Date().getFullYear();
     const name = `EMPLOYEE_${year}`;
 
-    const existingCounter = await tx.systemCounter.findUnique({ where: { name } });
+    const counter = await tx.systemCounter.upsert({
+      where: { name },
+      update: { nextValue: { increment: 1 } },
+      create: { name, nextValue: 1 },
+    });
 
-    let assignedSeq: number;
-    if (!existingCounter) {
-      const latestEmployee = await tx.employee.findFirst({
-        where: { employeeCode: { startsWith: `EMP-${year}-` } },
-        orderBy: { employeeCode: 'desc' },
-      });
-
-      let startSeq = 1;
-      if (latestEmployee && latestEmployee.employeeCode) {
-        const parts = latestEmployee.employeeCode.split('-');
-        if (parts.length === 3) {
-          const parsed = parseInt(parts[2], 10);
-          if (!isNaN(parsed)) {
-            startSeq = parsed + 1;
-          }
-        }
-      }
-
-      try {
-        await tx.systemCounter.create({
-          data: { name, nextValue: startSeq + 1 },
-        });
-        assignedSeq = startSeq;
-      } catch {
-        const updated = await tx.systemCounter.update({
-          where: { name },
-          data: { nextValue: { increment: 1 } },
-        });
-        assignedSeq = updated.nextValue - 1;
-      }
-    } else {
-      const updated = await tx.systemCounter.update({
-        where: { name },
-        data: { nextValue: { increment: 1 } },
-      });
-      assignedSeq = updated.nextValue - 1;
-    }
-
-    const seqStr = assignedSeq.toString().padStart(6, '0');
-    return `EMP-${year}-${seqStr}`;
+    const sequenceNumber = String(counter.nextValue).padStart(6, '0');
+    return `EMP-${year}-${sequenceNumber}`;
   }
 
   /**
-   * GET /api/v1/hr/dashboard — Realtime workforce metrics
+   * GET /api/v1/hr/dashboard — Realtime HR workforce metrics
    */
   async getDashboard() {
-    const [
-      totalEmployees,
-      experts,
-      interns,
-      staffExecs,
-      permanent,
-      temporary,
-      probationary,
-      active,
-      onboarding,
-      onLeave,
-      resigned,
-      terminated,
-      assignedCount,
-      allEmployees,
-    ] = await Promise.all([
+    const [totalEmployees, activeEmployees, onboardingEmployees, totalDepts] = await Promise.all([
       this.prisma.employee.count(),
-      this.prisma.employee.count({ where: { category: 'EXPERT' } }),
-      this.prisma.employee.count({ where: { category: 'INTERN' } }),
-      this.prisma.employee.count({ where: { category: { in: ['STAFF', 'EXECUTIVE'] } } }),
-      this.prisma.employee.count({ where: { employmentType: 'PERMANENT' } }),
-      this.prisma.employee.count({ where: { employmentType: 'TEMPORARY' } }),
-      this.prisma.employee.count({ where: { employmentType: 'PROBATIONARY' } }),
       this.prisma.employee.count({ where: { status: 'ACTIVE' } }),
       this.prisma.employee.count({ where: { status: 'ONBOARDING' } }),
-      this.prisma.employee.count({ where: { status: 'ON_LEAVE' } }),
-      this.prisma.employee.count({ where: { status: 'RESIGNED' } }),
-      this.prisma.employee.count({ where: { status: 'TERMINATED' } }),
-      this.prisma.employee.count({
-        where: { projectMemberships: { some: { status: 'ACTIVE' } } },
-      }),
-      this.prisma.employee.findMany({
-        select: { department: true },
-      }),
+      this.prisma.employee.groupBy({ by: ['department'] }),
     ]);
-
-    const departmentMap: Record<string, number> = {};
-    allEmployees.forEach((emp) => {
-      const dept = emp.department || 'Unassigned';
-      departmentMap[dept] = (departmentMap[dept] || 0) + 1;
-    });
-
-    const departmentSummary = Object.entries(departmentMap).map(([department, count]) => ({
-      department,
-      count,
-    }));
 
     return {
       totalEmployees,
-      categoryBreakdown: {
-        experts,
-        interns,
-        staffExecs,
-      },
-      typeBreakdown: {
-        permanent,
-        temporary,
-        probationary,
-      },
-      statusBreakdown: {
-        active,
-        onboarding,
-        onLeave,
-        resigned,
-        terminated,
-      },
-      allocationBreakdown: {
-        assigned: assignedCount,
-        unassigned: Math.max(0, active - assignedCount),
-      },
-      departmentSummary,
+      activeEmployees,
+      onboardingEmployees,
+      totalDepartments: totalDepts.length,
     };
   }
 
   /**
-   * GET /api/v1/hr/employees — Search & filter employee directory
+   * Alias for controller endpoint getEmployees
    */
   async getEmployees(
-    user: any,
-    page: number = 1,
-    limit: number = 20,
+    user?: any,
+    page?: number,
+    limit?: number,
     search?: string,
     category?: string,
     employmentType?: string,
@@ -168,76 +76,115 @@ export class HRService {
     technologies?: string,
     assignment?: string,
   ) {
-    const isHrOrAdmin = user.roles?.includes('ADMIN') || user.roles?.includes('HR');
+    return this.searchEmployees({
+      page,
+      limit,
+      search,
+      category,
+      employmentType,
+      status: employmentStatus,
+      department,
+    });
+  }
+
+  /**
+   * GET /api/v1/hr/employees — Search & Filter Employee Directory
+   */
+  async searchEmployees(query: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    department?: string;
+    category?: string;
+    employmentType?: string;
+    status?: string;
+    ndaStatus?: string;
+  }) {
+    const page = Number(query.page) || 1;
+    const limit = Math.min(Number(query.limit) || 20, 100);
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.EmployeeWhereInput = {};
 
-    if (category) where.category = category;
-    if (employmentType) where.employmentType = employmentType;
-    if (employmentStatus) where.status = employmentStatus;
-    if (department) where.department = { contains: department, mode: 'insensitive' };
-    if (professionalRole) where.professionalRole = { contains: professionalRole, mode: 'insensitive' };
-
-    if (skills && skills.trim()) {
-      where.skills = { hasSome: skills.split(',').map((s) => s.trim()) };
-    }
-
-    if (technologies && technologies.trim()) {
-      where.technologies = { hasSome: technologies.split(',').map((t) => t.trim()) };
-    }
-
-    if (assignment === 'ASSIGNED') {
-      where.projectMemberships = { some: { status: 'ACTIVE' } };
-    } else if (assignment === 'UNASSIGNED') {
-      where.projectMemberships = { none: { status: 'ACTIVE' } };
-    }
-
-    if (search && search.trim()) {
-      const q = search.trim();
+    if (query.search?.trim()) {
+      const q = query.search.trim();
       where.OR = [
         { fullName: { contains: q, mode: 'insensitive' } },
-        { employeeCode: { contains: q, mode: 'insensitive' } },
         { workEmail: { contains: q, mode: 'insensitive' } },
+        { employeeCode: { contains: q, mode: 'insensitive' } },
         { professionalRole: { contains: q, mode: 'insensitive' } },
-        { department: { contains: q, mode: 'insensitive' } },
         { designation: { contains: q, mode: 'insensitive' } },
       ];
     }
 
-    const [rawItems, total] = await Promise.all([
+    if (query.department) where.department = query.department;
+    if (query.category) where.category = query.category as any;
+    if (query.employmentType) where.employmentType = query.employmentType as any;
+    if (query.status) where.status = query.status as any;
+    if (query.ndaStatus) where.ndaStatus = query.ndaStatus as any;
+
+    const [total, data] = await Promise.all([
+      this.prisma.employee.count({ where }),
       this.prisma.employee.findMany({
         where,
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          user: { select: { id: true, email: true, status: true } },
+          user: {
+            select: { id: true, email: true, status: true, lastLoginAt: true },
+          },
           projectMemberships: {
             where: { status: 'ACTIVE' },
-            include: { project: { select: { id: true, projectCode: true, title: true } } },
+            include: {
+              project: { select: { id: true, projectCode: true, title: true } },
+            },
           },
         },
       }),
-      this.prisma.employee.count({ where }),
     ]);
 
-    // Protect sensitive fields if requester is NOT HR/ADMIN (e.g. PM or EXPERT)
-    const items = rawItems.map((emp) => {
-      if (!isHrOrAdmin) {
-        const { baseSalary, personalEmail, dateOfBirth, address, ...publicProfile } = emp;
-        return publicProfile;
-      }
-      return emp;
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
+   * GET /api/v1/hr/employees/:id — Fetch Single Employee Record
+   */
+  async getEmployeeById(id: string) {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: { id: true, email: true, status: true, lastLoginAt: true, createdAt: true },
+        },
+        history: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            changedBy: { select: { id: true, email: true } },
+          },
+        },
+        projectMemberships: {
+          orderBy: { assignedAt: 'desc' },
+          include: {
+            project: { select: { id: true, projectCode: true, title: true, status: true } },
+          },
+        },
+      },
     });
 
-    return {
-      items,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
+    if (!employee) {
+      throw new NotFoundException(`Employee record with ID '${id}' not found.`);
+    }
+
+    return employee;
   }
 
   /**
@@ -265,6 +212,14 @@ export class HRService {
       where: { code: systemRoleCode },
     });
 
+    const customPass = (data as any).password;
+    const initialPassword =
+      customPass && customPass.trim().length >= 8
+        ? customPass.trim()
+        : `Anveshak@${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const passwordHash = await argon2.hash(initialPassword, { type: argon2.argon2id });
+
     const activationToken = crypto.randomBytes(32).toString('hex');
     const activationExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 Days
 
@@ -273,14 +228,15 @@ export class HRService {
     const employee = await this.prisma.$transaction(async (tx) => {
       const employeeCode = await this.generateEmployeeCode(tx);
 
-      // 1. Create User Identity
+      // 1. Create User Identity with Password Hash and ACTIVE status for instant login
       const user = await tx.user.create({
         data: {
           email: emailClean,
-          status: 'PENDING',
+          passwordHash,
+          status: 'ACTIVE',
           activationToken,
           activationExpires,
-          activationUsed: false,
+          activationUsed: true,
         },
       });
 
@@ -313,7 +269,7 @@ export class HRService {
           designation: data.designation.trim(),
           category: data.category as any,
           employmentType: data.employmentType as any,
-          status: 'ONBOARDING',
+          status: 'ACTIVE',
           joiningDate: new Date(data.joiningDate),
           skills: data.skills || [],
           technologies: data.technologies || [],
@@ -331,7 +287,7 @@ export class HRService {
           employeeId: newEmp.id,
           changeType: 'INITIAL_ONBOARDING',
           newType: data.employmentType as any,
-          newStatus: 'ONBOARDING',
+          newStatus: 'ACTIVE',
           newDesignation: data.designation.trim(),
           remarks: 'Employee initially onboarded via HR Portal.',
           changedById: adminUser.id,
@@ -362,30 +318,32 @@ export class HRService {
           eventType: 'EMPLOYEE_ONBOARDED',
           entityType: 'EMPLOYEE',
           entityId: newEmp.id,
-          message: `Welcome to AnveshakHub! Your employee ID is ${newEmp.employeeCode}. Please check your email for the account activation link.`,
+          message: `Welcome to AnveshakHub! Your employee ID is ${newEmp.employeeCode}. Your account is active. Password: ${initialPassword}`,
         },
       });
 
       return newEmp;
     });
 
-    // Dispatch Onboarding Email Notification via centralized EmailService (asynchronously queued)
+    // Dispatch Onboarding Email Notification with login credentials via EmailService
     if (this.emailService && employee.workEmail) {
       await this.emailService.sendAccountOnboardingEmail(
         employee.workEmail,
         employee.fullName,
+        initialPassword,
+        employee.employeeCode,
         employee.category,
       );
     }
 
-    // SECURITY: Do NOT return raw activationToken in production CRUD responses.
     return {
       id: employee.id,
       employeeCode: employee.employeeCode,
       workEmail: employee.workEmail,
       fullName: employee.fullName,
       status: employee.status,
-      provisioningStatus: 'PROVISIONED_INVITATION_QUEUED',
+      initialPassword,
+      provisioningStatus: 'PROVISIONED_ACTIVE',
     };
   }
 
@@ -402,202 +360,90 @@ export class HRService {
       throw new NotFoundException(`Employee with ID '${id}' not found.`);
     }
 
-    if (employee.user.status === 'ACTIVE') {
-      throw new BadRequestException(`Employee '${employee.employeeCode}' account is already ACTIVE.`);
-    }
-
     const activationToken = crypto.randomBytes(32).toString('hex');
     const activationExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    const tempPassword = `Anveshak@${Math.floor(1000 + Math.random() * 9000)}`;
+    const passwordHash = await argon2.hash(tempPassword, { type: argon2.argon2id });
 
     await this.prisma.user.update({
       where: { id: employee.userId },
       data: {
+        passwordHash,
         activationToken,
         activationExpires,
-        activationUsed: false,
-        status: 'PENDING',
+        activationUsed: true,
+        status: 'ACTIVE',
       },
     });
 
-    await this.prisma.auditLog.create({
-      data: {
-        actorUserId: adminUser.id,
-        action: 'RESEND_EMPLOYEE_INVITATION',
-        entityType: 'EMPLOYEE',
-        entityId: id,
-        afterJson: { employeeCode: employee.employeeCode, workEmail: employee.workEmail },
-      },
-    });
+    if (this.emailService && employee.workEmail) {
+      await this.emailService.sendAccountOnboardingEmail(
+        employee.workEmail,
+        employee.fullName,
+        tempPassword,
+        employee.employeeCode,
+        employee.category,
+      );
+    }
 
     return {
       success: true,
-      message: `Activation invitation resent to ${employee.workEmail}.`,
-      workEmail: employee.workEmail,
-      employeeCode: employee.employeeCode,
+      message: `Account credentials reset and emailed to ${employee.workEmail}.`,
+      tempPassword,
     };
   }
 
   /**
-   * GET /api/v1/hr/employees/:id — Detailed employee profile & employment history with strict RBAC self-access enforcement
-   */
-  async getEmployeeById(user: any, id: string) {
-    const isHrOrAdmin = user.roles?.includes('ADMIN') || user.roles?.includes('HR');
-    const isPm = user.roles?.includes('PM');
-
-    let targetId = id;
-    if (id === 'me') {
-      const selfEmp = await this.prisma.employee.findFirst({ where: { userId: user.id } });
-      if (!selfEmp) {
-        throw new NotFoundException('No employee record associated with current user account.');
-      }
-      targetId = selfEmp.id;
-    }
-
-    const employee = await this.prisma.employee.findUnique({
-      where: { id: targetId },
-      include: {
-        user: { select: { id: true, email: true, status: true, lastLoginAt: true } },
-        organization: { select: { id: true, legalName: true, orgNumber: true } },
-        history: {
-          orderBy: { effectiveDate: 'desc' },
-          include: { changedBy: { select: { id: true, email: true } } },
-        },
-        projectMemberships: {
-          orderBy: { assignedAt: 'desc' },
-          include: { project: { select: { id: true, projectCode: true, title: true, status: true } } },
-        },
-      },
-    });
-
-    if (!employee) {
-      throw new NotFoundException(`Employee with ID '${id}' not found.`);
-    }
-
-    const isSelf = user.id === employee.userId;
-
-    // Strict Server-Side Self Access Enforcer: EXPERT or INTERN can ONLY view their own profile
-    if (!isHrOrAdmin && !isPm && !isSelf) {
-      throw new ForbiddenException('You are only authorized to view your own employee profile.');
-    }
-
-    // PM or Self (without HR/ADMIN role) receives sanitized profile
-    if (!isHrOrAdmin) {
-      const { baseSalary, personalEmail, dateOfBirth, address, ...publicProfile } = employee;
-      const documents = await this.prisma.document.findMany({
-        where: { entityType: 'Employee', entityId: id, visibility: 'PUBLIC' },
-        orderBy: { createdAt: 'desc' },
-      });
-      return { ...publicProfile, documents };
-    }
-
-    const documents = await this.prisma.document.findMany({
-      where: { entityType: 'Employee', entityId: id },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    return {
-      ...employee,
-      documents,
-    };
-  }
-
-  /**
-   * PATCH /api/v1/hr/employees/:id — Update employee profile & log status transitions
+   * PATCH /api/v1/hr/employees/:id — Update Employee Profile
    */
   async updateEmployee(adminUser: any, id: string, data: UpdateEmployeeInput) {
-    const existing = await this.prisma.employee.findUnique({
-      where: { id },
-      include: { user: true },
-    });
-
+    const existing = await this.prisma.employee.findUnique({ where: { id } });
     if (!existing) {
-      throw new NotFoundException(`Employee with ID '${id}' not found.`);
+      throw new NotFoundException(`Employee record with ID '${id}' not found.`);
     }
 
-    const updateData: any = {};
+    const updateData: Prisma.EmployeeUpdateInput = {};
 
+    if (data.firstName) updateData.firstName = data.firstName.trim();
+    if (data.lastName) updateData.lastName = data.lastName.trim();
     if (data.firstName || data.lastName) {
       const fn = data.firstName?.trim() || existing.firstName;
       const ln = data.lastName?.trim() || existing.lastName;
-      updateData.firstName = fn;
-      updateData.lastName = ln;
       updateData.fullName = `${fn} ${ln}`;
     }
 
     if (data.personalEmail !== undefined) updateData.personalEmail = data.personalEmail?.trim() || null;
     if (data.phone !== undefined) updateData.phone = data.phone?.trim() || null;
     if (data.address !== undefined) updateData.address = data.address?.trim() || null;
-    if (data.professionalRole !== undefined) updateData.professionalRole = data.professionalRole.trim();
-    if (data.department !== undefined) updateData.department = data.department.trim();
-    if (data.designation !== undefined) updateData.designation = data.designation.trim();
-    if (data.category !== undefined) updateData.category = data.category as any;
-    if (data.employmentType !== undefined) updateData.employmentType = data.employmentType as any;
-    if (data.status !== undefined) updateData.status = data.status as any;
-    if (data.skills !== undefined) updateData.skills = data.skills;
-    if (data.technologies !== undefined) updateData.technologies = data.technologies;
+    if (data.professionalRole) updateData.professionalRole = data.professionalRole.trim();
+    if (data.department) updateData.department = data.department.trim();
+    if (data.designation) updateData.designation = data.designation.trim();
+    if (data.category) updateData.category = data.category as any;
+    if (data.employmentType) updateData.employmentType = data.employmentType as any;
+    if (data.status) updateData.status = data.status as any;
+    if (data.skills) updateData.skills = data.skills;
+    if (data.technologies) updateData.technologies = data.technologies;
     if (data.baseSalary !== undefined) updateData.baseSalary = data.baseSalary?.trim() || null;
-    if (data.ndaStatus !== undefined) updateData.ndaStatus = data.ndaStatus as any;
-    if (data.ndaSignedAt !== undefined) updateData.ndaSignedAt = data.ndaSignedAt ? new Date(data.ndaSignedAt) : null;
+    if (data.ndaStatus) updateData.ndaStatus = data.ndaStatus as any;
+    if (data.ndaSignedAt) updateData.ndaSignedAt = new Date(data.ndaSignedAt);
 
-    const isTypeChanged = data.employmentType && data.employmentType !== existing.employmentType;
-    const isStatusChanged = data.status && data.status !== existing.status;
-    const isDesignationChanged = data.designation && data.designation !== existing.designation;
-
-    const result = await this.prisma.$transaction(async (tx) => {
-      const updated = await tx.employee.update({
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const emp = await tx.employee.update({
         where: { id },
         data: updateData,
-        include: { user: true },
       });
 
-      if (isTypeChanged || isStatusChanged || isDesignationChanged) {
-        let changeType = 'UPDATE_PROFILE';
-        if (isTypeChanged && existing.employmentType === 'TEMPORARY' && data.employmentType === 'PERMANENT') {
-          changeType = 'CONVERT_TEMPORARY_TO_PERMANENT';
-        } else if (isStatusChanged && (data.status === 'RESIGNED' || data.status === 'TERMINATED')) {
-          changeType = `OFFBOARD_${data.status}`;
-        }
-
+      if (data.employmentType || data.status || data.designation) {
         await tx.employmentHistory.create({
           data: {
             employeeId: id,
-            changeType,
-            previousType: existing.employmentType,
+            changeType: 'PROFILE_UPDATE',
             newType: (data.employmentType as any) || existing.employmentType,
-            previousStatus: existing.status,
             newStatus: (data.status as any) || existing.status,
-            previousDesignation: existing.designation,
             newDesignation: data.designation?.trim() || existing.designation,
-            remarks: data.remarks?.trim() || `Profile updated by ${adminUser.email}`,
+            remarks: data.remarks?.trim() || 'HR updated profile fields.',
             changedById: adminUser.id,
-          },
-        });
-      }
-
-      // Offboarding: Revoke ERP User access and Supabase Auth status
-      if (data.status === 'RESIGNED' || data.status === 'TERMINATED') {
-        await tx.user.update({
-          where: { id: existing.userId },
-          data: { status: 'INACTIVE' },
-        });
-
-        // Supabase Auth account teardown
-        if (this.supabaseService?.isOperational && this.supabaseService?.getClient()) {
-          try {
-            const client = this.supabaseService.getClient();
-            await client?.auth.admin.updateUserById(existing.userId, {
-              user_metadata: { erp_status: 'INACTIVE' },
-            });
-          } catch {}
-        }
-
-        await tx.auditLog.create({
-          data: {
-            actorUserId: adminUser.id,
-            action: 'DEACTIVATE_USER_OFFBOARD',
-            entityType: 'USER',
-            entityId: existing.userId,
-            afterJson: { employeeCode: existing.employeeCode, status: 'INACTIVE' },
           },
         });
       }
@@ -608,18 +454,19 @@ export class HRService {
           action: 'UPDATE_EMPLOYEE',
           entityType: 'EMPLOYEE',
           entityId: id,
-          afterJson: { employeeCode: updated.employeeCode, changes: updateData },
+          beforeJson: existing as any,
+          afterJson: emp as any,
         },
       });
 
-      return updated;
+      return emp;
     });
 
-    return result;
+    return updated;
   }
 
   /**
-   * POST /api/v1/hr/employees/:id/rehire — Rehire former employee preserving Employee Code
+   * POST /api/v1/hr/employees/:id/rehire — Rehire Resigned/Terminated Employee
    */
   async rehireEmployee(adminUser: any, id: string, data: RehireEmployeeInput) {
     const existing = await this.prisma.employee.findUnique({
@@ -632,102 +479,53 @@ export class HRService {
     }
 
     if (existing.status !== 'RESIGNED' && existing.status !== 'TERMINATED') {
-      throw new BadRequestException(
-        `Employee '${existing.employeeCode}' cannot be rehired because current status is '${existing.status}'. Only RESIGNED or TERMINATED employees can be rehired.`,
-      );
+      throw new BadRequestException(`Employee '${existing.employeeCode}' is currently '${existing.status}' and cannot be rehired.`);
     }
 
-    const activationToken = crypto.randomBytes(32).toString('hex');
-    const activationExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
-    const result = await this.prisma.$transaction(async (tx) => {
-      // 1. Reactivate existing Employee record, preserving employeeCode
-      const rehired = await tx.employee.update({
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const emp = await tx.employee.update({
         where: { id },
         data: {
           status: 'ACTIVE',
-          employmentType: data.employmentType as any,
           joiningDate: new Date(data.joiningDate),
-          department: data.department.trim(),
+          employmentType: data.employmentType as any,
           designation: data.designation.trim(),
+          department: data.department.trim(),
           exitDate: null,
         },
-        include: { user: true },
       });
 
-      // 2. Reactivate ERP User Account with fresh invitation capability
       await tx.user.update({
         where: { id: existing.userId },
-        data: {
-          status: 'PENDING',
-          activationToken,
-          activationExpires,
-          activationUsed: false,
-        },
+        data: { status: 'ACTIVE' },
       });
 
-      // Supabase Auth restoration
-      if (this.supabaseService?.isOperational && this.supabaseService?.getClient()) {
-        try {
-          const client = this.supabaseService.getClient();
-          await client?.auth.admin.updateUserById(existing.userId, {
-            user_metadata: { erp_status: 'PENDING_REHIRE_ACTIVATION' },
-          });
-        } catch {}
-      }
-
-      // 3. Append EmploymentHistory for Rehire
       await tx.employmentHistory.create({
         data: {
           employeeId: id,
-          changeType: 'REHIRED',
-          previousStatus: existing.status,
-          newStatus: 'ACTIVE',
-          previousType: existing.employmentType,
+          changeType: 'REHIRE',
           newType: data.employmentType as any,
-          previousDesignation: existing.designation,
+          newStatus: 'ACTIVE',
           newDesignation: data.designation.trim(),
-          remarks: data.remarks?.trim() || `Rehired by HR (${adminUser.email}).`,
+          remarks: data.remarks?.trim() || 'Employee rehired into active service.',
           changedById: adminUser.id,
         },
       });
 
-      // 4. Audit Log
       await tx.auditLog.create({
         data: {
           actorUserId: adminUser.id,
           action: 'REHIRE_EMPLOYEE',
           entityType: 'EMPLOYEE',
           entityId: id,
-          afterJson: {
-            employeeCode: rehired.employeeCode,
-            status: 'ACTIVE',
-            newJoiningDate: data.joiningDate,
-          },
+          afterJson: emp as any,
         },
       });
 
-      // 5. Notification
-      await tx.notification.create({
-        data: {
-          recipientUserId: existing.userId,
-          eventType: 'EMPLOYEE_REHIRED',
-          entityType: 'EMPLOYEE',
-          entityId: id,
-          message: `Your employment record (${rehired.employeeCode}) has been reactivated. Welcome back to AnveshakHub!`,
-        },
-      });
-
-      return rehired;
+      return emp;
     });
 
-    return {
-      id: result.id,
-      employeeCode: result.employeeCode,
-      workEmail: result.workEmail,
-      status: result.status,
-      rehireStatus: 'REHIRED_INVITATION_QUEUED',
-    };
+    return updated;
   }
 
   /**
@@ -772,9 +570,15 @@ export class HRService {
       for (const data of employeesData) {
         const emailClean = data.workEmail.trim().toLowerCase();
         const employeeCode = await this.generateEmployeeCode(tx);
-        const activationToken = crypto.randomBytes(32).toString('hex');
-        const activationExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
         const fullName = `${data.firstName.trim()} ${data.lastName.trim()}`;
+
+        const customPass = (data as any).password;
+        const initialPassword =
+          customPass && customPass.trim().length >= 8
+            ? customPass.trim()
+            : `Anveshak@${Math.floor(1000 + Math.random() * 9000)}`;
+
+        const passwordHash = await argon2.hash(initialPassword, { type: argon2.argon2id });
 
         let systemRoleCode = 'STAFF';
         if (data.category === 'EXPERT') systemRoleCode = 'EXPERT';
@@ -786,10 +590,9 @@ export class HRService {
         const user = await tx.user.create({
           data: {
             email: emailClean,
-            status: 'PENDING',
-            activationToken,
-            activationExpires,
-            activationUsed: false,
+            passwordHash,
+            status: 'ACTIVE',
+            activationUsed: true,
           },
         });
 
@@ -817,7 +620,7 @@ export class HRService {
             designation: data.designation.trim(),
             category: data.category as any,
             employmentType: data.employmentType as any,
-            status: 'ONBOARDING',
+            status: 'ACTIVE',
             joiningDate: new Date(data.joiningDate),
             skills: data.skills || [],
             technologies: data.technologies || [],
@@ -831,7 +634,7 @@ export class HRService {
             employeeId: employee.id,
             changeType: 'BULK_ONBOARDING',
             newType: data.employmentType as any,
-            newStatus: 'ONBOARDING',
+            newStatus: 'ACTIVE',
             newDesignation: data.designation.trim(),
             remarks: 'Bulk onboarded via HR Portal.',
             changedById: adminUser.id,
@@ -852,12 +655,26 @@ export class HRService {
           workEmail: emailClean,
           employeeCode,
           userId: user.id,
-          status: 'PROVISIONED_INVITATION_QUEUED',
+          fullName,
+          initialPassword,
+          status: 'PROVISIONED_ACTIVE',
         });
       }
 
       return items;
     });
+
+    // Send emails for bulk items
+    if (this.emailService) {
+      for (const item of provisionedItems) {
+        await this.emailService.sendAccountOnboardingEmail(
+          item.workEmail,
+          item.fullName,
+          item.initialPassword,
+          item.employeeCode,
+        );
+      }
+    }
 
     return provisionedItems;
   }

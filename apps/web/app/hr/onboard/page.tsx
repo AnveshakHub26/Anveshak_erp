@@ -55,6 +55,7 @@ export default function HROnboardPage() {
     employmentType: 'PERMANENT' as 'PERMANENT' | 'PROBATIONARY' | 'TEMPORARY' | 'CONTRACT' | 'PART_TIME',
     joiningDate: new Date().toISOString().split('T')[0],
     baseSalary: '',
+    password: '',
     ndaStatus: 'PENDING' as 'PENDING' | 'SIGNED_PHYSICAL' | 'SIGNED_ELECTRONIC' | 'EXPIRED',
   });
 
@@ -383,9 +384,9 @@ export default function HROnboardPage() {
                 </div>
 
                 <div>
-                  <h2 className="text-xl font-bold text-[#0F172A]">Employee Onboarded & Account Provisioned!</h2>
+                  <h2 className="text-xl font-bold text-[#0F172A]">Employee Onboarded &amp; Account Provisioned!</h2>
                   <p className="text-xs text-[#64748B] mt-1">
-                    An activation invitation has been generated and dispatched to the official email.
+                    An onboarding email containing these login credentials has been sent to <strong>{singleSuccess.workEmail}</strong>.
                   </p>
                 </div>
 
@@ -399,12 +400,20 @@ export default function HROnboardPage() {
                     <span className="text-[#0F172A] font-semibold">{singleSuccess.fullName}</span>
                   </div>
                   <div className="flex justify-between border-b border-[#E2E8F0] pb-2">
-                    <span className="text-[#64748B]">Work Email:</span>
-                    <span className="text-[#0F172A]">{singleSuccess.workEmail}</span>
+                    <span className="text-[#64748B]">Login Work Email:</span>
+                    <span className="text-[#0F172A] font-bold">{singleSuccess.workEmail}</span>
                   </div>
+                  {singleSuccess.initialPassword && (
+                    <div className="flex justify-between border-b border-[#E2E8F0] pb-2 bg-amber-50/60 p-2 rounded border border-amber-200">
+                      <span className="text-amber-800 font-sans font-bold">Initial Password:</span>
+                      <span className="text-[#0F172A] font-bold bg-white px-2 py-0.5 rounded border border-amber-300">
+                        {singleSuccess.initialPassword}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
-                    <span className="text-[#64748B]">Provisioning Status:</span>
-                    <span className="text-emerald-600 font-semibold">{singleSuccess.provisioningStatus}</span>
+                    <span className="text-[#64748B]">Account Status:</span>
+                    <span className="text-emerald-600 font-semibold">{singleSuccess.provisioningStatus || 'ACTIVE'}</span>
                   </div>
                 </div>
 
@@ -509,6 +518,20 @@ export default function HROnboardPage() {
                           placeholder="john.personal@gmail.com"
                           className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-[#0F172A] placeholder-[#94a3b8] focus:border-[#d49b38] focus:bg-white focus:outline-none"
                         />
+                      </div>
+
+                      <div>
+                        <label className="block text-[#64748B] font-medium mb-1">Account Password (Optional)</label>
+                        <input
+                          type="text"
+                          value={singleForm.password}
+                          onChange={(e) => setSingleForm({ ...singleForm, password: e.target.value })}
+                          placeholder="Leave blank to auto-generate password"
+                          className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-[#0F172A] placeholder-[#94a3b8] focus:border-[#d49b38] focus:bg-white focus:outline-none font-mono"
+                        />
+                        <span className="text-[10px] text-[#64748B] block mt-0.5">
+                          Set initial password or leave empty to auto-generate e.g. Anveshak@2026!
+                        </span>
                       </div>
 
                       <div>
