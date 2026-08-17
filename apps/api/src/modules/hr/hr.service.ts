@@ -44,10 +44,33 @@ export class HRService {
    * GET /api/v1/hr/dashboard — Realtime HR workforce metrics
    */
   async getDashboard() {
-    const [totalEmployees, activeEmployees, onboardingEmployees, totalDepts] = await Promise.all([
+    const [
+      totalEmployees,
+      activeEmployees,
+      onboardingEmployees,
+      resignedEmployees,
+      terminatedEmployees,
+      experts,
+      interns,
+      staffExecs,
+      permanent,
+      temporary,
+      probationary,
+      assignedCount,
+      totalDepts,
+    ] = await Promise.all([
       this.prisma.employee.count(),
       this.prisma.employee.count({ where: { status: 'ACTIVE' } }),
       this.prisma.employee.count({ where: { status: 'ONBOARDING' } }),
+      this.prisma.employee.count({ where: { status: 'RESIGNED' } }),
+      this.prisma.employee.count({ where: { status: 'TERMINATED' } }),
+      this.prisma.employee.count({ where: { category: 'EXPERT' } }),
+      this.prisma.employee.count({ where: { category: 'INTERN' } }),
+      this.prisma.employee.count({ where: { category: { in: ['STAFF', 'EXECUTIVE'] } } }),
+      this.prisma.employee.count({ where: { employmentType: 'PERMANENT' } }),
+      this.prisma.employee.count({ where: { employmentType: 'TEMPORARY' } }),
+      this.prisma.employee.count({ where: { employmentType: 'PROBATIONARY' } }),
+      this.prisma.projectMember.groupBy({ by: ['employeeId'] }).then((r) => r.length),
       this.prisma.employee.groupBy({ by: ['department'] }),
     ]);
 
@@ -56,6 +79,26 @@ export class HRService {
       activeEmployees,
       onboardingEmployees,
       totalDepartments: totalDepts.length,
+      allocationBreakdown: {
+        assigned: assignedCount,
+        unassigned: Math.max(0, totalEmployees - assignedCount),
+      },
+      categoryBreakdown: {
+        experts,
+        interns,
+        staffExecs,
+      },
+      typeBreakdown: {
+        permanent,
+        temporary,
+        probationary,
+      },
+      statusBreakdown: {
+        active: activeEmployees,
+        onboarding: onboardingEmployees,
+        resigned: resignedEmployees,
+        terminated: terminatedEmployees,
+      },
     };
   }
 
