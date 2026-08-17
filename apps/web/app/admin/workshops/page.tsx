@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { usePermissions } from '@/hooks/usePermissions';
 import { apiRequest } from '@/lib/api-client';
-import { AppShell } from '@/components/layout/app-shell';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -264,8 +263,7 @@ export default function AdminWorkshopsPage() {
   };
 
   return (
-    <AppShell>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Top Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -815,6 +813,5 @@ export default function AdminWorkshopsPage() {
           </div>
         )}
       </div>
-    </AppShell>
   );
 }

@@ -16,6 +16,7 @@ const PUBLIC_ROUTES = [
   '/terms',
   '/support',
   '/unauthorized',
+  '/workshops',
 ];
 
 export function PersistentShell({ children }: { children: React.ReactNode }) {
@@ -23,6 +24,7 @@ export function PersistentShell({ children }: { children: React.ReactNode }) {
 
   const isPublicRoute =
     PUBLIC_ROUTES.includes(pathname) ||
+    pathname.startsWith('/workshops') ||
     pathname.startsWith('/_not-found') ||
     pathname === '';
 
