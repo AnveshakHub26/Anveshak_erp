@@ -326,6 +326,27 @@ export class WorkshopsService {
       },
     });
 
+    // Notify active users when workshop is published
+    if (status === 'PUBLISHED' && existing.status !== 'PUBLISHED') {
+      const activeUsers = await this.prisma.user.findMany({
+        where: { status: 'ACTIVE' },
+        select: { id: true },
+        take: 50,
+      });
+
+      if (activeUsers.length > 0) {
+        await this.prisma.notification.createMany({
+          data: activeUsers.map((u) => ({
+            recipientUserId: u.id,
+            eventType: 'WORKSHOP_PUBLISHED',
+            entityType: 'WORKSHOP',
+            entityId: id,
+            message: `New Technical Workshop Published: "${updated.title}" scheduled for ${new Date(updated.date).toLocaleDateString()}.`,
+          })),
+        });
+      }
+    }
+
     return updated;
   }
 }
