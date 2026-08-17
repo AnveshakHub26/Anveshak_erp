@@ -67,7 +67,10 @@ export default function PublicWorkshopsPage() {
   }, [searchQuery, categoryFilter]);
 
   useEffect(() => {
-    fetchPublicWorkshops();
+    const timer = setTimeout(() => {
+      fetchPublicWorkshops();
+    }, 300);
+    return () => clearTimeout(timer);
   }, [fetchPublicWorkshops]);
 
   const now = new Date();

@@ -151,7 +151,10 @@ export default function AdminWorkshopsPage() {
       router.push('/unauthorized');
       return;
     }
-    fetchWorkshops();
+    const timer = setTimeout(() => {
+      fetchWorkshops();
+    }, 300);
+    return () => clearTimeout(timer);
   }, [hasRole, router, fetchWorkshops]);
 
   // Open Create Modal
