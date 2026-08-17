@@ -552,8 +552,11 @@ export class HRService {
         data: {
           employeeId: id,
           changeType: 'REHIRE',
+          previousType: existing.employmentType,
           newType: data.employmentType as any,
+          previousStatus: existing.status,
           newStatus: 'ACTIVE',
+          previousDesignation: existing.designation,
           newDesignation: data.designation.trim(),
           remarks: data.remarks?.trim() || 'Employee rehired into active service.',
           changedById: adminUser.id,

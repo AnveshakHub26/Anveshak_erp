@@ -972,8 +972,8 @@ export default function HREmployeeDetailPage() {
                 </button>
               </div>
 
-              <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/20 p-3 text-[11px] text-emerald-400">
-                Rehire reuses permanent Employee Code <span className="font-bold font-mono">{employee.employeeCode}</span> and reactivates the existing Employee master record.
+              <div className="rounded-lg border border-emerald-500/40 bg-emerald-950/30 p-3 text-xs text-emerald-300 font-medium leading-relaxed">
+                This will reactivate <span className="font-bold font-mono text-emerald-200">{employee.employeeCode}</span>. The employee's previous employment history will remain unchanged.
               </div>
 
               <form onSubmit={handleRehireSubmit} className="space-y-3">
