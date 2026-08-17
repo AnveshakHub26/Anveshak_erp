@@ -160,32 +160,32 @@ export default function PublicWorkshopDetailPage() {
         />
         <div className="pointer-events-none absolute -top-16 right-0 h-64 w-64 rounded-full bg-amber-500 opacity-10 blur-3xl" />
 
-        <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+        <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-14">
           {/* Breadcrumb */}
-          <nav className="flex items-center gap-1.5 text-xs text-slate-400 mb-6">
+          <nav className="flex items-center gap-1 sm:gap-1.5 text-xs text-slate-400 mb-4 sm:mb-6 flex-wrap">
             <Link href="/" className="hover:text-white transition-colors">Home</Link>
-            <ChevronRight className="h-3.5 w-3.5" />
+            <ChevronRight className="h-3 w-3 shrink-0" />
             <Link href="/workshops" className="hover:text-white transition-colors">Workshops</Link>
-            <ChevronRight className="h-3.5 w-3.5" />
-            <span className="text-slate-200 font-medium line-clamp-1 max-w-[180px]">{workshop.title}</span>
+            <ChevronRight className="h-3 w-3 shrink-0" />
+            <span className="text-slate-200 font-medium truncate max-w-[120px] sm:max-w-[200px]">{workshop.title}</span>
           </nav>
 
           {/* Badges */}
-          <div className="flex flex-wrap items-center gap-2 mb-4">
-            <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold border ${catStyle.bg} ${catStyle.text} border-current/20`}>
-              <Layers className="h-3.5 w-3.5" />
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-4">
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold border ${catStyle.bg} ${catStyle.text} border-current/20`}>
+              <Layers className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               {workshop.category}
             </span>
-            <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${
+            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-bold ${
               isCancelled ? 'bg-red-900/30 text-red-300 border-red-700/40' :
               isCompleted ? 'bg-purple-900/30 text-purple-300 border-purple-700/40' :
               'bg-emerald-900/30 text-emerald-300 border-emerald-700/40'
             }`}>
-              {isCancelled ? <XCircle className="h-3.5 w-3.5" /> : isCompleted ? <CheckCircle2 className="h-3.5 w-3.5" /> : <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />}
+              {isCancelled ? <XCircle className="h-3 w-3" /> : isCompleted ? <CheckCircle2 className="h-3 w-3" /> : <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />}
               {workshop.status}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-700/60 border border-slate-600/50 px-3 py-1 text-xs font-medium text-slate-200">
-              {workshop.mode === 'ONLINE' ? <Wifi className="h-3.5 w-3.5" /> : <MapPin className="h-3.5 w-3.5" />}
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-700/60 border border-slate-600/50 px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-medium text-slate-200">
+              {workshop.mode === 'ONLINE' ? <Wifi className="h-3 w-3" /> : <MapPin className="h-3 w-3" />}
               {workshop.mode}
             </span>
           </div>
@@ -193,24 +193,24 @@ export default function PublicWorkshopDetailPage() {
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight max-w-4xl">
             {workshop.title}
           </h1>
-          <p className="mt-3 text-sm sm:text-base text-slate-300 leading-relaxed max-w-3xl">
+          <p className="mt-2 sm:mt-3 text-sm sm:text-base text-slate-300 leading-relaxed max-w-3xl">
             {workshop.shortDescription}
           </p>
 
-          {/* Quick meta strip */}
-          <div className="mt-6 flex flex-wrap items-center gap-5 text-sm text-slate-300">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-amber-400" />
+          {/* Quick meta strip — wraps gracefully on mobile */}
+          <div className="mt-5 sm:mt-6 flex flex-wrap items-center gap-3 sm:gap-5 text-xs sm:text-sm text-slate-300">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-400 shrink-0" />
               <span className="font-semibold text-white">{formatDate(workshop.date)}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-amber-400" />
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-400 shrink-0" />
               <span>{workshop.startTime} – {workshop.endTime}</span>
-              <span className="text-slate-500">({workshop.timezone})</span>
+              <span className="text-slate-500 hidden sm:inline">({workshop.timezone})</span>
             </div>
             {workshop.speakerName && (
-              <div className="flex items-center gap-2">
-                <Users2 className="h-4 w-4 text-amber-400" />
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Users2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-400 shrink-0" />
                 <span>{workshop.speakerName}</span>
               </div>
             )}
@@ -220,8 +220,8 @@ export default function PublicWorkshopDetailPage() {
 
       {/* ─── MAIN CONTENT ─── */}
       <div className="bg-[#F7F9FC] min-h-screen">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
 
             {/* ── LEFT: Content ── */}
             <div className="lg:col-span-2 space-y-6">

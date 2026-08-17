@@ -145,15 +145,15 @@ export default function PublicWorkshopsPage() {
           </div>
 
           {/* ── Search + Filter Bar ── */}
-          <div className="mt-8 flex flex-col sm:flex-row gap-3 max-w-2xl">
-            <div className="relative flex-1">
+          <div className="mt-8 flex flex-col gap-2.5 max-w-2xl">
+            <div className="relative">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search workshops, speakers, topics..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-sm text-white placeholder-slate-400 focus:bg-white/15 focus:border-amber-400/60 focus:outline-none transition-all"
+                className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/10 border border-white/20 text-sm text-white placeholder-slate-400 focus:bg-white/15 focus:border-amber-400/60 focus:outline-none transition-all"
               />
             </div>
             <div className="relative">
@@ -161,7 +161,7 @@ export default function PublicWorkshopsPage() {
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="pl-10 pr-8 py-2.5 rounded-xl bg-white/10 border border-white/20 text-sm text-white focus:border-amber-400/60 focus:outline-none appearance-none cursor-pointer transition-all"
+                className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/10 border border-white/20 text-sm text-white focus:border-amber-400/60 focus:outline-none appearance-none cursor-pointer transition-all"
               >
                 <option value="ALL" className="text-slate-900">All Domains</option>
                 <option value="Artificial Intelligence" className="text-slate-900">Artificial Intelligence</option>
