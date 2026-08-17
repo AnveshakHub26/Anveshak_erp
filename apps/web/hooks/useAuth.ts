@@ -18,9 +18,10 @@ interface AuthState {
   setAuth: (user: UserProfile, token?: string) => void;
   logout: () => void;
   initializeSession: () => void;
+  clearSession: () => void;
 }
 
-const normalizeRoles = (rawRoles: any[]): string[] => {
+export const normalizeRoles = (rawRoles: any[]): string[] => {
   if (!Array.isArray(rawRoles)) return [];
   return rawRoles
     .map((r: any) => {
@@ -40,7 +41,14 @@ export function getDefaultRedirectForUser(user: UserProfile | null): string {
   if (roles.includes('ADMIN')) return '/admin/approvals';
   if (roles.includes('HR')) return '/hr';
   if (roles.includes('ORG_USER')) return '/industry';
-  if (roles.includes('PM') || roles.includes('EXPERT') || roles.includes('INTERN') || roles.includes('STAFF') || roles.includes('EXECUTIVE')) {
+  if (
+    roles.includes('EMPLOYEE') ||
+    roles.includes('PM') ||
+    roles.includes('EXPERT') ||
+    roles.includes('INTERN') ||
+    roles.includes('STAFF') ||
+    roles.includes('EXECUTIVE')
+  ) {
     return '/employee/dashboard';
   }
   return '/projects';
@@ -52,10 +60,16 @@ const getInitialState = () => {
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   ...getInitialState(),
+
   setAuth: (rawUser, token) => {
     const roles = normalizeRoles(rawUser?.roles);
     const user = { ...rawUser, roles };
-    const currentToken = token ?? get().token ?? (typeof window !== 'undefined' ? localStorage.getItem('token') : null) ?? '';
+    const currentToken =
+      token ??
+      get().token ??
+      (typeof window !== 'undefined' ? localStorage.getItem('token') : null) ??
+      '';
+
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('token', currentToken);
@@ -66,6 +80,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     set({ user, token: currentToken, isAuthenticated: true, isInitializing: false });
   },
+
+  clearSession: () => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } catch (err) {
+        console.error('Failed to clear session from localStorage:', err);
+      }
+    }
+    set({ user: null, token: null, isAuthenticated: false, isInitializing: false });
+  },
+
   logout: () => {
     if (typeof window !== 'undefined') {
       try {
@@ -78,6 +105,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       window.location.href = '/';
     }
   },
+
   initializeSession: () => {
     if (typeof window === 'undefined') {
       set({ isInitializing: false });
@@ -86,18 +114,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const storedToken = localStorage.getItem('token');
       const storedUserRaw = localStorage.getItem('user');
+
       if (storedToken && storedUserRaw) {
         const parsedUser = JSON.parse(storedUserRaw);
-        if (parsedUser) {
+        if (parsedUser && typeof parsedUser === 'object') {
           parsedUser.roles = normalizeRoles(parsedUser.roles);
           localStorage.setItem('user', JSON.stringify(parsedUser));
+          set({ user: parsedUser, token: storedToken, isAuthenticated: true, isInitializing: false });
+          return;
         }
-        set({ user: parsedUser, token: storedToken, isAuthenticated: true, isInitializing: false });
-      } else {
-        set({ user: null, token: null, isAuthenticated: false, isInitializing: false });
       }
+      // If no valid session or token
+      get().clearSession();
     } catch {
-      set({ user: null, token: null, isAuthenticated: false, isInitializing: false });
+      get().clearSession();
     }
   },
 }));

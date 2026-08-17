@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { usePermissions } from '@/hooks/usePermissions';
 import { apiRequest } from '@/lib/api-client';
-import { AppShell } from '@/components/layout/app-shell';
 import { Alert } from '@/components/ui/alert';
 import { ResourceManagementTab } from '@/components/projects/resource-management';
 import { ExecutionTab } from '@/components/projects/execution-tab';
@@ -27,6 +26,8 @@ import {
   Paperclip,
   Activity,
   Layers,
+  Building2,
+  Sparkles,
 } from 'lucide-react';
 
 export default function ProjectDetailPage() {
@@ -106,19 +107,19 @@ export default function ProjectDetailPage() {
   const statusBadge = (status: string) => {
     switch (status) {
       case 'INITIATED':
-        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">Initiated</span>;
+        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">Initiated</span>;
       case 'IN_PROGRESS':
-        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">In Progress</span>;
+        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">In Progress</span>;
       case 'RESOURCE_ASSIGNMENT':
-        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">Resource Assignment</span>;
+        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">Resource Assignment</span>;
       case 'ON_HOLD':
-        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">On Hold</span>;
+        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">On Hold</span>;
       case 'COMPLETED':
-        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Completed</span>;
+        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">Completed</span>;
       case 'CANCELLED':
-        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">Cancelled</span>;
+        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">Cancelled</span>;
       default:
-        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">{status}</span>;
+        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">{status}</span>;
     }
   };
 
@@ -134,246 +135,268 @@ export default function ProjectDetailPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-        {/* Workspace Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/80 p-6 rounded-2xl border border-slate-800 backdrop-blur-md shadow-xl">
-          <div className="flex items-start space-x-4">
-            <Link href="/projects" className="mt-1 rounded-lg border border-slate-800 p-2 hover:bg-slate-800 text-slate-400 transition">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-            <div>
-              <div className="flex items-center space-x-3">
-                <span className="font-mono text-sm font-bold text-cyan-400">{data?.projectCode}</span>
-                <span className="text-slate-600">•</span>
-                <h1 className="text-xl font-bold text-slate-100">{data?.title || 'Project Workspace'}</h1>
-              </div>
-              <p className="text-xs text-slate-400 mt-1">
-                Client Organization: <span className="font-semibold text-slate-200">{data?.organization?.legalName}</span> ({data?.organization?.orgNumber})
+      {/* Workspace Top Banner Card */}
+      <div className="bg-white p-6 rounded-2xl border border-[#E2E8F0] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-start space-x-4">
+          <Link
+            href="/projects"
+            className="mt-1 rounded-lg border border-[#E2E8F0] p-2 hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#0F172A] transition-colors"
+            title="Back to Projects"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <div>
+            <div className="flex items-center space-x-3">
+              <span className="font-mono text-xs font-bold text-[#d49b38] bg-[#F5E8D0]/40 px-2.5 py-0.5 rounded-md border border-[#d49b38]/30">
+                {data?.projectCode || 'PRJ-2026'}
+              </span>
+              <span className="text-[#CBD5E1]">•</span>
+              <h1 className="text-xl font-extrabold text-[#0F172A]">{data?.title || 'Project Workspace'}</h1>
+            </div>
+            <p className="text-xs text-[#64748B] mt-1.5 flex items-center gap-1.5">
+              <Building2 className="h-3.5 w-3.5 text-[#94a3b8]" />
+              Client Organization: <strong className="text-[#0F172A]">{data?.organization?.legalName}</strong> ({data?.organization?.orgNumber})
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          {/* Server-derived overall progress pill */}
+          <div className="bg-[#F8FAFC] px-4 py-2 rounded-xl border border-[#E2E8F0] text-center min-w-[120px]">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-[#64748B] block">Overall Progress</span>
+            <span className="text-lg font-black text-[#0F172A]">{overallProgressPct}%</span>
+          </div>
+          {data?.status && statusBadge(data.status)}
+        </div>
+      </div>
+
+      {/* Workspace Navigation Tabs */}
+      <div className="flex border-b border-[#E2E8F0] space-x-6 text-xs font-semibold overflow-x-auto bg-white px-4 pt-2 rounded-xl shadow-xs">
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`pb-3 flex items-center space-x-2 border-b-2 transition-all whitespace-nowrap ${
+            activeTab === 'overview'
+              ? 'border-[#d49b38] text-[#0F172A] font-bold'
+              : 'border-transparent text-[#64748B] hover:text-[#0F172A]'
+          }`}
+        >
+          <FileText className="h-4 w-4 text-[#d49b38]" />
+          <span>Overview</span>
+        </button>
+
+        {!isOrgUser && (
+          <button
+            onClick={() => setActiveTab('resources')}
+            className={`pb-3 flex items-center space-x-2 border-b-2 transition-all whitespace-nowrap ${
+              activeTab === 'resources'
+                ? 'border-[#d49b38] text-[#0F172A] font-bold'
+                : 'border-transparent text-[#64748B] hover:text-[#0F172A]'
+            }`}
+          >
+            <Users className="h-4 w-4 text-[#d49b38]" />
+            <span>Team &amp; Resources</span>
+            {data?.members && data.members.filter((m: any) => m.status === 'ACTIVE').length > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#F8FAFC] text-[#0F172A] font-mono border border-[#E2E8F0]">
+                {data.members.filter((m: any) => m.status === 'ACTIVE').length}
+              </span>
+            )}
+          </button>
+        )}
+
+        <button
+          onClick={() => setActiveTab('execution')}
+          className={`pb-3 flex items-center space-x-2 border-b-2 transition-all whitespace-nowrap ${
+            activeTab === 'execution'
+              ? 'border-[#d49b38] text-[#0F172A] font-bold'
+              : 'border-transparent text-[#64748B] hover:text-[#0F172A]'
+          }`}
+        >
+          <ListTodo className="h-4 w-4 text-[#d49b38]" />
+          <span>Execution &amp; Tasks</span>
+          {tasks.length > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#F8FAFC] text-[#0F172A] font-mono border border-[#E2E8F0]">
+              {tasks.length}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('deliverables')}
+          className={`pb-3 flex items-center space-x-2 border-b-2 transition-all whitespace-nowrap ${
+            activeTab === 'deliverables'
+              ? 'border-[#d49b38] text-[#0F172A] font-bold'
+              : 'border-transparent text-[#64748B] hover:text-[#0F172A]'
+          }`}
+        >
+          <PackageCheck className="h-4 w-4 text-[#d49b38]" />
+          <span>Deliverables</span>
+          {deliverables.length > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#F8FAFC] text-[#0F172A] font-mono border border-[#E2E8F0]">
+              {deliverables.length}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('meetings')}
+          className={`pb-3 flex items-center space-x-2 border-b-2 transition-all whitespace-nowrap ${
+            activeTab === 'meetings'
+              ? 'border-[#d49b38] text-[#0F172A] font-bold'
+              : 'border-transparent text-[#64748B] hover:text-[#0F172A]'
+          }`}
+        >
+          <Video className="h-4 w-4 text-[#d49b38]" />
+          <span>Online Meetings</span>
+          {meetings.filter((m) => m.status === 'SCHEDULED').length > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-50 text-emerald-800 font-mono border border-emerald-200">
+              {meetings.filter((m) => m.status === 'SCHEDULED').length}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('files')}
+          className={`pb-3 flex items-center space-x-2 border-b-2 transition-all whitespace-nowrap ${
+            activeTab === 'files'
+              ? 'border-[#d49b38] text-[#0F172A] font-bold'
+              : 'border-transparent text-[#64748B] hover:text-[#0F172A]'
+          }`}
+        >
+          <Paperclip className="h-4 w-4 text-[#d49b38]" />
+          <span>Files &amp; External Links</span>
+        </button>
+
+        {!isOrgUser && (
+          <button
+            onClick={() => setActiveTab('activity')}
+            className={`pb-3 flex items-center space-x-2 border-b-2 transition-all whitespace-nowrap ${
+              activeTab === 'activity'
+                ? 'border-[#d49b38] text-[#0F172A] font-bold'
+                : 'border-transparent text-[#64748B] hover:text-[#0F172A]'
+            }`}
+          >
+            <Activity className="h-4 w-4 text-[#d49b38]" />
+            <span>Activity Feed</span>
+          </button>
+        )}
+      </div>
+
+      {error && <Alert variant="error">{error}</Alert>}
+
+      {isLoading ? (
+        <div className="rounded-2xl border border-[#E2E8F0] bg-white p-12 text-center text-xs text-[#64748B] shadow-xs">
+          <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[#d49b38] border-t-transparent mb-2" />
+          <p className="font-semibold text-[#0F172A]">Loading project collaboration workspace...</p>
+        </div>
+      ) : !data ? null : activeTab === 'resources' && !isOrgUser ? (
+        <ResourceManagementTab
+          projectId={data.id}
+          projectCode={data.projectCode}
+          projectStatus={data.status}
+          members={data.members || []}
+          onRefreshProject={loadWorkspaceData}
+        />
+      ) : activeTab === 'execution' ? (
+        <ExecutionTab
+          projectId={data.id}
+          isLocked={isLocked}
+          isAdminOrPm={isAdminOrPm}
+          milestones={milestones}
+          tasks={tasks}
+          members={data.members || []}
+          onRefresh={loadWorkspaceData}
+        />
+      ) : activeTab === 'deliverables' ? (
+        <DeliverablesTab
+          projectId={data.id}
+          isLocked={isLocked}
+          isAdminOrPm={isAdminOrPm}
+          deliverables={deliverables}
+          milestones={milestones}
+          onRefresh={loadWorkspaceData}
+        />
+      ) : activeTab === 'meetings' ? (
+        <MeetingsTab
+          projectId={data.id}
+          isLocked={isLocked}
+          isAdminOrPm={isAdminOrPm}
+          meetings={meetings}
+          members={data.members || []}
+          onRefresh={loadWorkspaceData}
+        />
+      ) : activeTab === 'files' ? (
+        <FilesResourcesTab
+          projectId={data.id}
+          isLocked={isLocked}
+          isAdminOrPm={isAdminOrPm}
+          files={files}
+          links={resourceLinks}
+          onRefresh={loadWorkspaceData}
+        />
+      ) : activeTab === 'activity' && !isOrgUser ? (
+        <ActivityTab activities={activities} />
+      ) : (
+        /* TAB 1: OVERVIEW WORKSPACE */
+        <div className="space-y-6">
+          {/* Metric Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+            <div className="rounded-xl border border-[#E2E8F0] bg-white p-5 space-y-1.5 shadow-xs hover:border-[#d49b38] transition-colors">
+              <span className="text-[#64748B] flex items-center font-semibold text-[11px] uppercase tracking-wider">
+                <Tag className="h-4 w-4 text-[#d49b38] mr-2" />
+                Business Vertical
+              </span>
+              <p className="font-bold text-[#0F172A] text-sm">{data.businessVertical?.name || 'Research-led Projects'}</p>
+              <p className="text-[#d49b38] font-mono text-[11px] font-bold">{data.businessVertical?.code || 'BV-01'}</p>
+            </div>
+
+            <div className="rounded-xl border border-[#E2E8F0] bg-white p-5 space-y-1.5 shadow-xs hover:border-[#d49b38] transition-colors">
+              <span className="text-[#64748B] flex items-center font-semibold text-[11px] uppercase tracking-wider">
+                <Layers className="h-4 w-4 text-purple-600 mr-2" />
+                Milestones
+              </span>
+              <p className="font-bold text-[#0F172A] text-sm">{milestones.length} Milestones</p>
+              <p className="text-[#64748B] text-[11px]">
+                {milestones.filter((m) => m.status === 'COMPLETED').length} Completed
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-[#E2E8F0] bg-white p-5 space-y-1.5 shadow-xs hover:border-[#d49b38] transition-colors">
+              <span className="text-[#64748B] flex items-center font-semibold text-[11px] uppercase tracking-wider">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 mr-2" />
+                Task Execution
+              </span>
+              <p className="font-bold text-[#0F172A] text-sm">{tasks.length} Total Tasks</p>
+              <p className="text-[#64748B] text-[11px]">
+                {tasks.filter((t) => t.status === 'COMPLETED').length} Completed · {tasks.filter((t) => t.status === 'BLOCKED').length} Blocked
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-[#E2E8F0] bg-white p-5 space-y-1.5 shadow-xs hover:border-[#d49b38] transition-colors">
+              <span className="text-[#64748B] flex items-center font-semibold text-[11px] uppercase tracking-wider">
+                <Users className="h-4 w-4 text-blue-600 mr-2" />
+                Team Staffing
+              </span>
+              <p className="font-bold text-[#0F172A] text-sm">
+                {data.members ? data.members.filter((m: any) => m.status === 'ACTIVE').length : 0} Active Members
+              </p>
+              <p className="text-[#64748B] text-[11px]">
+                {data.resourceRequirements?.length || 0} Requirements Defined
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            {/* Server derived overall progress pill */}
-            <div className="bg-slate-950 px-4 py-2 rounded-xl border border-slate-800 text-center">
-              <span className="text-[10px] uppercase font-semibold tracking-wider text-slate-400 block">Overall Progress</span>
-              <span className="text-base font-bold text-cyan-400">{overallProgressPct}%</span>
+          {/* Technical Scope & Description */}
+          <div className="rounded-xl border border-[#E2E8F0] bg-white p-6 space-y-4 shadow-xs">
+            <h2 className="text-sm font-bold text-[#0F172A] border-b border-[#E2E8F0] pb-3 flex items-center">
+              <FileText className="h-4 w-4 text-[#d49b38] mr-2" />
+              Project Technical Scope &amp; Core Objectives
+            </h2>
+            <div className="text-xs text-[#334155] leading-relaxed whitespace-pre-wrap font-medium">
+              {data.description || 'No detailed technical scope defined.'}
             </div>
-            {data?.status && statusBadge(data.status)}
           </div>
         </div>
-
-        {/* Tab Navigation Container */}
-        <div className="flex border-b border-slate-800 space-x-6 text-xs font-semibold overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`pb-3 flex items-center space-x-2 border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'overview' ? 'border-cyan-400 text-cyan-400 font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <FileText className="h-4 w-4" />
-            <span>Overview</span>
-          </button>
-
-          {!isOrgUser && (
-            <button
-              onClick={() => setActiveTab('resources')}
-              className={`pb-3 flex items-center space-x-2 border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === 'resources' ? 'border-cyan-400 text-cyan-400 font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Users className="h-4 w-4" />
-              <span>Team &amp; Resources</span>
-              {data?.members && data.members.filter((m: any) => m.status === 'ACTIVE').length > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-800 text-cyan-400 font-mono">
-                  {data.members.filter((m: any) => m.status === 'ACTIVE').length}
-                </span>
-              )}
-            </button>
-          )}
-
-          <button
-            onClick={() => setActiveTab('execution')}
-            className={`pb-3 flex items-center space-x-2 border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'execution' ? 'border-cyan-400 text-cyan-400 font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <ListTodo className="h-4 w-4" />
-            <span>Execution &amp; Tasks</span>
-            {tasks.length > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-800 text-slate-300 font-mono">
-                {tasks.length}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => setActiveTab('deliverables')}
-            className={`pb-3 flex items-center space-x-2 border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'deliverables' ? 'border-cyan-400 text-cyan-400 font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <PackageCheck className="h-4 w-4" />
-            <span>Deliverables</span>
-            {deliverables.length > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] bg-purple-950 text-purple-300 border border-purple-800 font-mono">
-                {deliverables.length}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => setActiveTab('meetings')}
-            className={`pb-3 flex items-center space-x-2 border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'meetings' ? 'border-cyan-400 text-cyan-400 font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Video className="h-4 w-4" />
-            <span>Online Meetings</span>
-            {meetings.filter((m) => m.status === 'SCHEDULED').length > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono">
-                {meetings.filter((m) => m.status === 'SCHEDULED').length}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => setActiveTab('files')}
-            className={`pb-3 flex items-center space-x-2 border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'files' ? 'border-cyan-400 text-cyan-400 font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Paperclip className="h-4 w-4" />
-            <span>Files &amp; External Links</span>
-          </button>
-
-          {!isOrgUser && (
-            <button
-              onClick={() => setActiveTab('activity')}
-              className={`pb-3 flex items-center space-x-2 border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === 'activity' ? 'border-cyan-400 text-cyan-400 font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Activity className="h-4 w-4" />
-              <span>Activity Feed</span>
-            </button>
-          )}
-        </div>
-
-        {error && <Alert variant="error">{error}</Alert>}
-
-        {isLoading ? (
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-12 text-center text-xs text-slate-400">
-            Loading project collaboration workspace...
-          </div>
-        ) : !data ? null : activeTab === 'resources' && !isOrgUser ? (
-          <ResourceManagementTab
-            projectId={data.id}
-            projectCode={data.projectCode}
-            projectStatus={data.status}
-            members={data.members || []}
-            onRefreshProject={loadWorkspaceData}
-          />
-        ) : activeTab === 'execution' ? (
-          <ExecutionTab
-            projectId={data.id}
-            isLocked={isLocked}
-            isAdminOrPm={isAdminOrPm}
-            milestones={milestones}
-            tasks={tasks}
-            members={data.members || []}
-            onRefresh={loadWorkspaceData}
-          />
-        ) : activeTab === 'deliverables' ? (
-          <DeliverablesTab
-            projectId={data.id}
-            isLocked={isLocked}
-            isAdminOrPm={isAdminOrPm}
-            deliverables={deliverables}
-            milestones={milestones}
-            onRefresh={loadWorkspaceData}
-          />
-        ) : activeTab === 'meetings' ? (
-          <MeetingsTab
-            projectId={data.id}
-            isLocked={isLocked}
-            isAdminOrPm={isAdminOrPm}
-            meetings={meetings}
-            members={data.members || []}
-            onRefresh={loadWorkspaceData}
-          />
-        ) : activeTab === 'files' ? (
-          <FilesResourcesTab
-            projectId={data.id}
-            isLocked={isLocked}
-            isAdminOrPm={isAdminOrPm}
-            files={files}
-            links={resourceLinks}
-            onRefresh={loadWorkspaceData}
-          />
-        ) : activeTab === 'activity' && !isOrgUser ? (
-          <ActivityTab activities={activities} />
-        ) : (
-          /* TAB 1: OVERVIEW WORKSPACE */
-          <div className="space-y-6">
-            {/* Metric Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
-              <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 space-y-1 shadow-sm">
-                <span className="text-slate-400 flex items-center">
-                  <Tag className="h-3.5 w-3.5 text-cyan-400 mr-1.5" />
-                  Business Vertical
-                </span>
-                <p className="font-bold text-slate-100">{data.businessVertical?.name}</p>
-                <p className="text-slate-400 font-mono text-[11px]">{data.businessVertical?.code}</p>
-              </div>
-
-              <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 space-y-1 shadow-sm">
-                <span className="text-slate-400 flex items-center">
-                  <Layers className="h-3.5 w-3.5 text-purple-400 mr-1.5" />
-                  Milestones
-                </span>
-                <p className="font-bold text-slate-100">{milestones.length} Milestones</p>
-                <p className="text-slate-400 text-[11px]">
-                  {milestones.filter((m) => m.status === 'COMPLETED').length} Completed
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 space-y-1 shadow-sm">
-                <span className="text-slate-400 flex items-center">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 mr-1.5" />
-                  Task Execution
-                </span>
-                <p className="font-bold text-slate-100">{tasks.length} Total Tasks</p>
-                <p className="text-slate-400 text-[11px]">
-                  {tasks.filter((t) => t.status === 'COMPLETED').length} Completed · {tasks.filter((t) => t.status === 'BLOCKED').length} Blocked
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 space-y-1 shadow-sm">
-                <span className="text-slate-400 flex items-center">
-                  <Users className="h-3.5 w-3.5 text-blue-400 mr-1.5" />
-                  Team Staffing
-                </span>
-                <p className="font-bold text-slate-100">
-                  {data.members ? data.members.filter((m: any) => m.status === 'ACTIVE').length : 0} Active Members
-                </p>
-                <p className="text-slate-400 text-[11px]">
-                  {data.resourceRequirements?.length || 0} Requirements Defined
-                </p>
-              </div>
-            </div>
-
-            {/* Technical Scope & Description */}
-            <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 space-y-3 shadow-sm">
-              <h2 className="text-sm font-bold text-slate-100 border-b border-slate-800 pb-2 flex items-center">
-                <FileText className="h-4 w-4 text-cyan-400 mr-2" />
-                Project Technical Scope &amp; Core Objectives
-              </h2>
-              <div className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">
-                {data.description}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      )}
+    </div>
   );
 }

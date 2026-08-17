@@ -2,6 +2,10 @@
 
 import { useState } from 'react';
 import { ProjectResourceLink } from '@anveshak/types';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Plus, Paperclip, ExternalLink, FileText, Download, Trash2 } from 'lucide-react';
 
 interface FilesResourcesTabProps {
   projectId: string;
@@ -13,13 +17,13 @@ interface FilesResourcesTabProps {
 }
 
 const RESOURCE_TYPE_BADGES: Record<string, { label: string; bg: string; border: string; text: string }> = {
-  GIT_REPOSITORY: { label: 'Git Repository', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-400' },
-  DESIGN: { label: 'Figma / Design', bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-400' },
-  DOCUMENTATION: { label: 'Docs / Notion', bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-400' },
-  DATASET: { label: 'Dataset', bg: 'bg-amber-500/10', border: 'border-amber-500/20', text: 'text-amber-400' },
-  API: { label: 'API Endpoint', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20', text: 'text-cyan-400' },
-  CLOUD_STORAGE: { label: 'Cloud Storage', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20', text: 'text-indigo-400' },
-  OTHER: { label: 'External Resource', bg: 'bg-slate-500/10', border: 'border-slate-500/20', text: 'text-slate-400' },
+  GIT_REPOSITORY: { label: 'Git Repository', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-800' },
+  DESIGN: { label: 'Figma / Design', bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-800' },
+  DOCUMENTATION: { label: 'Docs / Notion', bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800' },
+  DATASET: { label: 'Dataset', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-800' },
+  API: { label: 'API Endpoint', bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-800' },
+  CLOUD_STORAGE: { label: 'Cloud Storage', bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-800' },
+  OTHER: { label: 'External Resource', bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-800' },
 };
 
 export function FilesResourcesTab({
@@ -83,29 +87,30 @@ export function FilesResourcesTab({
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800 backdrop-blur-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-[#E2E8F0] shadow-xs">
         <div>
-          <h2 className="text-lg font-semibold text-slate-100">Project Files & Shared Resources</h2>
-          <p className="text-xs text-slate-400">
+          <h2 className="text-base font-bold text-[#0F172A]">Project Files &amp; Shared Resources</h2>
+          <p className="text-xs text-[#64748B] mt-0.5">
             {files.length} Project Documents · {links.length} External Links (Git, Figma, Documentation)
           </p>
         </div>
         {!isLocked && (
-          <button
+          <Button
+            size="sm"
             onClick={() => setShowLinkModal(true)}
-            className="px-3.5 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-medium rounded-lg shadow-lg shadow-emerald-500/20 transition"
+            className="bg-gradient-to-r from-[#d49b38] to-[#c48b28] text-[#151c2e] hover:from-[#c48b28] font-bold text-xs shadow-sm"
           >
-            + Add Resource Link
-          </button>
+            <Plus className="mr-1.5 h-3.5 w-3.5 text-[#151c2e]" /> Add Resource Link
+          </Button>
         )}
       </div>
 
       {/* EXTERNAL RESOURCE LINKS SECTION */}
-      <div>
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
-          External Shared Links & Repositories
+      <div className="space-y-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-[#64748B]">
+          External Shared Links &amp; Repositories
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {links.map((link: any) => {
@@ -113,31 +118,31 @@ export function FilesResourcesTab({
             return (
               <div
                 key={link.id}
-                className="p-4 bg-slate-900/50 rounded-xl border border-slate-800 hover:border-slate-700 transition flex flex-col justify-between space-y-3"
+                className="p-5 bg-white rounded-xl border border-[#E2E8F0] hover:border-[#d49b38] transition-colors shadow-xs flex flex-col justify-between space-y-3"
               >
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <span className={`text-[10px] px-2 py-0.5 rounded font-medium border ${badge.bg} ${badge.border} ${badge.text}`}>
+                    <span className={`text-[10px] px-2.5 py-0.5 rounded font-bold border ${badge.bg} ${badge.border} ${badge.text}`}>
                       {badge.label}
                     </span>
                   </div>
-                  <h4 className="text-sm font-semibold text-slate-200">{link.title}</h4>
-                  {link.description && <p className="text-xs text-slate-400 line-clamp-2 mt-1">{link.description}</p>}
+                  <h4 className="text-sm font-bold text-[#0F172A]">{link.title}</h4>
+                  {link.description && <p className="text-xs text-[#64748B] line-clamp-2 mt-1">{link.description}</p>}
                 </div>
 
-                <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                <div className="pt-3 border-t border-[#E2E8F0] flex items-center justify-between gap-2">
                   <a
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs font-medium text-emerald-400 hover:text-emerald-300 transition truncate max-w-[200px]"
+                    className="text-xs font-bold text-[#0F172A] hover:text-[#d49b38] transition-colors inline-flex items-center gap-1 truncate max-w-[200px]"
                   >
-                    Open Resource ↗
+                    Open Resource <ExternalLink className="h-3 w-3" />
                   </a>
                   {!isLocked && (
                     <button
                       onClick={() => handleDeleteLink(link.id)}
-                      className="text-[11px] text-rose-400 hover:bg-rose-500/10 px-2 py-0.5 rounded transition"
+                      className="text-[11px] text-rose-600 hover:bg-rose-50 px-2 py-0.5 rounded font-semibold transition"
                     >
                       Delete
                     </button>
@@ -148,7 +153,7 @@ export function FilesResourcesTab({
           })}
 
           {links.length === 0 && (
-            <div className="col-span-full p-6 text-center bg-slate-900/40 rounded-xl border border-slate-800 text-xs text-slate-400">
+            <div className="col-span-full p-8 text-center bg-white rounded-xl border border-[#E2E8F0] text-xs text-[#64748B] shadow-xs">
               No external resource links added yet (e.g. GitHub repos, Figma designs, Notion docs).
             </div>
           )}
@@ -156,14 +161,14 @@ export function FilesResourcesTab({
       </div>
 
       {/* PROJECT DOCUMENTS SECTION */}
-      <div>
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
-          Uploaded Technical & Deliverable Documents
+      <div className="space-y-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-[#64748B]">
+          Uploaded Technical &amp; Deliverable Documents
         </h3>
-        <div className="bg-slate-900/50 rounded-xl border border-slate-800 overflow-hidden">
+        <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden shadow-xs">
           {files.length > 0 ? (
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-950 text-slate-400 uppercase font-semibold text-[10px] border-b border-slate-800">
+            <table className="w-full text-left text-xs text-[#0F172A]">
+              <thead className="bg-[#F8FAFC] text-[#64748B] uppercase font-semibold text-[10px] border-b border-[#E2E8F0]">
                 <tr>
                   <th className="px-4 py-3">Document Title</th>
                   <th className="px-4 py-3">Entity</th>
@@ -172,21 +177,21 @@ export function FilesResourcesTab({
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-[#E2E8F0]">
                 {files.map((file: any) => (
-                  <tr key={file.id} className="hover:bg-slate-800/30 transition">
-                    <td className="px-4 py-3 font-medium text-slate-200">{file.title || file.fileName}</td>
-                    <td className="px-4 py-3 font-mono text-[10px] text-slate-400">{file.entityType}</td>
-                    <td className="px-4 py-3 text-slate-400">{file.uploader?.email || 'System'}</td>
-                    <td className="px-4 py-3 text-slate-400">{new Date(file.createdAt).toLocaleDateString()}</td>
+                  <tr key={file.id} className="hover:bg-[#F8FAFC] transition-colors">
+                    <td className="px-4 py-3 font-bold text-[#0F172A]">{file.title || file.fileName}</td>
+                    <td className="px-4 py-3 font-mono text-[10px] text-[#64748B] font-semibold">{file.entityType}</td>
+                    <td className="px-4 py-3 text-[#64748B]">{file.uploader?.email || 'System'}</td>
+                    <td className="px-4 py-3 text-[#64748B]">{new Date(file.createdAt).toLocaleDateString()}</td>
                     <td className="px-4 py-3 text-right">
                       <a
                         href={`/api/v1/documents/${file.id}/download`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs font-medium text-cyan-400 hover:text-cyan-300 transition"
+                        className="text-xs font-bold text-[#0F172A] hover:text-[#d49b38] transition-colors inline-flex items-center gap-1"
                       >
-                        Download ↗
+                        Download <Download className="h-3 w-3" />
                       </a>
                     </td>
                   </tr>
@@ -194,7 +199,7 @@ export function FilesResourcesTab({
               </tbody>
             </table>
           ) : (
-            <div className="p-8 text-center text-xs text-slate-400">
+            <div className="p-8 text-center text-xs text-[#64748B]">
               No technical or deliverable documents attached to this project yet.
             </div>
           )}
@@ -203,42 +208,46 @@ export function FilesResourcesTab({
 
       {/* ADD RESOURCE LINK MODAL */}
       {showLinkModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-            <h3 className="text-base font-semibold text-slate-100">Add External Project Resource Link</h3>
-            {error && <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-xs text-rose-400">{error}</div>}
+        <div className="fixed inset-0 bg-[#0F172A]/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-[#E2E8F0] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-[#0F172A]">Add External Project Resource Link</h3>
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs font-semibold text-red-800">
+                {error}
+              </div>
+            )}
 
-            <form onSubmit={handleAddLink} className="space-y-3">
-              <div>
-                <label className="text-xs font-medium text-slate-400 block mb-1">Resource Title</label>
-                <input
+            <form onSubmit={handleAddLink} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#0F172A]">Resource Title *</label>
+                <Input
                   required
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. GitHub Monorepo Repository"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                  className="text-xs"
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-medium text-slate-400 block mb-1">URL</label>
-                <input
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#0F172A]">URL *</label>
+                <Input
                   required
                   type="url"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder="https://github.com/company/project-repo"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                  className="text-xs"
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-medium text-slate-400 block mb-1">Resource Type</label>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#0F172A]">Resource Type *</label>
                 <select
                   value={resourceType}
                   onChange={(e) => setResourceType(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                  className="w-full rounded-lg border border-[#E2E8F0] bg-white px-3 py-2 text-xs text-[#0F172A] focus:border-[#d49b38] focus:outline-none"
                 >
                   <option value="GIT_REPOSITORY">Git Repository</option>
                   <option value="DESIGN">Figma / UI Design</option>
@@ -251,32 +260,35 @@ export function FilesResourcesTab({
                 </select>
               </div>
 
-              <div>
-                <label className="text-xs font-medium text-slate-400 block mb-1">Description (Optional)</label>
-                <textarea
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#0F172A]">Description (Optional)</label>
+                <Textarea
                   rows={2}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Additional context or notes..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                  className="text-xs"
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-3">
-                <button
+              <div className="flex justify-end gap-3 pt-3 border-t border-[#E2E8F0]">
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={() => setShowLinkModal(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 text-xs font-medium rounded-lg hover:bg-slate-700 transition"
+                  className="text-xs font-semibold"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   disabled={loading}
                   type="submit"
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg transition disabled:opacity-50"
+                  size="sm"
+                  className="bg-gradient-to-r from-[#d49b38] to-[#c48b28] text-[#151c2e] hover:from-[#c48b28] font-bold text-xs shadow-sm"
                 >
                   {loading ? 'Adding...' : 'Add Link'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>

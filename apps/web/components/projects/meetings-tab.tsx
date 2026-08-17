@@ -2,6 +2,10 @@
 
 import { useState } from 'react';
 import { ProjectMeeting, ProjectMember } from '@anveshak/types';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Plus, Video, Calendar, Clock, ExternalLink } from 'lucide-react';
 
 interface MeetingsTabProps {
   projectId: string;
@@ -13,10 +17,10 @@ interface MeetingsTabProps {
 }
 
 const PROVIDER_BADGES: Record<string, { label: string; bg: string; border: string; text: string }> = {
-  GOOGLE_MEET: { label: 'Google Meet', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-400' },
-  MICROSOFT_TEAMS: { label: 'MS Teams', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20', text: 'text-indigo-400' },
-  ZOOM: { label: 'Zoom', bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-400' },
-  OTHER: { label: 'Custom Video Link', bg: 'bg-slate-500/10', border: 'border-slate-500/20', text: 'text-slate-400' },
+  GOOGLE_MEET: { label: 'Google Meet', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-800' },
+  MICROSOFT_TEAMS: { label: 'MS Teams', bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-800' },
+  ZOOM: { label: 'Zoom', bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800' },
+  OTHER: { label: 'Custom Video Link', bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-800' },
 };
 
 export function MeetingsTab({
@@ -99,20 +103,21 @@ export function MeetingsTab({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800 backdrop-blur-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-[#E2E8F0] shadow-xs">
         <div>
-          <h2 className="text-lg font-semibold text-slate-100">Project Online Meetings</h2>
-          <p className="text-xs text-slate-400">
+          <h2 className="text-base font-bold text-[#0F172A]">Project Online Meetings</h2>
+          <p className="text-xs text-[#64748B] mt-0.5">
             {meetings.length} Meetings Scheduled · Instant video link access for project members
           </p>
         </div>
         {isAdminOrPm && !isLocked && (
-          <button
+          <Button
+            size="sm"
             onClick={() => setShowModal(true)}
-            className="px-3.5 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white text-xs font-medium rounded-lg shadow-lg shadow-blue-500/20 transition"
+            className="bg-gradient-to-r from-[#d49b38] to-[#c48b28] text-[#151c2e] hover:from-[#c48b28] font-bold text-xs shadow-sm"
           >
-            + Schedule Online Meeting
-          </button>
+            <Plus className="mr-1.5 h-3.5 w-3.5 text-[#151c2e]" /> Schedule Online Meeting
+          </Button>
         )}
       </div>
 
@@ -125,24 +130,34 @@ export function MeetingsTab({
           return (
             <div
               key={m.id}
-              className={`p-5 rounded-xl border transition ${isCancelled ? 'bg-slate-950/40 border-slate-800/60 opacity-60' : 'bg-slate-900/50 border-slate-800 hover:border-slate-700'} space-y-3`}
+              className={`p-5 rounded-xl border transition-all shadow-xs ${
+                isCancelled
+                  ? 'bg-slate-50 border-slate-200 opacity-60'
+                  : 'bg-white border-[#E2E8F0] hover:border-[#d49b38]'
+              } space-y-3`}
             >
               <div className="flex items-start justify-between gap-2">
-                <span className={`text-[10px] px-2 py-0.5 rounded font-medium border ${prov.bg} ${prov.border} ${prov.text}`}>
+                <span className={`text-[10px] px-2.5 py-0.5 rounded font-bold border ${prov.bg} ${prov.border} ${prov.text}`}>
                   {prov.label}
                 </span>
-                <span className={`text-[10px] px-2 py-0.5 rounded font-medium border uppercase ${isCancelled ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}`}>
+                <span
+                  className={`text-[10px] px-2.5 py-0.5 rounded font-bold border uppercase ${
+                    isCancelled
+                      ? 'bg-rose-50 text-rose-800 border-rose-200'
+                      : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                  }`}
+                >
                   {m.status}
                 </span>
               </div>
 
-              <h4 className="text-sm font-semibold text-slate-200">{m.title}</h4>
-              {m.description && <p className="text-xs text-slate-400 line-clamp-2">{m.description}</p>}
+              <h4 className="text-sm font-bold text-[#0F172A]">{m.title}</h4>
+              {m.description && <p className="text-xs text-[#64748B] line-clamp-2">{m.description}</p>}
 
-              <div className="p-3 bg-slate-950/80 border border-slate-800/80 rounded-lg text-xs space-y-1 text-slate-300">
+              <div className="p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg text-xs space-y-1.5 text-[#0F172A]">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Date & Time:</span>
-                  <span className="font-mono text-cyan-400">
+                  <span className="text-[#64748B] font-semibold">Date &amp; Time:</span>
+                  <span className="font-mono font-bold text-[#0F172A]">
                     {new Date(m.startDateTime).toLocaleString(undefined, {
                       month: 'short',
                       day: 'numeric',
@@ -152,31 +167,31 @@ export function MeetingsTab({
                   </span>
                 </div>
                 {m.participants && m.participants.length > 0 && (
-                  <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-800/50">
-                    <span className="text-slate-500">Participants:</span>
-                    <span className="text-slate-400">{m.participants.length} Team Members</span>
+                  <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-[#E2E8F0]">
+                    <span className="text-[#64748B] font-semibold">Participants:</span>
+                    <span className="text-[#0F172A] font-medium">{m.participants.length} Team Members</span>
                   </div>
                 )}
               </div>
 
-              <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-3">
+              <div className="pt-2 border-t border-[#E2E8F0] flex items-center justify-between gap-3">
                 {!isCancelled ? (
                   <a
                     href={m.meetingUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-lg transition inline-flex items-center gap-1.5 shadow-sm shadow-blue-500/20"
+                    className="px-4 py-1.5 bg-[#151c2e] hover:bg-[#1e293b] text-white text-xs font-bold rounded-lg transition inline-flex items-center gap-1.5 shadow-xs"
                   >
-                    Join Meeting ↗
+                    Join Meeting <ExternalLink className="h-3.5 w-3.5" />
                   </a>
                 ) : (
-                  <span className="text-xs text-rose-400 font-medium">Meeting Cancelled</span>
+                  <span className="text-xs text-rose-600 font-bold">Meeting Cancelled</span>
                 )}
 
                 {isAdminOrPm && !isCancelled && !isLocked && (
                   <button
                     onClick={() => handleCancelMeeting(m.id)}
-                    className="px-2.5 py-1 text-xs text-rose-400 hover:bg-rose-500/10 rounded transition"
+                    className="px-3 py-1 text-xs text-rose-600 hover:bg-rose-50 font-semibold rounded-md transition"
                   >
                     Cancel
                   </button>
@@ -187,7 +202,7 @@ export function MeetingsTab({
         })}
 
         {meetings.length === 0 && (
-          <div className="col-span-full p-8 text-center bg-slate-900/40 rounded-xl border border-slate-800 text-xs text-slate-400">
+          <div className="col-span-full p-8 text-center bg-white rounded-xl border border-[#E2E8F0] text-xs text-[#64748B] shadow-xs">
             No meetings scheduled for this project yet.
           </div>
         )}
@@ -195,42 +210,46 @@ export function MeetingsTab({
 
       {/* SCHEDULE MEETING MODAL */}
       {showModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4">
-            <h3 className="text-base font-semibold text-slate-100">Schedule Online Project Meeting</h3>
-            {error && <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-xs text-rose-400">{error}</div>}
+        <div className="fixed inset-0 bg-[#0F172A]/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-[#E2E8F0] rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-[#0F172A]">Schedule Online Project Meeting</h3>
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs font-semibold text-red-800">
+                {error}
+              </div>
+            )}
 
-            <form onSubmit={handleScheduleMeeting} className="space-y-3">
-              <div>
-                <label className="text-xs font-medium text-slate-400 block mb-1">Meeting Title</label>
-                <input
+            <form onSubmit={handleScheduleMeeting} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#0F172A]">Meeting Title *</label>
+                <Input
                   required
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Weekly Technical Sync & Architecture Review"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                  className="text-xs"
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-medium text-slate-400 block mb-1">Agenda / Description</label>
-                <textarea
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#0F172A]">Agenda / Description</label>
+                <Textarea
                   rows={2}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Key topics to discuss..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                  className="text-xs"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-slate-400 block mb-1">Provider</label>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-[#0F172A]">Provider *</label>
                   <select
                     value={provider}
                     onChange={(e: any) => setProvider(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                    className="w-full rounded-lg border border-[#E2E8F0] bg-white px-3 py-2 text-xs text-[#0F172A] focus:border-[#d49b38] focus:outline-none"
                   >
                     <option value="GOOGLE_MEET">Google Meet</option>
                     <option value="MICROSOFT_TEAMS">MS Teams</option>
@@ -238,75 +257,78 @@ export function MeetingsTab({
                     <option value="OTHER">Custom Video Link</option>
                   </select>
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-slate-400 block mb-1">Meeting URL</label>
-                  <input
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-[#0F172A]">Meeting URL *</label>
+                  <Input
                     required
                     type="url"
                     value={meetingUrl}
                     onChange={(e) => setMeetingUrl(e.target.value)}
                     placeholder="https://meet.google.com/xyz-abc-def"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                    className="text-xs"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-slate-400 block mb-1">Start Time</label>
-                  <input
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-[#0F172A]">Start Time *</label>
+                  <Input
                     required
                     type="datetime-local"
                     value={startDateTime}
                     onChange={(e) => setStartDateTime(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                    className="text-xs"
                   />
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-slate-400 block mb-1">End Time</label>
-                  <input
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-[#0F172A]">End Time *</label>
+                  <Input
                     required
                     type="datetime-local"
                     value={endDateTime}
                     onChange={(e) => setEndDateTime(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                    className="text-xs"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-medium text-slate-400 block mb-1">Select Participants (Project Team)</label>
-                <div className="max-h-32 overflow-y-auto bg-slate-950 border border-slate-800 rounded-lg p-2 space-y-1">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#0F172A]">Select Participants</label>
+                <div className="max-h-32 overflow-y-auto bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-2 space-y-1">
                   {activeMembers.map((m: any) => (
-                    <label key={m.id} className="flex items-center gap-2 text-xs text-slate-300 hover:bg-slate-900 p-1 rounded cursor-pointer">
+                    <label key={m.id} className="flex items-center gap-2 text-xs text-[#0F172A] hover:bg-white p-1 rounded cursor-pointer font-medium">
                       <input
                         type="checkbox"
                         checked={selectedParticipants.includes(m.employeeId)}
                         onChange={() => handleToggleParticipant(m.employeeId)}
-                        className="rounded border-slate-800 text-blue-600 focus:ring-0"
+                        className="rounded border-[#E2E8F0] text-[#d49b38] focus:ring-0"
                       />
                       <span>{m.employee.fullName} ({m.projectRole})</span>
                     </label>
                   ))}
-                  {activeMembers.length === 0 && <div className="text-[11px] text-slate-600">No active team members assigned</div>}
+                  {activeMembers.length === 0 && <div className="text-[11px] text-[#64748B]">No active team members assigned</div>}
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-3">
-                <button
+              <div className="flex justify-end gap-3 pt-3 border-t border-[#E2E8F0]">
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 text-xs font-medium rounded-lg hover:bg-slate-700 transition"
+                  className="text-xs font-semibold"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   disabled={loading}
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-lg transition disabled:opacity-50"
+                  size="sm"
+                  className="bg-gradient-to-r from-[#d49b38] to-[#c48b28] text-[#151c2e] hover:from-[#c48b28] font-bold text-xs shadow-sm"
                 >
                   {loading ? 'Scheduling...' : 'Schedule Meeting'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
