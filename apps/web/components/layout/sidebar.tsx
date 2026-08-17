@@ -63,6 +63,12 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ['ADMIN'],
   },
   {
+    label: 'Workshop Management',
+    href: '/admin/workshops',
+    icon: Calendar,
+    roles: ['ADMIN'],
+  },
+  {
     label: 'Employee Workspace',
     href: '/employee/dashboard',
     icon: UserCheck,
