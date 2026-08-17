@@ -645,9 +645,10 @@ export class ProjectsService {
           throw new BadRequestException(`Employee employment type '${employee.employment_type}' is incompatible with requirement employment type '${req.employmentType}'.`);
         }
 
-        if (req.professionalRole && employee.professional_role.toLowerCase() !== req.professionalRole.toLowerCase()) {
-          throw new BadRequestException(`Employee professional role '${employee.professional_role}' is incompatible with requirement role '${req.professionalRole}'.`);
-        }
+        // NOTE: Professional role strict-match intentionally removed.
+        // Admins use the candidate matching engine to find suitable candidates.
+        // Final assignment allows role override via the projectRole field,
+        // which is the actual role the employee will play in the project.
       }
 
       // 3. Check existing active assignment on same project (Duplicate protection)

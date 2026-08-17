@@ -154,6 +154,10 @@ export function ResourceManagementTab({
   const [releasingMember, setReleasingMember] = useState<ProjectMember | null>(null);
   const [releaseReason, setReleaseReason] = useState('');
 
+  // Assignment Modal local state (error/loading shown INSIDE the modal)
+  const [assignSubmitting, setAssignSubmitting] = useState(false);
+  const [assignSubmitError, setAssignSubmitError] = useState<string | null>(null);
+
   const loadRequirements = useCallback(async () => {
     setIsLoadingReqs(true);
     setError(null);
@@ -279,7 +283,8 @@ export function ResourceManagementTab({
   const handleAssignSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!assigningCandidate) return;
-    setError(null);
+    setAssignSubmitError(null);
+    setAssignSubmitting(true);
     try {
       await apiRequest(`/projects/${projectId}/members`, {
         method: 'POST',
@@ -295,11 +300,15 @@ export function ResourceManagementTab({
 
       setSuccessMsg(`Assigned ${assigningCandidate.fullName} (${assigningCandidate.employeeCode}) to ${projectCode}.`);
       setAssigningCandidate(null);
+      setAssignSubmitError(null);
       setIsCandidateDrawerOpen(false);
       loadRequirements();
       if (onRefreshProject) onRefreshProject();
     } catch (err: any) {
-      setError(err.message || 'Failed to assign employee to project.');
+      // Show error INSIDE the modal, not just at the top of the page
+      setAssignSubmitError(err.message || 'Failed to assign employee to project.');
+    } finally {
+      setAssignSubmitting(false);
     }
   };
 
@@ -905,7 +914,7 @@ export function ResourceManagementTab({
       {assigningCandidate && (
         <Modal
           isOpen={!!assigningCandidate}
-          onClose={() => setAssigningCandidate(null)}
+          onClose={() => { setAssigningCandidate(null); setAssignSubmitError(null); }}
           title={`Confirm Project Assignment — ${assigningCandidate.fullName}`}
         >
           <form onSubmit={handleAssignSubmit} className="space-y-4 text-xs">
@@ -916,6 +925,14 @@ export function ResourceManagementTab({
                 <p><span className="text-[#64748B]">Requirement:</span> <span className="font-bold text-[#0F172A]">{selectedReqForCandidate.professionalRole}</span></p>
               )}
             </div>
+
+            {/* Error shown INSIDE the modal — visible to user */}
+            {assignSubmitError && (
+              <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-xs text-red-700 font-medium flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+                <span>{assignSubmitError}</span>
+              </div>
+            )}
 
             <div>
               <label className="block font-semibold text-[#0F172A] mb-1">Project Role *</label>
@@ -959,11 +976,27 @@ export function ResourceManagementTab({
             </div>
 
             <div className="flex items-center justify-end space-x-2 pt-4 border-t border-[#E2E8F0]">
-              <Button type="button" variant="outline" onClick={() => setAssigningCandidate(null)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => { setAssigningCandidate(null); setAssignSubmitError(null); }}
+                disabled={assignSubmitting}
+              >
                 Cancel
               </Button>
-              <Button type="submit" className="bg-[#10B981] hover:bg-[#059669]">
-                Confirm &amp; Assign Member
+              <Button
+                type="submit"
+                className="bg-[#10B981] hover:bg-[#059669] min-w-[160px]"
+                disabled={assignSubmitting}
+              >
+                {assignSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <span className="h-3.5 w-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    Assigning...
+                  </span>
+                ) : (
+                  'Confirm & Assign Member'
+                )}
               </Button>
             </div>
           </form>
