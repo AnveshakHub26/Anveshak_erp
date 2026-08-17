@@ -547,7 +547,9 @@ export default function HREmployeeDetailPage() {
                 </div>
                 <div>
                   <span className="text-[#94a3b8] block">Joining Date</span>
-                  <span className="text-white">{new Date(employee.joiningDate).toLocaleDateString()}</span>
+                  <span className="text-white">
+                    {employee.joiningDate ? new Date(employee.joiningDate).toLocaleDateString() : 'N/A'}
+                  </span>
                 </div>
                 <div>
                   <span className="text-[#94a3b8] block">Exit Date</span>
@@ -555,11 +557,15 @@ export default function HREmployeeDetailPage() {
                     {employee.exitDate ? new Date(employee.exitDate).toLocaleDateString() : 'N/A'}
                   </span>
                 </div>
-                {employee.baseSalary !== undefined && (
+                {employee.baseSalary != null && String(employee.baseSalary).trim() !== '' && (
                   <div className="col-span-2 pt-2 border-t border-[#182238] flex items-center justify-between">
                     <span className="text-[#94a3b8]">Base Salary (Confidential):</span>
                     <span className="font-mono font-bold text-[#d49b38] text-sm">
-                      ${employee.baseSalary.toLocaleString()} / year
+                      ₹{typeof employee.baseSalary === 'number'
+                          ? employee.baseSalary.toLocaleString('en-IN')
+                          : isNaN(Number(employee.baseSalary))
+                          ? employee.baseSalary
+                          : Number(employee.baseSalary).toLocaleString('en-IN')} / year
                     </span>
                   </div>
                 )}
@@ -804,7 +810,9 @@ export default function HREmployeeDetailPage() {
               </div>
               <div>
                 <span className="text-[#94a3b8] block">Account Provisioned Date</span>
-                <span className="text-white">{new Date(employee.user?.createdAt).toLocaleDateString()}</span>
+                <span className="text-white">
+                  {employee.user?.createdAt ? new Date(employee.user.createdAt).toLocaleDateString() : 'N/A'}
+                </span>
               </div>
             </div>
           </div>
