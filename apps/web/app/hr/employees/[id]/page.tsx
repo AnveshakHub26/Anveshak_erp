@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { usePermissions } from '@/hooks/usePermissions';
 import { apiRequest } from '@/lib/api-client';
 import { AppShell } from '@/components/layout/app-shell';
@@ -120,6 +120,8 @@ export default function HREmployeeDetailPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
+  const searchParams = useSearchParams();
+
   // Tab State
   const [activeTab, setActiveTab] = useState<'profile' | 'skills' | 'nda' | 'history' | 'projects' | 'account'>('profile');
 
@@ -127,6 +129,19 @@ export default function HREmployeeDetailPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showRehireModal, setShowRehireModal] = useState(false);
   const [showOffboardModal, setShowOffboardModal] = useState(false);
+
+  useEffect(() => {
+    if (!searchParams) return;
+    const tabParam = searchParams.get('tab');
+    const modalParam = searchParams.get('modal');
+
+    if (tabParam === 'history' || tabParam === 'skills' || tabParam === 'nda' || tabParam === 'projects' || tabParam === 'account') {
+      setActiveTab(tabParam as any);
+    }
+    if (modalParam === 'edit') setShowEditModal(true);
+    if (modalParam === 'rehire') setShowRehireModal(true);
+    if (modalParam === 'offboard') setShowOffboardModal(true);
+  }, [searchParams]);
 
   // Edit Form State
   const [editForm, setEditForm] = useState<any>({});

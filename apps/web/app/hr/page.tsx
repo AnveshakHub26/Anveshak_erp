@@ -23,6 +23,11 @@ import {
   FolderGit2,
   CheckCircle2,
   PlusCircle,
+  History,
+  UserPlus,
+  Eye,
+  Edit3,
+  UserX,
 } from 'lucide-react';
 
 interface DashboardMetrics {
@@ -567,13 +572,71 @@ export default function HRPage() {
                             )}
                           </td>
 
-                          {/* Action Link */}
+                          {/* Status-Aware Action Links */}
                           <td className="px-4 py-3 text-right">
-                            <Link href={`/hr/employees/${emp.id}`}>
-                              <Button variant="outline" size="sm">
-                                View Record
-                              </Button>
-                            </Link>
+                            <div className="flex items-center justify-end space-x-1.5">
+                              {emp.status === 'RESIGNED' || emp.status === 'TERMINATED' ? (
+                                <>
+                                  <Link href={`/hr/employees/${emp.id}?tab=history`}>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-[11px] h-7 px-2 border-slate-300 text-slate-700 hover:bg-slate-100"
+                                      title="View employment & rehire history"
+                                    >
+                                      <History className="h-3 w-3 mr-1 text-slate-500" />
+                                      View History
+                                    </Button>
+                                  </Link>
+                                  <Link href={`/hr/employees/${emp.id}?modal=rehire`}>
+                                    <Button
+                                      size="sm"
+                                      className="text-[11px] h-7 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs"
+                                      title="Rehire employee into active service"
+                                    >
+                                      <UserPlus className="h-3 w-3 mr-1" />
+                                      Rehire
+                                    </Button>
+                                  </Link>
+                                </>
+                              ) : (
+                                <>
+                                  <Link href={`/hr/employees/${emp.id}`}>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-[11px] h-7 px-2 border-slate-300 text-slate-700 hover:bg-slate-100"
+                                      title="View employee profile"
+                                    >
+                                      <Eye className="h-3 w-3 mr-1 text-slate-500" />
+                                      View
+                                    </Button>
+                                  </Link>
+                                  <Link href={`/hr/employees/${emp.id}?modal=edit`}>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-[11px] h-7 px-2 border-slate-300 text-slate-700 hover:bg-slate-100"
+                                      title="Edit employee profile"
+                                    >
+                                      <Edit3 className="h-3 w-3 mr-1 text-amber-600" />
+                                      Edit
+                                    </Button>
+                                  </Link>
+                                  <Link href={`/hr/employees/${emp.id}?modal=offboard`}>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-[11px] h-7 px-2 border-red-200 text-red-700 hover:bg-red-50"
+                                      title="Deactivate or mark employee exit"
+                                    >
+                                      <UserX className="h-3 w-3 mr-1 text-red-600" />
+                                      Deactivate
+                                    </Button>
+                                  </Link>
+                                </>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
