@@ -237,6 +237,30 @@ export default function AdminApprovalsPage() {
     }
   };
 
+  const handleDirectApprove = async (orgId: string, legalName: string) => {
+    setIsSubmittingDecision(true);
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      const res = await apiRequest<{ success: boolean; data: any }>(
+        `/organizations/${orgId}/decision`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ decision: 'APPROVE' }),
+        },
+      );
+      if (res.success) {
+        setSuccessMsg(`Organization '${legalName}' application successfully APPROVED.`);
+        setSelectedOrg(null);
+        await loadApplications();
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to approve organization.');
+    } finally {
+      setIsSubmittingDecision(false);
+    }
+  };
+
   // Delete Organization Application Handler
   const handleDeleteSubmit = async () => {
     if (!deleteModal.orgId) return;
@@ -460,7 +484,7 @@ export default function AdminApprovalsPage() {
                             day: 'numeric',
                           })}
                         </td>
-                        <td className="px-5 py-4">{statusBadge(item.status)}</td>
+                        <td className="px-5 py-4">{renderStatusBadge(item.status)}</td>
                         <td className="px-5 py-4 text-right">
                           <div className="flex items-center justify-end space-x-2">
                             <Button
@@ -539,7 +563,7 @@ export default function AdminApprovalsPage() {
                 <div>
                   <div className="flex items-center space-x-3">
                     <h2 className="text-lg sm:text-xl font-bold text-[#0F172A]">{selectedOrg.legalName}</h2>
-                    {statusBadge(selectedOrg.status)}
+                    {renderStatusBadge(selectedOrg.status)}
                   </div>
                   <p className="text-xs font-mono text-[#d49b38] mt-1 font-semibold">Reference Number: {selectedOrg.orgNumber}</p>
                 </div>
@@ -773,7 +797,7 @@ export default function AdminApprovalsPage() {
                   variant="primary"
                   size="sm"
                   isLoading={isSubmittingDecision}
-                  onClick={handleExecuteDecision}
+                  onClick={handleDecisionSubmit}
                   className={
                     decisionModal.decision === 'REJECT'
                       ? 'bg-[#EF4444] hover:bg-[#DC2626]'
@@ -821,7 +845,7 @@ export default function AdminApprovalsPage() {
                   variant="primary"
                   size="sm"
                   isLoading={isDeleting}
-                  onClick={handleDeleteOrganization}
+                  onClick={handleDeleteSubmit}
                   className="bg-[#EF4444] hover:bg-[#DC2626] text-white font-bold"
                 >
                   Confirm Delete
