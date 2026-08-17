@@ -14,31 +14,53 @@ export function renderAccountOnboardingTemplate(
   const safeCode = employeeCode ? escapeHtml(employeeCode) : '';
   const safePassword = password ? escapeHtml(password) : '';
 
-  const subject = `🎉 Your AnveshakHub Account Credentials — ${safeName}`;
+  const subject = `🎉 Welcome to AnveshakHub Enterprise — Your Account Credentials`;
 
   const html = renderBaseEmailTemplate({
-    title: 'Employee Account Provisioned',
-    badgeText: 'ACCOUNT CREATED',
-    badgeBgColor: '#d1fae5',
-    badgeTextColor: '#065f46',
+    title: 'Account Credentials & Access Details',
+    badgeText: 'EMPLOYEE ACCOUNT CREATED',
+    badgeBgColor: '#dcfce7',
+    badgeTextColor: '#15803d',
     contentHtml: `
-      <h2>Welcome aboard, ${safeName}!</h2>
-      <p>Your official employee account on <strong>AnveshakHub Enterprise ERP</strong> has been successfully created${safeRole ? ` (${safeRole})` : ''}.</p>
+      <h2 style="color: #0f172a; font-size: 20px; font-weight: 700; margin-top: 0;">Welcome aboard, ${safeName}!</h2>
+      <p style="font-size: 14px; line-height: 1.6; color: #334155;">Your official employee account on <strong>AnveshakHub Enterprise ERP</strong> has been successfully provisioned${safeRole ? ` with role <strong>${safeRole}</strong>` : ''}.</p>
       
-      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin: 24px 0;">
-        <h3 style="margin-top: 0; color: #0f172a; font-size: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">🔑 Your Login Credentials</h3>
-        ${safeCode ? `<p style="margin: 8px 0; font-size: 13px;"><strong>Employee ID:</strong> <span style="font-family: monospace; color: #d49b38; font-weight: bold;">${safeCode}</span></p>` : ''}
-        <p style="margin: 8px 0; font-size: 13px;"><strong>Work Email:</strong> <span style="font-family: monospace; color: #0f172a;">${safeEmail}</span></p>
-        ${safePassword ? `<p style="margin: 8px 0; font-size: 13px;"><strong>Password:</strong> <span style="font-family: monospace; color: #0f172a; background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${safePassword}</span></p>` : ''}
+      <div style="background-color: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 24px; margin: 24px 0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+        <h3 style="margin-top: 0; color: #0f172a; font-size: 15px; font-weight: 700; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">
+          🔑 Your Login Credentials
+        </h3>
+        
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 12px;">
+          ${safeCode ? `
+          <tr>
+            <td style="padding: 8px 0; color: #64748b; font-weight: 600; width: 140px;">Employee ID:</td>
+            <td style="padding: 8px 0; font-family: monospace; color: #d49b38; font-weight: 700; font-size: 15px;">${safeCode}</td>
+          </tr>` : ''}
+          <tr>
+            <td style="padding: 8px 0; color: #64748b; font-weight: 600;">Work Email:</td>
+            <td style="padding: 8px 0; font-family: monospace; color: #0f172a; font-weight: 600;">${safeEmail}</td>
+          </tr>
+          ${safePassword ? `
+          <tr>
+            <td style="padding: 8px 0; color: #64748b; font-weight: 600;">Password:</td>
+            <td style="padding: 8px 0;">
+              <span style="font-family: monospace; color: #0f172a; background: #ffffff; border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 14px; letter-spacing: 0.5px; display: inline-block;">${safePassword}</span>
+            </td>
+          </tr>` : ''}
+        </table>
       </div>
 
-      <p>Use the button below to sign in directly with these credentials. Please change your password after logging in for security.</p>
+      <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px; padding: 14px 16px; margin: 20px 0; font-size: 13px; color: #1e40af; line-height: 1.5;">
+        💡 <strong>Security & Recovery Tip:</strong> You can sign in immediately using your Work Email and Password above. If you want to change your password or update your security credentials at any time, click on <strong>"Forgot Password?"</strong> on the login page.
+      </div>
+
+      <p style="font-size: 13px; color: #475569; margin-top: 20px;">Click below to access your workspace and get started:</p>
     `,
     actionUrl: loginUrl,
     actionText: 'Sign In to Enterprise ERP',
   });
 
-  const text = `Welcome to AnveshakHub Enterprise ERP, ${userName}!\n\nYour account has been created.\nWork Email: ${workEmail}\n${employeeCode ? `Employee ID: ${employeeCode}\n` : ''}${password ? `Password: ${password}\n` : ''}\nSign in at: ${loginUrl}`;
+  const text = `Welcome to AnveshakHub Enterprise ERP, ${userName}!\n\nYour account credentials:\nWork Email: ${workEmail}\n${employeeCode ? `Employee ID: ${employeeCode}\n` : ''}${password ? `Initial Password: ${password}\n` : ''}\nSign in at: ${loginUrl}\n\nYou can reset or change your password anytime using the "Forgot Password" option on the login page.`;
 
   return { subject, html, text };
 }

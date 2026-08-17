@@ -521,16 +521,32 @@ export default function HROnboardPage() {
                       </div>
 
                       <div>
-                        <label className="block text-[#64748B] font-medium mb-1">Account Password (Optional)</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-[#64748B] font-medium">Account Password</label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+                              let autoPass = 'Anv#';
+                              for (let i = 0; i < 8; i++) {
+                                autoPass += chars.charAt(Math.floor(Math.random() * chars.length));
+                              }
+                              setSingleForm({ ...singleForm, password: autoPass });
+                            }}
+                            className="text-[11px] font-semibold text-[#d49b38] hover:underline flex items-center gap-1 cursor-pointer"
+                          >
+                            <Sparkles className="h-3 w-3" /> Auto-Generate Password
+                          </button>
+                        </div>
                         <input
                           type="text"
                           value={singleForm.password}
                           onChange={(e) => setSingleForm({ ...singleForm, password: e.target.value })}
-                          placeholder="Leave blank to auto-generate password"
-                          className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-[#0F172A] placeholder-[#94a3b8] focus:border-[#d49b38] focus:bg-white focus:outline-none font-mono"
+                          placeholder="e.g. Anv#9f82K!3q or leave blank to auto-generate"
+                          className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-[#0F172A] placeholder-[#94a3b8] focus:border-[#d49b38] focus:bg-white focus:outline-none font-mono text-sm"
                         />
-                        <span className="text-[10px] text-[#64748B] block mt-0.5">
-                          Set initial password or leave empty to auto-generate e.g. Anveshak@2026!
+                        <span className="text-[10px] text-[#64748B] block mt-1">
+                          Click "Auto-Generate Password" or enter a custom initial password. Credentials will be emailed to the employee.
                         </span>
                       </div>
 
