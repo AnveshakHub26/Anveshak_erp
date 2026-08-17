@@ -201,7 +201,7 @@ function StatusContent() {
 
       {/* Footer */}
       <div className="mt-6 border-t border-[#D7DEE6] pt-4 text-center text-xs text-[#5B6673]">
-        AnveshakHub v3.0 Master • Real-Time Registration Tracking
+        AnveshakHub Enterprise • Real-Time Registration Tracking
       </div>
     </div>
   );

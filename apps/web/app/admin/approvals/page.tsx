@@ -49,7 +49,7 @@ interface OrganizationItem {
   documents?: { id: string; storageKey: string; type: string; createdAt: string }[];
 }
 
-export default function Adm03ApprovalsPage() {
+export default function AdminApprovalsPage() {
   const router = useRouter();
   const { hasRole, isInitializing, user } = usePermissions();
 
@@ -104,7 +104,7 @@ export default function Adm03ApprovalsPage() {
       return;
     }
     if (!hasRole('ADMIN')) {
-      router.push('/unauthorized');
+      setError('Access Restricted: Administrator privileges are required to view the approval queue.');
     }
   }, [isInitializing, user, hasRole, router]);
 
@@ -136,7 +136,11 @@ export default function Adm03ApprovalsPage() {
         setTotalPages(res.data.totalPages || 1);
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to load organization applications list.');
+      if (err.status === 401 || err.message === 'Unauthorized' || err.status === 403 || err.message === 'Forbidden') {
+        setError('Access Restricted: You do not have Administrator permissions to access the Organization Approvals Queue. Please sign in as an Administrator.');
+      } else {
+        setError(err.message || 'Failed to load organization applications list.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -184,93 +188,87 @@ export default function Adm03ApprovalsPage() {
     }
   };
 
-  // Submit Decision (Approve / Reject / Request Changes)
-  const handleExecuteDecision = async () => {
+  // Decision Submission Handler
+  const handleDecisionSubmit = async () => {
     if (!selectedOrg) return;
-    const { decision, reason } = decisionModal;
-
-    if (decision !== 'APPROVE' && !reason.trim()) {
-      alert(`A mandatory ${decision === 'REJECT' ? 'reason' : 'feedback comment'} must be provided.`);
+    if (
+      (decisionModal.decision === 'REJECT' || decisionModal.decision === 'REQUEST_CHANGES') &&
+      !decisionModal.reason.trim()
+    ) {
+      setError('A mandatory reason must be provided for Rejection or Requesting Changes.');
       return;
     }
 
     setIsSubmittingDecision(true);
-    setSuccessMsg(null);
-    try {
-      await apiRequest(`/organizations/${selectedOrg.id}/decision`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          decision,
-          reason: reason.trim() || undefined,
-        }),
-      });
-
-      setSuccessMsg(
-        `Organization "${selectedOrg.legalName}" onboarding request was ${
-          decision === 'APPROVE' ? 'APPROVED' : decision === 'REJECT' ? 'REJECTED' : 'returned for CHANGES'
-        } successfully.`,
-      );
-
-      setDecisionModal({ isOpen: false, decision: 'APPROVE', reason: '' });
-      setSelectedOrg(null);
-      loadApplications();
-    } catch (err: any) {
-      alert(err.message || 'Failed to submit approval decision.');
-    } finally {
-      setIsSubmittingDecision(false);
-    }
-  };
-
-  const handleDirectApprove = async (orgId: string, legalName: string) => {
-    setIsSubmittingDecision(true);
-    setSuccessMsg(null);
     setError(null);
+    setSuccessMsg(null);
+
     try {
-      const res = await apiRequest(`/organizations/${orgId}/decision`, {
-        method: 'PATCH',
-        body: JSON.stringify({ decision: 'APPROVE' }),
-      });
-      setSuccessMsg(
-        res.data?.message || `Organization "${legalName}" approved successfully. Approval confirmation email sent to applicant.`
+      const res = await apiRequest<{ success: boolean; data: any }>(
+        `/organizations/${selectedOrg.id}/decision`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            decision: decisionModal.decision,
+            reason: decisionModal.reason.trim() || undefined,
+          }),
+        },
       );
-      setSelectedOrg(null);
-      loadApplications();
+
+      if (res.success) {
+        setSuccessMsg(
+          `Organization '${selectedOrg.legalName}' application successfully ${
+            decisionModal.decision === 'APPROVE'
+              ? 'APPROVED'
+              : decisionModal.decision === 'REJECT'
+              ? 'REJECTED'
+              : 'updated to CHANGES_REQUESTED'
+          }. Notification email dispatched.`,
+        );
+
+        setDecisionModal({ isOpen: false, decision: 'APPROVE', reason: '' });
+        setSelectedOrg(null);
+        await loadApplications();
+      }
     } catch (err: any) {
-      alert(err.message || 'Failed to approve organization.');
+      setError(err.message || 'Failed to record administrative decision.');
     } finally {
       setIsSubmittingDecision(false);
     }
   };
 
-  const handleDeleteOrganization = async () => {
+  // Delete Organization Application Handler
+  const handleDeleteSubmit = async () => {
     if (!deleteModal.orgId) return;
+
     setIsDeleting(true);
     setError(null);
     setSuccessMsg(null);
+
     try {
-      const res = await apiRequest(`/organizations/${deleteModal.orgId}`, {
-        method: 'DELETE',
-      });
-      setSuccessMsg(res.data?.message || `Organization '${deleteModal.orgName}' deleted successfully.`);
-      setDeleteModal({ isOpen: false, orgId: '', orgName: '', orgNumber: '', email: '' });
-      setSelectedOrg(null);
-      loadApplications();
+      const res = await apiRequest<{ success: boolean; message: string }>(
+        `/organizations/${deleteModal.orgId}`,
+        {
+          method: 'DELETE',
+        },
+      );
+
+      if (res.success) {
+        setSuccessMsg(`Registration application for '${deleteModal.orgName}' (${deleteModal.orgNumber}) has been cancelled and deleted.`);
+        setDeleteModal({ isOpen: false, orgId: '', orgName: '', orgNumber: '', email: '' });
+        if (selectedOrg?.id === deleteModal.orgId) {
+          setSelectedOrg(null);
+        }
+        await loadApplications();
+      }
     } catch (err: any) {
-      alert(err.message || 'Failed to delete organization.');
+      setError(err.message || 'Failed to delete organization registration application.');
     } finally {
       setIsDeleting(false);
     }
   };
 
-  if (!hasRole('ADMIN')) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="text-xs text-[#64748B]">Verifying ADMIN authorization...</div>
-      </div>
-    );
-  }
-
-  const statusBadge = (status: string) => {
+  const renderStatusBadge = (status: string) => {
     switch (status) {
       case 'APPROVED':
         return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#E6F4EA] text-[#137333]">Approved</span>;
@@ -298,7 +296,7 @@ export default function Adm03ApprovalsPage() {
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-[#0F172A]">
-                ADM-03 Verification & Approval Queue
+                Organization Verification & Approvals
               </h1>
               <p className="text-xs text-[#64748B]">
                 Review, verify, approve, or return Company/Industry onboarding applications.
@@ -318,7 +316,26 @@ export default function Adm03ApprovalsPage() {
           </div>
         </div>
 
-        {error && <Alert variant="error">{error}</Alert>}
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50/80 p-4 text-xs text-red-800 flex items-start space-x-3 shadow-xs">
+            <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <div className="font-semibold text-red-900 text-sm">
+                {error.includes('Access Restricted') ? 'Access Restricted' : 'Action Requirement'}
+              </div>
+              <p className="mt-0.5 text-red-700 leading-relaxed">{error}</p>
+            </div>
+            {error.includes('Access Restricted') && (
+              <Button
+                size="sm"
+                onClick={() => router.push('/login')}
+                className="bg-red-700 hover:bg-red-800 text-white font-medium text-xs border-0"
+              >
+                Sign In as Admin
+              </Button>
+            )}
+          </div>
+        )}
         {successMsg && <Alert variant="success">{successMsg}</Alert>}
 
         {/* Filter Controls & Search */}

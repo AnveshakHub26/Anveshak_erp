@@ -282,7 +282,7 @@ export default function Fnd01LandingPage() {
                       <div className="h-3 w-3 rounded-full bg-yellow-500/80" />
                       <div className="h-3 w-3 rounded-full bg-green-500/80" />
                     </div>
-                    <span className="text-[11px] font-mono text-[#94a3b8]">AnveshakHub v3.0</span>
+                    <span className="text-[11px] font-medium text-[#94a3b8]">AnveshakHub Enterprise</span>
                   </div>
 
                   {/* Dashboard Preview Header */}

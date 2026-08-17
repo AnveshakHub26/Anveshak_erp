@@ -235,8 +235,11 @@ export const Sidebar: React.FC<{ onItemClick?: () => void }> = ({ onItemClick })
 
       {/* Footer System Info */}
       <div className="p-4 border-t border-[#182238] text-xs text-[#94a3b8] shrink-0">
-        <div className="font-bold text-white">AnveshakHub v3.0</div>
-        <div className="text-[11px] text-[#64748b] mt-0.5">Organization Client Portal</div>
+        <div className="font-semibold text-white text-xs flex items-center justify-between">
+          <span>AnveshakHub Enterprise</span>
+          <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="System Operational"></span>
+        </div>
+        <div className="text-[11px] text-[#64748b] mt-0.5">Enterprise Operations Platform</div>
       </div>
     </div>
   );
