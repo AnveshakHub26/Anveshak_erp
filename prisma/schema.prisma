@@ -57,6 +57,7 @@ model User {
   createdResourceLinks        ProjectResourceLink[]       @relation("ResourceLinkCreators")
   createdSupportQueries       SupportQuery[]              @relation("CreatedSupportQueries")
   queryMessages               SupportQueryMessage[]       @relation("QueryMessageSenders")
+  createdWorkshops            Workshop[]                  @relation("CreatedWorkshops")
 
   @@map("users")
 }
@@ -877,6 +878,56 @@ model SupportQueryMessage {
   @@map("support_query_messages")
 }
 
+// ==========================================
+// ENTERPRISE WORKSHOP MANAGEMENT & DISCOVERY
+// ==========================================
 
+enum WorkshopMode {
+  ONLINE
+  PHYSICAL
+  HYBRID
+}
 
+enum WorkshopStatus {
+  DRAFT
+  PUBLISHED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
 
+model Workshop {
+  id                   String          @id @default(uuid())
+  title                String
+  shortDescription     String          @map("short_description") @db.Text
+  description          String?         @db.Text
+  category             String          // e.g. Artificial Intelligence, Cloud Computing, Cybersecurity, Robotics
+  organizer            String          @default("AnveshakHub Technical Team")
+  speakerName          String?         @map("speaker_name")
+  speakerRole          String?         @map("speaker_role")
+  date                 DateTime
+  startTime            String          @map("start_time")
+  endTime              String          @map("end_time")
+  timezone             String          @default("IST (UTC+5:30)")
+  mode                 WorkshopMode    @default(ONLINE)
+  meetingProvider      MeetingProvider @default(GOOGLE_MEET) @map("meeting_provider")
+  meetingUrl           String?         @map("meeting_url")
+  registrationUrl      String?         @map("registration_url")
+  location             String?
+  capacity             Int?
+  status               WorkshopStatus  @default(DRAFT)
+  isPublic             Boolean         @default(true) @map("is_public")
+  registrationDeadline DateTime?       @map("registration_deadline")
+  bannerUrl            String?         @map("banner_url")
+  createdById          String          @map("created_by_id")
+  createdAt            DateTime        @default(now()) @map("created_at")
+  updatedAt            DateTime        @updatedAt @map("updated_at")
+
+  createdBy User @relation("CreatedWorkshops", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([status])
+  @@index([date])
+  @@index([category])
+  @@index([isPublic])
+  @@map("workshops")
+}
