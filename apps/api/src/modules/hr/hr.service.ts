@@ -408,6 +408,19 @@ export class HRService {
       return newEmp;
     });
 
+    // Sync Supabase Auth User Identity if Supabase is operational
+    if (this.supabaseService?.isOperational) {
+      try {
+        await this.supabaseService.ensureSupabaseAuthUser({
+          id: employee.userId,
+          email: employee.workEmail,
+          password: initialPassword,
+        });
+      } catch (supaErr: any) {
+        console.warn(`Supabase Auth sync warning for onboarded employee: ${supaErr.message}`);
+      }
+    }
+
     // Dispatch Onboarding Email Notification with login credentials via EmailService
     if (this.emailService && employee.workEmail) {
       await this.emailService.sendAccountOnboardingEmail(
@@ -868,6 +881,19 @@ export class HRService {
 
       return items;
     });
+
+    // Sync Supabase Auth User Identities for bulk onboarded items
+    if (this.supabaseService?.isOperational) {
+      for (const item of provisionedItems) {
+        try {
+          await this.supabaseService.ensureSupabaseAuthUser({
+            id: item.userId,
+            email: item.workEmail,
+            password: item.initialPassword,
+          });
+        } catch {}
+      }
+    }
 
     // Send emails for bulk items
     if (this.emailService) {

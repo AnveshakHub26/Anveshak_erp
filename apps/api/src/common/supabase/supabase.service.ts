@@ -113,6 +113,13 @@ export class SupabaseService implements OnModuleInit {
     try {
       const { data: existing } = await this.adminAuth.getUserById(user.id);
       if (existing?.user) {
+        if (user.password) {
+          await this.adminAuth.updateUserById(user.id, {
+            password: user.password,
+            email_confirm: true,
+            user_metadata: { roles: user.roles || [] },
+          });
+        }
         return existing.user;
       }
 
