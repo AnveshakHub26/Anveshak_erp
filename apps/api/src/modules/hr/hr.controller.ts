@@ -109,6 +109,14 @@ export class HRController {
     return { success: true, data };
   }
 
+  @Get('employees/me')
+  @Roles('HR', 'ADMIN', 'PM', 'EXPERT', 'INTERN', 'STAFF', 'EXECUTIVE', 'QA', 'LEGAL')
+  @ApiOperation({ summary: 'GET /api/v1/hr/employees/me — Detailed profile for logged-in employee' })
+  async getSelfEmployee(@CurrentUser('id') userId: string) {
+    const data = await this.hrService.getSelfEmployee(userId);
+    return { success: true, data };
+  }
+
   @Get('employees/:id')
   @Roles('HR', 'ADMIN', 'PM', 'EXPERT', 'INTERN')
   @ApiOperation({ summary: 'GET /api/v1/hr/employees/:id — Detailed employee profile & employment history' })
@@ -154,6 +162,19 @@ export class HRController {
     @Param('id') id: string,
   ) {
     const data = await this.hrService.resendInvitation(user, id);
+    return { success: true, data };
+  }
+
+  @Post('employees/:id/exit')
+  @HttpCode(HttpStatus.OK)
+  @Roles('HR', 'ADMIN')
+  @ApiOperation({ summary: 'POST /api/v1/hr/employees/:id/exit — Offboard/Deactivate employee preserving record & employeeCode' })
+  async exitEmployee(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() body: { status?: 'RESIGNED' | 'TERMINATED'; exitDate?: string; remarks?: string },
+  ) {
+    const data = await this.hrService.exitEmployee(user, id, body);
     return { success: true, data };
   }
 }

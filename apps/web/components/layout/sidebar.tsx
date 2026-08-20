@@ -20,6 +20,7 @@ import {
   HelpCircle,
   PhoneCall,
   PlusCircle,
+  Clock,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -51,6 +52,18 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ['ADMIN', 'HR'],
   },
   {
+    label: 'HR Attendance Audit',
+    href: '/hr/attendance',
+    icon: Clock,
+    roles: ['ADMIN', 'HR'],
+  },
+  {
+    label: 'HR Leave Approvals',
+    href: '/hr/leave',
+    icon: Calendar,
+    roles: ['ADMIN', 'HR'],
+  },
+  {
     label: 'Employee Onboarding',
     href: '/hr/onboard',
     icon: UserPlus,
@@ -73,6 +86,13 @@ export const NAV_ITEMS: NavItem[] = [
     href: '/employee/dashboard',
     icon: UserCheck,
     roles: ['HR', 'PM', 'EXPERT', 'INTERN', 'STAFF', 'EXECUTIVE'],
+    subItems: [
+      { label: 'Overview', href: '/employee/dashboard' },
+      { label: 'My Profile', href: '/employee/profile' },
+      { label: 'My Attendance', href: '/employee/attendance' },
+      { label: 'My Leave', href: '/employee/leave' },
+      { label: 'My Documents', href: '/employee/documents' },
+    ],
   },
 
   // Dedicated Industry Client Portal Navigation (ORG_USER)

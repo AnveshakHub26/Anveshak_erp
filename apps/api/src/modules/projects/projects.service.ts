@@ -33,7 +33,80 @@ export class ProjectsService {
   ) {}
 
   /**
-   * Enterprise Projects List View with server-side multi-tenant organization boundary isolation
+   * Central Project Access Helper: Verifies user authorization for a specific project.
+   * - ADMIN: Access allowed across authorized scope.
+   * - PM / Creator: Access allowed for managed projects.
+   * - HR: Access allowed for HR resource/workforce management.
+   * - ORG_USER: Access allowed ONLY if project belongs to their active approved organization.
+   * - Assigned Workforce (EXPERT, INTERN, STAFF, EXECUTIVE, QA, LEGAL): Access allowed ONLY if actively assigned as a ProjectMember (status: 'ACTIVE').
+   * - Exited / Inactive Employees: Access DENIED (403 Forbidden).
+   * - Released / Unassigned Members: Access DENIED (403 Forbidden).
+   */
+  async checkProjectAccess(user: any, projectId: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        organization: { select: { id: true, status: true } },
+        members: { where: { status: 'ACTIVE' }, select: { employeeId: true, status: true } },
+      },
+    });
+
+    if (!project) {
+      throw new NotFoundException(`Project with ID '${projectId}' not found.`);
+    }
+
+    const isAdmin = user.roles?.includes('ADMIN');
+    const isPM = user.roles?.includes('PM') || project.createdById === user.id;
+    const isHR = user.roles?.includes('HR');
+    const isInternalWorkforce = user.roles?.some((r: string) =>
+      ['HR', 'PM', 'EXPERT', 'INTERN', 'STAFF', 'EXECUTIVE', 'QA', 'LEGAL'].includes(r),
+    );
+
+    // 1. ADMIN bypass
+    if (isAdmin) return project;
+
+    // 2. ORG_USER check
+    if (!isInternalWorkforce && user.roles?.includes('ORG_USER')) {
+      const orgUser = await this.prisma.organizationUser.findFirst({
+        where: { userId: user.id, status: 'ACTIVE' },
+      });
+      if (!orgUser || project.organizationId !== orgUser.organizationId) {
+        throw new ForbiddenException('Access denied: You do not have permission to access this organization project.');
+      }
+      return project;
+    }
+
+    // 3. Exited / Inactive Employee check for workforce
+    const employee = await this.prisma.employee.findUnique({
+      where: { userId: user.id },
+      select: { id: true, status: true },
+    });
+
+    if (employee && (employee.status === 'RESIGNED' || employee.status === 'TERMINATED')) {
+      throw new ForbiddenException('Exited or inactive employees cannot access projects.');
+    }
+
+    // 4. PM or HR check
+    if (isPM || isHR) return project;
+
+    // 5. Assigned Workforce membership check
+    if (!employee) {
+      throw new ForbiddenException('Employee profile required for project access.');
+    }
+
+    const isMember = project.members.some(
+      (m) => m.employeeId === employee.id && m.status === 'ACTIVE',
+    );
+
+    if (!isMember) {
+      throw new ForbiddenException('Access denied: You are not an active member of this project.');
+    }
+
+    return project;
+  }
+
+  /**
+   * Enterprise Projects List View with server-side multi-tenant organization boundary isolation & project membership scoping
    */
   async findAll(
     user: any,
@@ -43,7 +116,9 @@ export class ProjectsService {
     status?: string,
   ) {
     const isAdmin = user.roles?.includes('ADMIN');
-    const isInternalWorkforce = user.roles?.some((r: string) => ['HR', 'PM', 'EXPERT', 'INTERN', 'QA', 'LEGAL'].includes(r));
+    const isPM = user.roles?.includes('PM');
+    const isHR = user.roles?.includes('HR');
+    const isInternalWorkforce = user.roles?.some((r: string) => ['HR', 'PM', 'EXPERT', 'INTERN', 'STAFF', 'EXECUTIVE', 'QA', 'LEGAL'].includes(r));
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -60,6 +135,23 @@ export class ProjectsService {
       }
 
       where.organizationId = orgUser.organizationId;
+    } else if (!isAdmin && !isPM && !isHR && isInternalWorkforce) {
+      // Non-ADMIN/PM workforce employees only see projects where they are actively assigned
+      const employee = await this.prisma.employee.findUnique({
+        where: { userId: user.id },
+        select: { id: true, status: true },
+      });
+
+      if (!employee || employee.status === 'RESIGNED' || employee.status === 'TERMINATED') {
+        throw new ForbiddenException('Exited or inactive employees cannot access project records.');
+      }
+
+      where.members = {
+        some: {
+          employeeId: employee.id,
+          status: 'ACTIVE',
+        },
+      };
     }
 
     if (status) {
@@ -224,8 +316,10 @@ export class ProjectsService {
    * Project Detail View with document traceability and organization isolation
    */
   async findOne(user: any, id: string) {
+    await this.checkProjectAccess(user, id);
+
     const isAdmin = user.roles?.includes('ADMIN');
-    const isInternalWorkforce = user.roles?.some((r: string) => ['HR', 'PM', 'EXPERT', 'INTERN', 'QA', 'LEGAL'].includes(r));
+    const isInternalWorkforce = user.roles?.some((r: string) => ['HR', 'PM', 'EXPERT', 'INTERN', 'STAFF', 'EXECUTIVE', 'QA', 'LEGAL'].includes(r));
 
     const project = await this.prisma.project.findUnique({
       where: { id },
@@ -256,16 +350,6 @@ export class ProjectsService {
 
     if (!project) {
       throw new NotFoundException(`Project with ID '${id}' not found.`);
-    }
-
-    // Strict multi-tenant boundary isolation for Industry users
-    if (!isAdmin && !isInternalWorkforce) {
-      const orgUser = await this.prisma.organizationUser.findFirst({
-        where: { userId: user.id, status: 'ACTIVE' },
-      });
-      if (!orgUser || project.organizationId !== orgUser.organizationId) {
-        throw new ForbiddenException('Access denied: You do not have permission to view this project.');
-      }
     }
 
     // Preserved document traceability
@@ -869,14 +953,7 @@ export class ProjectsService {
    * Helper: Centralized server-side execution access check
    */
   async verifyProjectExecutionAccess(user: any, projectId: string, mode: 'MANAGE' | 'VIEW' = 'VIEW') {
-    const project = await this.prisma.project.findUnique({
-      where: { id: projectId },
-      include: { organization: true },
-    });
-
-    if (!project) {
-      throw new NotFoundException(`Project '${projectId}' not found.`);
-    }
+    const project = await this.checkProjectAccess(user, projectId);
 
     const isAdmin = user.roles?.includes('ADMIN');
     const isHr = user.roles?.includes('HR');
@@ -915,22 +992,8 @@ export class ProjectsService {
       return { project, isAdmin: false, isPm: true, employee };
     }
 
-    // mode === 'VIEW'
-    const isInternalWorkforce = user.roles?.some((r: string) => ['ADMIN', 'HR', 'PM', 'EXPERT', 'INTERN', 'QA', 'LEGAL'].includes(r));
-    if (isAdmin || isInternalWorkforce) {
-      return { project, isAdmin, isInternal: true, isOrgUser: false };
-    }
-
-    // Check Industry user (ORG_USER) tenant isolation
-    const orgUser = await this.prisma.organizationUser.findFirst({
-      where: { userId: user.id, status: 'ACTIVE' },
-    });
-
-    if (!orgUser || orgUser.organizationId !== project.organizationId) {
-      throw new ForbiddenException('Cannot access project execution outside your authorized organization.');
-    }
-
-    return { project, isAdmin: false, isInternal: false, isOrgUser: true };
+    const isInternalWorkforce = user.roles?.some((r: string) => ['ADMIN', 'HR', 'PM', 'EXPERT', 'INTERN', 'STAFF', 'EXECUTIVE', 'QA', 'LEGAL'].includes(r));
+    return { project, isAdmin, isInternal: isInternalWorkforce, isOrgUser: !isInternalWorkforce };
   }
 
   /**
@@ -1609,6 +1672,20 @@ export class ProjectsService {
       },
     });
 
+    const submitterUser = await this.prisma.user?.findUnique({
+      where: { id: deliverable.submittedById },
+      select: { email: true },
+    });
+
+    if (submitterUser?.email) {
+      await this.emailService?.sendDeliverableNotificationEmail(
+        submitterUser.email,
+        deliverable.title,
+        targetStatus,
+        reviewNotes,
+      );
+    }
+
     return updated;
   }
 
@@ -1654,7 +1731,15 @@ export class ProjectsService {
       include: {
         participants: {
           include: {
-            employee: { select: { id: true, employeeCode: true, fullName: true, userId: true } },
+            employee: {
+              select: {
+                id: true,
+                employeeCode: true,
+                fullName: true,
+                userId: true,
+                user: { select: { email: true } },
+              },
+            },
           },
         },
       },
@@ -1682,6 +1767,16 @@ export class ProjectsService {
             message: `You have been invited to meeting '${meeting.title}' for project ${project.projectCode}.`,
           },
         });
+
+        if (p.employee.user?.email) {
+          await this.emailService?.sendMeetingNotificationEmail(
+            p.employee.user.email,
+            meeting.title,
+            'SCHEDULED',
+            meeting.startDateTime.toISOString(),
+            meeting.meetingUrl,
+          );
+        }
       }
     }
 
@@ -1901,8 +1996,56 @@ export class ProjectsService {
     return { success: true, id: linkId };
   }
 
+  /**
+   * Idempotent initialization of standard Project document category folders
+   */
+  async ensureProjectDefaultFolders(user: any, projectId: string) {
+    const defaultCategories = [
+      'Requirements',
+      'Technical',
+      'Meetings',
+      'Deliverables',
+      'Client Shared',
+      'Internal',
+    ];
+
+    const existingFolders = await this.prisma.documentFolder.findMany({
+      where: { entityType: 'Project', entityId: projectId, parentFolderId: null },
+      select: { name: true },
+    });
+
+    const existingNames = new Set(existingFolders.map((f) => f.name));
+    const missingCategories = defaultCategories.filter((cat) => !existingNames.has(cat));
+
+    if (missingCategories.length > 0) {
+      await Promise.all(
+        missingCategories.map((name) =>
+          this.prisma.documentFolder.create({
+            data: {
+              name,
+              entityType: 'Project',
+              entityId: projectId,
+              parentFolderId: null,
+              createdById: user.id,
+            },
+          }),
+        ),
+      );
+    }
+
+    return this.prisma.documentFolder.findMany({
+      where: { entityType: 'Project', entityId: projectId, parentFolderId: null },
+      orderBy: { name: 'asc' },
+      include: {
+        _count: { select: { documents: true } },
+      },
+    });
+  }
+
   async getProjectFiles(user: any, projectId: string) {
     const { isOrgUser } = await this.verifyProjectExecutionAccess(user, projectId, 'VIEW');
+
+    const folders = await this.ensureProjectDefaultFolders(user, projectId);
 
     // Get documents attached to project directly OR deliverables of this project
     const deliverables = await this.prisma.projectDeliverable.findMany({
@@ -1920,16 +2063,19 @@ export class ProjectsService {
       },
       include: {
         uploader: { select: { id: true, email: true } },
+        folder: { select: { id: true, name: true } },
         versions: { orderBy: { version: 'desc' }, take: 1 },
       },
       orderBy: { createdAt: 'desc' },
     });
 
     if (isOrgUser) {
-      return docs.filter((d) => d.visibility === 'PUBLIC' || d.visibility === 'SHARED');
+      const safeFolders = folders.filter((f) => f.name !== 'Internal');
+      const safeDocs = docs.filter((d) => (d.visibility === 'PUBLIC' || d.visibility === 'SHARED') && d.folder?.name !== 'Internal');
+      return { folders: safeFolders, documents: safeDocs };
     }
 
-    return docs;
+    return { folders, documents: docs };
   }
 
   // --- PROJECT UNIFIED ACTIVITY LOG API ---
@@ -2355,7 +2501,100 @@ export class ProjectsService {
       },
     });
 
+    if (project.createdById) {
+      await this.prisma.notification.create({
+        data: {
+          recipientUserId: project.createdById,
+          eventType: 'CLIENT_MEETING_REQUESTED',
+          entityType: 'ProjectMeeting',
+          entityId: meeting.id,
+          message: `Industry client requested a meeting: '${meeting.title}' for project ${project.projectCode}.`,
+        },
+      });
+    }
+
     return meeting;
+  }
+
+  /**
+   * PATCH /api/v1/projects/:id/status — Update project lifecycle status
+   */
+  async updateProjectStatus(
+    user: any,
+    projectId: string,
+    newStatus: 'INITIATED' | 'RESOURCE_ASSIGNMENT' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED',
+    reason?: string,
+  ) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        members: {
+          where: { status: 'ACTIVE' },
+          include: { employee: { include: { user: { select: { email: true } } } } },
+        },
+      },
+    });
+
+    if (!project) {
+      throw new NotFoundException(`Project with ID '${projectId}' not found.`);
+    }
+
+    const isAdmin = user.roles?.includes('ADMIN');
+    const isPM = user.roles?.includes('PM');
+
+    if (!isAdmin && !isPM) {
+      throw new ForbiddenException('Only ADMIN or PM can update project lifecycle status.');
+    }
+
+    if (project.status === newStatus) {
+      return project;
+    }
+
+    // Terminal state lock guard
+    if ((project.status === 'COMPLETED' || project.status === 'CANCELLED') && !isAdmin) {
+      throw new BadRequestException(`Cannot transition project status from locked state '${project.status}'.`);
+    }
+
+    const updated = await this.prisma.project.update({
+      where: { id: projectId },
+      data: { status: newStatus as any },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorUserId: user.id,
+        action: 'PROJECT_STATUS_CHANGED',
+        entityType: 'Project',
+        entityId: projectId,
+        beforeJson: { status: project.status },
+        afterJson: { status: newStatus, reason },
+      },
+    });
+
+    // Notify all active project members
+    for (const member of project.members) {
+      if (member.employee?.userId) {
+        await this.prisma.notification.create({
+          data: {
+            recipientUserId: member.employee.userId,
+            eventType: 'PROJECT_STATUS_CHANGED',
+            entityType: 'Project',
+            entityId: projectId,
+            message: `Project ${project.projectCode} status changed to ${newStatus}.`,
+          },
+        });
+
+        if (member.employee.user?.email) {
+          await this.emailService?.sendProjectNotificationEmail(
+            member.employee.user.email,
+            project.title,
+            `Project status updated from ${project.status} to ${newStatus}. ${reason ? `Reason: ${reason}` : ''}`,
+          );
+        }
+      }
+    }
+
+    return updated;
   }
 }
 

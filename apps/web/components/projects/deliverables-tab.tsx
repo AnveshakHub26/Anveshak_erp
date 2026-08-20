@@ -1,5 +1,6 @@
 'use client';
 
+import { apiRequest } from '@/lib/api-client';
 import { useState } from 'react';
 import { ProjectDeliverable, ProjectMilestone } from '@anveshak/types';
 import { Button } from '@/components/ui/button';
@@ -52,17 +53,14 @@ export function DeliverablesTab({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/v1/projects/${projectId}/deliverables`, {
+      await apiRequest(`/projects/${projectId}/deliverables`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title,
           description: description || undefined,
           milestoneId: milestoneId || undefined,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to create deliverable');
 
       setShowCreateModal(false);
       setTitle('');
@@ -78,10 +76,10 @@ export function DeliverablesTab({
   const handleSubmitDeliverable = async (deliverableId: string) => {
     if (isLocked) return;
     try {
-      const res = await fetch(`/api/v1/projects/${projectId}/deliverables/${deliverableId}/submit`, {
+      await apiRequest(`/projects/${projectId}/deliverables/${deliverableId}/submit`, {
         method: 'POST',
       });
-      if (res.ok) onRefresh();
+      onRefresh();
     } catch (err) {
       console.error('Failed to submit deliverable:', err);
     }
@@ -93,13 +91,10 @@ export function DeliverablesTab({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/v1/projects/${projectId}/deliverables/${reviewDeliverable.id}/review`, {
+      await apiRequest(`/projects/${projectId}/deliverables/${reviewDeliverable.id}/review`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ decision, reviewNotes }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to review deliverable');
 
       setReviewDeliverable(null);
       setReviewNotes('');

@@ -4,6 +4,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { SupabaseService } from '../../common/supabase/supabase.service';
 import { LoginDto } from './dto/login.dto';
 import { Response } from 'express';
+import { getJwtSecret } from './jwt-secret.helper';
 
 import * as argon2 from 'argon2';
 
@@ -109,7 +110,7 @@ export class AuthService {
       }
       accessToken = jwt.sign(
         { sub: user.id, email: user.email },
-        process.env.JWT_SECRET || 'anveshak_secret',
+        getJwtSecret(),
         { expiresIn: '1d' },
       );
     }

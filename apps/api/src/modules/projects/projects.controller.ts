@@ -483,4 +483,18 @@ export class ProjectsController {
     const data = await this.projectsService.getProjectActivity(user, projectId);
     return { success: true, data };
   }
+
+  // --- PROJECT STATUS UPDATE ENDPOINT ---
+
+  @Patch(':id/status')
+  @Roles('ADMIN', 'PM')
+  @ApiOperation({ summary: 'PATCH /api/v1/projects/:id/status — Update project lifecycle status' })
+  async updateProjectStatus(
+    @CurrentUser() user: any,
+    @Param('id') projectId: string,
+    @Body() body: { status: 'INITIATED' | 'RESOURCE_ASSIGNMENT' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED'; reason?: string },
+  ) {
+    const data = await this.projectsService.updateProjectStatus(user, projectId, body.status, body.reason);
+    return { success: true, data };
+  }
 }

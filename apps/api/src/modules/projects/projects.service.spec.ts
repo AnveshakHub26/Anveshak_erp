@@ -17,6 +17,11 @@ describe('ProjectsService Resource Management Engine', () => {
       findUnique: jest.fn(),
       findMany: jest.fn(),
       count: jest.fn(),
+      update: jest.fn(),
+    },
+    user: {
+      findUnique: jest.fn(),
+      findFirst: jest.fn(),
     },
     projectResourceRequirement: {
       create: jest.fn(),
@@ -759,6 +764,125 @@ describe('ProjectsService Resource Management Engine', () => {
       });
     });
 
+    describe('Phase 6B Security & Access Control Hardening', () => {
+      const mockProject = {
+        id: 'proj-sec-1',
+        projectCode: 'PRJ-2026-000100',
+        organizationId: 'org-sec-1',
+        createdById: 'u-pm-1',
+        members: [{ employeeId: 'emp-active-1', status: 'ACTIVE' }],
+      };
+
+      const mockWorkforceUser = { id: 'u-emp-1', email: 'staff@anveshak.com', roles: ['EXPERT'] };
+      const mockUnassignedUser = { id: 'u-unassigned', email: 'unassigned@anveshak.com', roles: ['INTERN'] };
+      const mockExitedUser = { id: 'u-exited', email: 'exited@anveshak.com', roles: ['EXPERT'] };
+
+      it('1. ADMIN can access any authorized project', async () => {
+        mockPrisma.project.findUnique.mockResolvedValue(mockProject);
+        const res = await service.checkProjectAccess(mockAdminUser, 'proj-sec-1');
+        expect(res.id).toBe('proj-sec-1');
+      });
+
+      it('2. PM can access project they created or manage', async () => {
+        mockPrisma.project.findUnique.mockResolvedValue(mockProject);
+        const res = await service.checkProjectAccess(mockPmUser, 'proj-sec-1');
+        expect(res.id).toBe('proj-sec-1');
+      });
+
+      it('3. Active project member can access project', async () => {
+        mockPrisma.project.findUnique.mockResolvedValue(mockProject);
+        mockPrisma.employee.findUnique.mockResolvedValue({ id: 'emp-active-1', status: 'ACTIVE' });
+
+        const res = await service.checkProjectAccess(mockWorkforceUser, 'proj-sec-1');
+        expect(res.id).toBe('proj-sec-1');
+      });
+
+      it('4 & 5. Unassigned or released project member receives 403', async () => {
+        mockPrisma.project.findUnique.mockResolvedValue(mockProject);
+        mockPrisma.employee.findUnique.mockResolvedValue({ id: 'emp-released-99', status: 'ACTIVE' });
+
+        await expect(
+          service.checkProjectAccess(mockUnassignedUser, 'proj-sec-1'),
+        ).rejects.toThrow(ForbiddenException);
+      });
+
+      it('6. Exited employee receives 403 Forbidden', async () => {
+        mockPrisma.project.findUnique.mockResolvedValue(mockProject);
+        mockPrisma.employee.findUnique.mockResolvedValue({ id: 'emp-active-1', status: 'RESIGNED' });
+
+        await expect(
+          service.checkProjectAccess(mockExitedUser, 'proj-sec-1'),
+        ).rejects.toThrow(ForbiddenException);
+      });
+
+      it('7. ORG_USER can access project belonging to own organization', async () => {
+        mockPrisma.project.findUnique.mockResolvedValue(mockProject);
+        mockPrisma.organizationUser.findFirst.mockResolvedValue({
+          id: 'ou-1',
+          organizationId: 'org-sec-1',
+          status: 'ACTIVE',
+        });
+
+        const res = await service.checkProjectAccess(mockOrgUser, 'proj-sec-1');
+        expect(res.id).toBe('proj-sec-1');
+      });
+
+      it('8. ORG_USER receives 403 for project of another organization', async () => {
+        mockPrisma.project.findUnique.mockResolvedValue(mockProject);
+        mockPrisma.organizationUser.findFirst.mockResolvedValue({
+          id: 'ou-1',
+          organizationId: 'org-DIFFERENT-CLIENT',
+          status: 'ACTIVE',
+        });
+
+        await expect(
+          service.checkProjectAccess(mockOrgUser, 'proj-sec-1'),
+        ).rejects.toThrow(ForbiddenException);
+      });
+    });
+
+    describe('Phase 6D Lifecycle & Communication Workflow', () => {
+      it('should transition project status and dispatch notifications to active members', async () => {
+        mockPrisma.project.findUnique.mockResolvedValue({
+          id: 'proj-1',
+          projectCode: 'PRJ-2026-000001',
+          title: 'ERP Completion',
+          status: 'IN_PROGRESS',
+          members: [
+            { employee: { userId: 'u-emp-1', email: 'worker@anveshak.com' } },
+          ],
+        });
+        mockPrisma.project.update.mockResolvedValue({ id: 'proj-1', status: 'COMPLETED' });
+        mockPrisma.auditLog.create.mockResolvedValue({ id: 'al-1' });
+        mockPrisma.notification.create.mockResolvedValue({ id: 'notif-1' });
+
+        const res = await service.updateProjectStatus(mockAdminUser, 'proj-1', 'COMPLETED', 'Milestones fulfilled');
+
+        expect(res.status).toBe('COMPLETED');
+        expect(mockPrisma.auditLog.create).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            action: 'PROJECT_STATUS_CHANGED',
+          }),
+        });
+        expect(mockPrisma.notification.create).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            eventType: 'PROJECT_STATUS_CHANGED',
+          }),
+        });
+      });
+
+      it('should prevent non-ADMIN from changing status on COMPLETED project', async () => {
+        mockPrisma.project.findUnique.mockResolvedValue({
+          id: 'proj-1',
+          status: 'COMPLETED',
+          members: [],
+        });
+
+        await expect(
+          service.updateProjectStatus(mockPmUser, 'proj-1', 'IN_PROGRESS'),
+        ).rejects.toThrow(BadRequestException);
+      });
+    });
   });
 });
 

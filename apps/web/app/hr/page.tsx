@@ -28,6 +28,8 @@ import {
   Eye,
   Edit3,
   UserX,
+  Clock,
+  Calendar,
 } from 'lucide-react';
 
 interface DashboardMetrics {
@@ -210,7 +212,19 @@ export default function HRPage() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/hr/attendance">
+              <Button variant="outline" size="sm" className="border-[#E2E8F0] text-xs">
+                <Clock className="h-4 w-4 mr-1.5 text-[#d49b38]" />
+                Attendance Audit
+              </Button>
+            </Link>
+            <Link href="/hr/leave">
+              <Button variant="outline" size="sm" className="border-[#E2E8F0] text-xs">
+                <Calendar className="h-4 w-4 mr-1.5 text-[#d49b38]" />
+                Leave Approvals
+              </Button>
+            </Link>
             <Link href="/hr/onboard">
               <Button variant="primary" size="sm">
                 <PlusCircle className="h-4 w-4 mr-1.5" />

@@ -42,7 +42,7 @@ export default function ProjectDetailPage() {
   const [deliverables, setDeliverables] = useState<any[]>([]);
   const [meetings, setMeetings] = useState<any[]>([]);
   const [resourceLinks, setResourceLinks] = useState<any[]>([]);
-  const [files, setFiles] = useState<any[]>([]);
+  const [files, setFiles] = useState<any>({ folders: [], documents: [] });
   const [activities, setActivities] = useState<any[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -263,7 +263,7 @@ export default function ProjectDetailPage() {
           }`}
         >
           <Paperclip className="h-4 w-4 text-[#d49b38]" />
-          <span>Files &amp; External Links</span>
+          <span>Documents</span>
         </button>
 
         {!isOrgUser && (
@@ -329,7 +329,9 @@ export default function ProjectDetailPage() {
           projectId={data.id}
           isLocked={isLocked}
           isAdminOrPm={isAdminOrPm}
-          files={files}
+          isOrgUser={isOrgUser}
+          folders={files?.folders || []}
+          documents={files?.documents || (Array.isArray(files) ? files : [])}
           links={resourceLinks}
           onRefresh={loadWorkspaceData}
         />

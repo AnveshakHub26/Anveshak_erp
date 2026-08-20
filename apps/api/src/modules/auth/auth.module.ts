@@ -6,12 +6,13 @@ import { AuthController } from './auth.controller';
 import { InvitationsService } from './invitations.service';
 import { InvitationsController } from './invitations.controller';
 import { JwtStrategy } from './jwt.strategy';
+import { getJwtSecret } from './jwt-secret.helper';
 
 @Module({
   imports: [
     PassportModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'anveshak_super_secret_jwt_key_change_in_production_2026!',
+      secret: getJwtSecret(),
       signOptions: { expiresIn: '1d' },
     }),
   ],

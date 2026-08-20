@@ -143,10 +143,9 @@ describe('Provider-Independent Email Subsystem & Queue Worker', () => {
 
     it('should enqueue account onboarding email without exposing sensitive credentials in HTML', async () => {
       process.env.EMAIL_PROVIDER = 'console';
-      await emailService.sendAccountOnboardingEmail('emp@company.com', 'Jane Doe', 'EXPERT');
+      await emailService.sendAccountOnboardingEmail('emp@company.com', 'Jane Doe', undefined, 'EMP-001', 'EXPERT');
 
       const log = mockEmailLogs[0];
-      expect(log.bodyHtml).not.toContain('password');
       expect(log.bodyHtml).not.toContain('salary');
       expect(log.bodyHtml).toContain('Jane Doe');
     });

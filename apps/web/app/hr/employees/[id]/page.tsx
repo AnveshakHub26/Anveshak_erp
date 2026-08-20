@@ -8,6 +8,7 @@ import { apiRequest } from '@/lib/api-client';
 import { AppShell } from '@/components/layout/app-shell';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
+import { DocumentBrowser } from '@/components/documents/document-browser';
 import {
   ChevronLeft,
   UserCheck,
@@ -123,7 +124,7 @@ export default function HREmployeeDetailPage() {
   const searchParams = useSearchParams();
 
   // Tab State
-  const [activeTab, setActiveTab] = useState<'profile' | 'skills' | 'nda' | 'history' | 'projects' | 'account'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'skills' | 'nda' | 'history' | 'documents' | 'projects' | 'account'>('profile');
 
   // Modal States
   const [showEditModal, setShowEditModal] = useState(false);
@@ -135,7 +136,7 @@ export default function HREmployeeDetailPage() {
     const tabParam = searchParams.get('tab');
     const modalParam = searchParams.get('modal');
 
-    if (tabParam === 'history' || tabParam === 'skills' || tabParam === 'nda' || tabParam === 'projects' || tabParam === 'account') {
+    if (tabParam === 'history' || tabParam === 'skills' || tabParam === 'nda' || tabParam === 'documents' || tabParam === 'projects' || tabParam === 'account') {
       setActiveTab(tabParam as any);
     }
     if (modalParam === 'edit') setShowEditModal(true);
@@ -465,6 +466,7 @@ export default function HREmployeeDetailPage() {
             { id: 'skills', label: 'Skills & Tech' },
             { id: 'nda', label: 'NDA & Governance' },
             { id: 'history', label: 'Employment History' },
+            { id: 'documents', label: 'Employee Documents' },
             { id: 'projects', label: 'Projects (Read-Only)' },
             { id: 'account', label: 'Account & Security' },
           ].map((t) => (
@@ -743,6 +745,19 @@ export default function HREmployeeDetailPage() {
             ) : (
               <div className="text-xs text-[#64748b] text-center py-6">No historical transitions recorded yet.</div>
             )}
+          </div>
+        )}
+
+        {/* ========================================== */}
+        {/* TAB: EMPLOYEE VAULT DOCUMENTS              */}
+        {/* ========================================== */}
+        {activeTab === 'documents' && (
+          <div className="rounded-xl border border-[#182238] bg-[#151c2e] p-6 shadow-sm">
+            <DocumentBrowser
+              entityType="Employee"
+              entityId={employee.id}
+              entityTitle={`${employee.firstName} ${employee.lastName}'s`}
+            />
           </div>
         )}
 

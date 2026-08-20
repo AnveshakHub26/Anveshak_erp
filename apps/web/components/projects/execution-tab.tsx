@@ -1,5 +1,6 @@
 'use client';
 
+import { apiRequest } from '@/lib/api-client';
 import { useState } from 'react';
 import { ProjectMilestone, ProjectTask, ProjectMember } from '@anveshak/types';
 import { Button } from '@/components/ui/button';
@@ -69,9 +70,8 @@ export function ExecutionTab({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/v1/projects/${projectId}/milestones`, {
+      await apiRequest(`/projects/${projectId}/milestones`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: mTitle,
           description: mDescription || undefined,
@@ -79,8 +79,6 @@ export function ExecutionTab({
           sequence: Number(mSequence),
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to create milestone');
 
       setShowMilestoneModal(false);
       setMTitle('');
@@ -99,9 +97,8 @@ export function ExecutionTab({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/v1/projects/${projectId}/tasks`, {
+      await apiRequest(`/projects/${projectId}/tasks`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: tTitle,
           description: tDescription || undefined,
@@ -112,8 +109,6 @@ export function ExecutionTab({
           estimatedHours: tEstHours ? Number(tEstHours) : undefined,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to create task');
 
       setShowTaskModal(false);
       setTTitle('');
@@ -130,12 +125,11 @@ export function ExecutionTab({
   const handleTaskStatusChange = async (taskId: string, newStatus: string) => {
     if (isLocked) return;
     try {
-      const res = await fetch(`/api/v1/projects/${projectId}/tasks/${taskId}`, {
+      await apiRequest(`/projects/${projectId}/tasks/${taskId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       });
-      if (res.ok) onRefresh();
+      onRefresh();
     } catch (err) {
       console.error('Failed to update task status:', err);
     }

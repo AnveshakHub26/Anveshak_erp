@@ -58,6 +58,8 @@ model User {
   createdSupportQueries       SupportQuery[]              @relation("CreatedSupportQueries")
   queryMessages               SupportQueryMessage[]       @relation("QueryMessageSenders")
   createdWorkshops            Workshop[]                  @relation("CreatedWorkshops")
+  reviewedLeaveRequests       LeaveRequest[]              @relation("LeaveRequestReviewers")
+  createdFolders              DocumentFolder[]            @relation("CreatedDocumentFolders")
 
   @@map("users")
 }
@@ -309,10 +311,32 @@ enum DocumentVisibility {
   PUBLIC
 }
 
+model DocumentFolder {
+  id             String          @id @default(uuid())
+  name           String
+  parentFolderId String?         @map("parent_folder_id")
+  entityType     String          @map("entity_type")
+  entityId       String          @map("entity_id")
+  createdById    String          @map("created_by_id")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  parentFolder   DocumentFolder?  @relation("FolderHierarchy", fields: [parentFolderId], references: [id], onDelete: Cascade)
+  subFolders     DocumentFolder[] @relation("FolderHierarchy")
+  createdBy      User             @relation("CreatedDocumentFolders", fields: [createdById], references: [id], onDelete: Restrict)
+  documents      Document[]
+
+  @@unique([entityType, entityId, parentFolderId, name])
+  @@index([entityType, entityId])
+  @@index([parentFolderId])
+  @@map("document_folders")
+}
+
 model Document {
   id         String             @id @default(uuid())
   entityType String             @map("entity_type") // e.g. Organization, Lead, Project, Deliverable
   entityId   String             @map("entity_id")
+  folderId   String?            @map("folder_id")
   type       String             // e.g. Registration, Proposal, NDA, Invoice
   storageKey String             @map("storage_key")
   scanStatus ScanStatus         @default(PENDING) @map("scan_status")
@@ -322,9 +346,13 @@ model Document {
   updatedAt  DateTime           @updatedAt @map("updated_at")
 
   uploader User              @relation("UploadedDocuments", fields: [uploadedBy], references: [id])
+  folder   DocumentFolder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
   versions DocumentVersion[]
 
   @@index([entityType, entityId])
+  @@index([folderId])
+  @@index([type])
+  @@index([storageKey])
   @@map("documents")
 }
 
@@ -473,6 +501,19 @@ enum NdaStatus {
   EXPIRED
 }
 
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  CLOCKED_IN
+  ON_BREAK
+  CLOCKED_OUT
+}
+
 model Employee {
   id               String           @id @default(uuid())
   employeeCode     String           @unique @map("employee_code") // e.g. EMP-2026-000001 (lifelong immutable identifier)
@@ -509,6 +550,9 @@ model Employee {
   projectMemberships    ProjectMember[]
   assignedTasks         ProjectTask[]
   meetingParticipations ProjectMeetingParticipant[]
+  leaveBalances         LeaveBalance[]
+  leaveRequests         LeaveRequest[]
+  attendances           Attendance[]
 
   @@index([department])
   @@index([status])
@@ -538,6 +582,118 @@ model EmploymentHistory {
   @@index([employeeId])
   @@map("employment_history")
 }
+
+// ==========================================
+// LEAVE MANAGEMENT FOUNDATION
+// ==========================================
+
+model LeaveType {
+  id               String   @id @default(uuid())
+  code             String   @unique // e.g. SICK, CASUAL, ANNUAL, MATERNITY, PATERNITY, STUDY
+  name             String   @unique // e.g. "Sick Leave", "Casual Leave", "Annual Leave"
+  description      String?  @db.Text
+  isPaid           Boolean  @default(true) @map("is_paid")
+  annualAllocation Int      @default(0) @map("annual_allocation") // Entitlement days per year (>= 0)
+  isActive         Boolean  @default(true) @map("is_active")      // Inactive types are preserved for history
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  balances LeaveBalance[]
+  requests LeaveRequest[]
+
+  @@index([isActive])
+  @@map("leave_types")
+}
+
+model LeaveBalance {
+  id            String   @id @default(uuid())
+  employeeId    String   @map("employee_id")
+  leaveTypeId   String   @map("leave_type_id")
+  year          Int      // Calendar year, e.g. 2026
+  allocatedDays Float    @default(0) @map("allocated_days") // Total entitlement for this year (>= 0)
+  usedDays      Float    @default(0) @map("used_days")       // Days consumed by APPROVED requests (>= 0)
+  pendingDays   Float    @default(0) @map("pending_days")    // Days locked by PENDING requests (>= 0)
+  // Available balance = allocatedDays - usedDays - pendingDays (computed at query time, never stored)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  employee  Employee  @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict)
+
+  @@unique([employeeId, leaveTypeId, year])
+  @@index([employeeId])
+  @@index([leaveTypeId])
+  @@map("leave_balances")
+}
+
+model LeaveRequest {
+  id              String             @id @default(uuid())
+  referenceCode   String             @unique @map("reference_code") // e.g. LR-2026-000001 — permanent, generated via SystemCounter
+  employeeId      String             @map("employee_id")
+  leaveTypeId     String             @map("leave_type_id")
+  startDate       DateTime           @map("start_date")
+  endDate         DateTime           @map("end_date")
+  totalDays       Float              @map("total_days")        // > 0; Float supports future half-day leave
+  reason          String             @db.Text
+  status          LeaveRequestStatus @default(PENDING)
+  reviewedById    String?            @map("reviewed_by_id")
+  reviewedAt      DateTime?          @map("reviewed_at")
+  rejectionReason String?            @db.Text @map("rejection_reason")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  employee   Employee   @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  leaveType  LeaveType  @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict)
+  reviewedBy User?      @relation("LeaveRequestReviewers", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([employeeId])
+  @@index([leaveTypeId])
+  @@index([status])
+  @@index([startDate])
+  @@map("leave_requests")
+}
+
+// ==========================================
+// EMPLOYEE ATTENDANCE & WORK TIME FOUNDATION
+// ==========================================
+
+model Attendance {
+  id                 String           @id @default(uuid())
+  employeeId         String           @map("employee_id")
+  attendanceDate     DateTime         @map("attendance_date") @db.Date // Date only: YYYY-MM-DD
+  clockInAt          DateTime         @map("clock_in_at")
+  clockOutAt         DateTime?        @map("clock_out_at")
+  totalWorkedMinutes Int              @default(0) @map("total_worked_minutes")
+  totalBreakMinutes  Int              @default(0) @map("total_break_minutes")
+  status             AttendanceStatus @default(CLOCKED_IN)
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+
+  employee Employee          @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  breaks   AttendanceBreak[]
+
+  @@unique([employeeId, attendanceDate])
+  @@index([employeeId])
+  @@index([attendanceDate])
+  @@index([status])
+  @@map("attendances")
+}
+
+model AttendanceBreak {
+  id           String    @id @default(uuid())
+  attendanceId String    @map("attendance_id")
+  startTime    DateTime  @map("start_time")
+  endTime      DateTime? @map("end_time")
+  durationMins Int       @default(0) @map("duration_mins")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  attendance Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+
+  @@index([attendanceId])
+  @@map("attendance_breaks")
+}
+
 
 model ProjectMember {
   id            String    @id @default(uuid())

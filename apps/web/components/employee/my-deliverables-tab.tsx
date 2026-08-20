@@ -1,5 +1,6 @@
 'use client';
 
+import { apiRequest } from '@/lib/api-client';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,13 +38,10 @@ export function MyDeliverablesTab({ deliverables, myProjects, onRefresh }: MyDel
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/v1/projects/${projectId}/deliverables`, {
+      await apiRequest(`/projects/${projectId}/deliverables`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, description: description || undefined }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to create deliverable draft');
 
       setShowCreateModal(false);
       setTitle('');
@@ -58,10 +56,10 @@ export function MyDeliverablesTab({ deliverables, myProjects, onRefresh }: MyDel
 
   const handleSubmitDeliverable = async (pId: string, dId: string) => {
     try {
-      const res = await fetch(`/api/v1/projects/${pId}/deliverables/${dId}/submit`, {
+      await apiRequest(`/projects/${pId}/deliverables/${dId}/submit`, {
         method: 'POST',
       });
-      if (res.ok) onRefresh();
+      onRefresh();
     } catch (err) {
       console.error('Failed to submit deliverable:', err);
     }

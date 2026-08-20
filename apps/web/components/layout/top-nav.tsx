@@ -4,7 +4,8 @@ import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { UserMenu } from './user-menu';
-import { Bell, Search, ArrowLeft, Home } from 'lucide-react';
+import { NotificationHeaderBell } from './notification-header-bell';
+import { Search, ArrowLeft, Home } from 'lucide-react';
 
 export const TopNav: React.FC = () => {
   const router = useRouter();
@@ -49,14 +50,7 @@ export const TopNav: React.FC = () => {
 
       {/* Right Notifications & Profile */}
       <div className="flex items-center space-x-4">
-        <Link
-          href="/notifications"
-          className="relative rounded-lg p-2 text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A] transition-colors"
-          title="Notification Center"
-        >
-          <Bell className="h-5 w-5" />
-          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#d49b38]" />
-        </Link>
+        <NotificationHeaderBell />
         <div className="h-5 w-px bg-[#E2E8F0]" />
         <UserMenu />
       </div>

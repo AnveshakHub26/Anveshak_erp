@@ -15,12 +15,15 @@ import * as argon2 from 'argon2';
 
 import { EmailService } from '../../common/email/email.service';
 
+import { NotificationsService } from '../notifications/notifications.service';
+
 @Injectable()
 export class HRService {
   constructor(
     private prisma: PrismaService,
     @Optional() private supabaseService?: SupabaseService,
     @Optional() private emailService?: EmailService,
+    @Optional() private notificationsService?: NotificationsService,
   ) {}
 
   /**
@@ -230,6 +233,38 @@ export class HRService {
 
     if (!employee) {
       throw new NotFoundException(`Employee record with ID '${id}' not found.`);
+    }
+
+    return employee;
+  }
+
+  /**
+   * GET /api/v1/hr/employees/me — Fetch Logged-In Employee Profile
+   */
+  async getSelfEmployee(userId: string) {
+    const employee = await this.prisma.employee.findUnique({
+      where: { userId },
+      include: {
+        user: {
+          select: { id: true, email: true, status: true, lastLoginAt: true, createdAt: true },
+        },
+        history: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            changedBy: { select: { id: true, email: true } },
+          },
+        },
+        projectMemberships: {
+          orderBy: { assignedAt: 'desc' },
+          include: {
+            project: { select: { id: true, projectCode: true, title: true, status: true } },
+          },
+        },
+      },
+    });
+
+    if (!employee) {
+      throw new NotFoundException(`Employee profile not linked to active user account.`);
     }
 
     return employee;
@@ -575,6 +610,125 @@ export class HRService {
 
       return emp;
     });
+
+    if (existing.userId) {
+      try {
+        if (this.notificationsService) {
+          await this.notificationsService.create({
+            recipientUserId: existing.userId,
+            eventType: 'EMPLOYEE_ACCOUNT',
+            entityType: 'Employee',
+            entityId: existing.id,
+            message: `Your employee account (${existing.employeeCode}) has been reactivated.`,
+          });
+        }
+
+        if (this.emailService && existing.workEmail) {
+          await this.emailService.sendEmployeeRehireEmail(
+            existing.workEmail,
+            existing.fullName,
+            existing.employeeCode,
+            data.designation.trim(),
+            data.department.trim(),
+          );
+        }
+      } catch {
+        // Non-blocking notification failure
+      }
+    }
+
+    return updated;
+  }
+
+  /**
+   * POST /api/v1/hr/employees/:id/exit — Deactivate/Offboard Employee (preserves history & employeeCode)
+   */
+  async exitEmployee(
+    adminUser: any,
+    id: string,
+    data: { status?: 'RESIGNED' | 'TERMINATED'; exitDate?: string; remarks?: string },
+  ) {
+    const existing = await this.prisma.employee.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Employee record with ID '${id}' not found.`);
+    }
+
+    const exitStatus = data.status || 'RESIGNED';
+    const exitDate = data.exitDate ? new Date(data.exitDate) : new Date();
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const emp = await tx.employee.update({
+        where: { id },
+        data: {
+          status: exitStatus as any,
+          exitDate,
+        },
+      });
+
+      // Disable user login account upon exit
+      await tx.user.update({
+        where: { id: existing.userId },
+        data: { status: 'INACTIVE' },
+      });
+
+      await tx.employmentHistory.create({
+        data: {
+          employeeId: id,
+          changeType: 'EMPLOYEE_EXIT',
+          previousStatus: existing.status,
+          newStatus: exitStatus as any,
+          previousType: existing.employmentType,
+          newType: existing.employmentType,
+          previousDesignation: existing.designation,
+          newDesignation: existing.designation,
+          remarks: data.remarks?.trim() || `Employee offboarded (${exitStatus}).`,
+          effectiveDate: exitDate,
+          changedById: adminUser.id,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: adminUser.id,
+          action: 'EXIT_EMPLOYEE',
+          entityType: 'EMPLOYEE',
+          entityId: id,
+          beforeJson: { status: existing.status, exitDate: existing.exitDate } as any,
+          afterJson: { status: emp.status, exitDate: emp.exitDate } as any,
+        },
+      });
+
+      return emp;
+    });
+
+    if (existing.userId) {
+      try {
+        if (this.notificationsService) {
+          await this.notificationsService.create({
+            recipientUserId: existing.userId,
+            eventType: 'EMPLOYEE_ACCOUNT',
+            entityType: 'Employee',
+            entityId: existing.id,
+            message: `Your employee offboarding (${exitStatus}) effective ${exitDate.toISOString().split('T')[0]} has been registered.`,
+          });
+        }
+
+        if (this.emailService && existing.workEmail) {
+          await this.emailService.sendEmployeeExitEmail(
+            existing.workEmail,
+            existing.fullName,
+            existing.employeeCode,
+            exitDate.toISOString().split('T')[0],
+          );
+        }
+      } catch {
+        // Non-blocking notification failure
+      }
+    }
 
     return updated;
   }

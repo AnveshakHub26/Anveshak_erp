@@ -10,11 +10,14 @@ import { PrismaService } from '../../database/prisma.service';
 import { Prisma } from '@prisma/client';
 import { EmailService } from '../../common/email/email.service';
 
+import { DocumentsService } from '../documents/documents.service';
+
 @Injectable()
 export class IndustryService {
   constructor(
     private prisma: PrismaService,
     @Optional() private emailService?: EmailService,
+    @Optional() private docsService?: DocumentsService,
   ) {}
 
   private async generatePsCode(): Promise<string> {
@@ -485,19 +488,15 @@ export class IndustryService {
         },
       });
 
-      if (data.documentStorageKeys && data.documentStorageKeys.length > 0) {
-        for (const storageKey of data.documentStorageKeys) {
-          await tx.document.create({
-            data: {
-              entityType: 'ProblemStatement',
-              entityId: ps.id,
-              type: 'TechnicalSpecification',
-              storageKey,
-              visibility: 'PRIVATE',
-              uploadedBy: user.id,
-            },
-          });
-        }
+      if (data.documentStorageKeys && data.documentStorageKeys.length > 0 && this.docsService) {
+        await this.docsService.linkDocumentsToEntity(
+          tx,
+          'ProblemStatement',
+          ps.id,
+          data.documentStorageKeys,
+          user.id,
+          'TechnicalSpecification',
+        );
       }
 
       await tx.auditLog.create({

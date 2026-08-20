@@ -314,4 +314,166 @@ export class EmailService {
       metadata: { alertTitle },
     });
   }
+
+  /**
+   * Leave Category Helper: HR Leave Submission Email
+   */
+  async sendLeaveSubmittedHREmail(
+    toEmail: string,
+    employeeName: string,
+    employeeCode: string,
+    referenceCode: string,
+    leaveType: string,
+    isPaid: boolean,
+    startDate: string,
+    endDate: string,
+    totalDays: number,
+    reason: string,
+  ) {
+    const hrUrl = process.env.APP_URL ? `${process.env.APP_URL}/hr/leave` : 'http://localhost:3000/hr/leave';
+    const { renderLeaveSubmittedHRTemplate } = await import('./templates/leave-notification.template');
+    const tpl = renderLeaveSubmittedHRTemplate(
+      employeeName,
+      employeeCode,
+      referenceCode,
+      leaveType,
+      isPaid,
+      startDate,
+      endDate,
+      totalDays,
+      reason,
+      hrUrl,
+    );
+
+    return this.sendTransactionalEmail({
+      to: toEmail,
+      subject: tpl.subject,
+      html: tpl.html,
+      text: tpl.text,
+      category: TransactionalEmailCategory.LEAVE_NOTIFICATION,
+      idempotencyKey: `leave-sub-${referenceCode}-${Date.now()}`,
+    });
+  }
+
+  /**
+   * Leave Category Helper: Employee Leave Approval Email
+   */
+  async sendLeaveApprovedEmail(
+    toEmail: string,
+    employeeName: string,
+    referenceCode: string,
+    leaveType: string,
+    startDate: string,
+    endDate: string,
+    totalDays: number,
+    reviewerName: string,
+  ) {
+    const leaveUrl = process.env.APP_URL ? `${process.env.APP_URL}/employee/leave` : 'http://localhost:3000/employee/leave';
+    const { renderLeaveApprovedTemplate } = await import('./templates/leave-notification.template');
+    const tpl = renderLeaveApprovedTemplate(
+      employeeName,
+      referenceCode,
+      leaveType,
+      startDate,
+      endDate,
+      totalDays,
+      reviewerName,
+      leaveUrl,
+    );
+
+    return this.sendTransactionalEmail({
+      to: toEmail,
+      subject: tpl.subject,
+      html: tpl.html,
+      text: tpl.text,
+      category: TransactionalEmailCategory.LEAVE_NOTIFICATION,
+      idempotencyKey: `leave-appr-${referenceCode}-${Date.now()}`,
+    });
+  }
+
+  /**
+   * Leave Category Helper: Employee Leave Rejection Email
+   */
+  async sendLeaveRejectedEmail(
+    toEmail: string,
+    employeeName: string,
+    referenceCode: string,
+    leaveType: string,
+    startDate: string,
+    endDate: string,
+    rejectionReason: string,
+  ) {
+    const leaveUrl = process.env.APP_URL ? `${process.env.APP_URL}/employee/leave` : 'http://localhost:3000/employee/leave';
+    const { renderLeaveRejectedTemplate } = await import('./templates/leave-notification.template');
+    const tpl = renderLeaveRejectedTemplate(
+      employeeName,
+      referenceCode,
+      leaveType,
+      startDate,
+      endDate,
+      rejectionReason,
+      leaveUrl,
+    );
+
+    return this.sendTransactionalEmail({
+      to: toEmail,
+      subject: tpl.subject,
+      html: tpl.html,
+      text: tpl.text,
+      category: TransactionalEmailCategory.LEAVE_NOTIFICATION,
+      idempotencyKey: `leave-rej-${referenceCode}-${Date.now()}`,
+    });
+  }
+
+  /**
+   * Employee Lifecycle Category Helper: Employee Rehire Email
+   */
+  async sendEmployeeRehireEmail(
+    toEmail: string,
+    employeeName: string,
+    employeeCode: string,
+    designation: string,
+    department: string,
+  ) {
+    const loginUrl = process.env.APP_URL ? `${process.env.APP_URL}/login` : 'http://localhost:3000/login';
+    const { renderEmployeeRehireTemplate } = await import('./templates/employee-lifecycle.template');
+    const tpl = renderEmployeeRehireTemplate(
+      employeeName,
+      employeeCode,
+      designation,
+      department,
+      loginUrl,
+    );
+
+    return this.sendTransactionalEmail({
+      to: toEmail,
+      subject: tpl.subject,
+      html: tpl.html,
+      text: tpl.text,
+      category: TransactionalEmailCategory.EMPLOYEE_LIFECYCLE,
+      idempotencyKey: `emp-rehire-${employeeCode}-${Date.now()}`,
+    });
+  }
+
+  /**
+   * Employee Lifecycle Category Helper: Employee Exit Email
+   */
+  async sendEmployeeExitEmail(
+    toEmail: string,
+    employeeName: string,
+    employeeCode: string,
+    exitDate: string,
+  ) {
+    const { renderEmployeeExitTemplate } = await import('./templates/employee-lifecycle.template');
+    const tpl = renderEmployeeExitTemplate(employeeName, employeeCode, exitDate);
+
+    return this.sendTransactionalEmail({
+      to: toEmail,
+      subject: tpl.subject,
+      html: tpl.html,
+      text: tpl.text,
+      category: TransactionalEmailCategory.EMPLOYEE_LIFECYCLE,
+      idempotencyKey: `emp-exit-${employeeCode}-${Date.now()}`,
+    });
+  }
 }

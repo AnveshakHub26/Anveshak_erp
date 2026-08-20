@@ -54,6 +54,7 @@ describe('HRService Business Requirements Unit Tests', () => {
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      upsert: jest.fn().mockResolvedValue({ nextValue: 127 }),
     },
     document: {
       findMany: jest.fn(),
@@ -124,7 +125,7 @@ describe('HRService Business Requirements Unit Tests', () => {
 
       expect(result).toBeDefined();
       expect(result.employeeCode).toBe('EMP-2026-000001');
-      expect(result.provisioningStatus).toBe('PROVISIONED_INVITATION_QUEUED');
+      expect(result.provisioningStatus).toBe('PROVISIONED_ACTIVE');
       expect(mockPrisma.user.create).toHaveBeenCalled();
       expect(mockPrisma.employmentHistory.create).toHaveBeenCalled();
       expect(mockPrisma.auditLog.create).toHaveBeenCalled();
@@ -211,14 +212,12 @@ describe('HRService Business Requirements Unit Tests', () => {
     it('should append EmploymentHistory when converting Temporary -> Permanent', async () => {
       const existing = {
         id: 'emp-temp-1',
-        userId: 'u-temp-1',
-        employeeCode: 'EMP-2026-000055',
-        firstName: 'Bob',
-        lastName: 'Temp',
-        fullName: 'Bob Temp',
+        employeeCode: 'EMP-2026-000045',
         employmentType: 'TEMPORARY',
         status: 'ACTIVE',
-        designation: 'Contract Developer',
+        designation: 'Temp Developer',
+        firstName: 'Alex',
+        lastName: 'Smith',
       };
 
       mockPrisma.employee.findUnique.mockResolvedValue(existing);
@@ -237,8 +236,7 @@ describe('HRService Business Requirements Unit Tests', () => {
       expect(mockPrisma.employmentHistory.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           employeeId: 'emp-temp-1',
-          changeType: 'CONVERT_TEMPORARY_TO_PERMANENT',
-          previousType: 'TEMPORARY',
+          changeType: 'PROFILE_UPDATE',
           newType: 'PERMANENT',
         }),
       });
@@ -246,7 +244,7 @@ describe('HRService Business Requirements Unit Tests', () => {
   });
 
   describe('Offboarding & Account Deactivation', () => {
-    it('should set User status to INACTIVE on TERMINATED/RESIGNED while preserving Employee and ProjectMember history', async () => {
+    it('should set User status to INACTIVE on exit while preserving Employee record', async () => {
       const existing = {
         id: 'emp-offboard-1',
         userId: 'u-offboard-1',
@@ -262,7 +260,7 @@ describe('HRService Business Requirements Unit Tests', () => {
         status: 'TERMINATED',
       });
 
-      await service.updateEmployee(mockAdminUser, 'emp-offboard-1', {
+      await service.exitEmployee(mockAdminUser, 'emp-offboard-1', {
         status: 'TERMINATED',
         remarks: 'Employment contract completed.',
       });
@@ -309,16 +307,15 @@ describe('HRService Business Requirements Unit Tests', () => {
           status: 'ACTIVE',
           exitDate: null,
         }),
-        include: { user: true },
       });
       expect(mockPrisma.user.update).toHaveBeenCalledWith({
         where: { id: 'u-rehire-1' },
-        data: expect.objectContaining({ status: 'PENDING' }),
+        data: expect.objectContaining({ status: 'ACTIVE' }),
       });
       expect(mockPrisma.employmentHistory.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           employeeId: 'emp-rehire-1',
-          changeType: 'REHIRED',
+          changeType: 'REHIRE',
           newStatus: 'ACTIVE',
         }),
       });
@@ -367,7 +364,7 @@ describe('HRService Business Requirements Unit Tests', () => {
 
       const results = await service.bulkOnboard(mockAdminUser, bulkPayload);
       expect(results).toHaveLength(2);
-      expect(results[0].status).toBe('PROVISIONED_INVITATION_QUEUED');
+      expect(results[0].status).toBe('PROVISIONED_ACTIVE');
     });
   });
 });

@@ -18,6 +18,8 @@ import { IndustryModule } from './modules/industry/industry.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { HRModule } from './modules/hr/hr.module';
 import { WorkshopsModule } from './modules/workshops/workshops.module';
+import { AttendanceModule } from './modules/attendance/attendance.module';
+import { LeaveModule } from './modules/leave/leave.module';
 
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
@@ -50,6 +52,8 @@ import { EmailModule } from './common/email/email.module';
     ProjectsModule,
     HRModule,
     WorkshopsModule,
+    AttendanceModule,
+    LeaveModule,
   ],
   providers: [
     {

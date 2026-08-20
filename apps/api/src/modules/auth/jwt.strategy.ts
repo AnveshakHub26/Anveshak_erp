@@ -5,6 +5,7 @@ import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { PrismaService } from '../../database/prisma.service';
 import { SupabaseService } from '../../common/supabase/supabase.service';
+import { getJwtSecret } from './jwt-secret.helper';
 
 class EnterpriseJwtStrategy extends Strategy {
   name = 'jwt';
@@ -36,7 +37,7 @@ class EnterpriseJwtStrategy extends Strategy {
 
       // 1. Try standard HS256 verification first for local ERP tokens
       try {
-        const secret = process.env.JWT_SECRET || 'anveshak_super_secret_jwt_key_change_in_production_2026!';
+        const secret = getJwtSecret();
         payload = jwt.verify(token, secret);
       } catch (verifyErr) {
         // 2. If token is from Supabase Auth (ES256), decode payload & verify expiration

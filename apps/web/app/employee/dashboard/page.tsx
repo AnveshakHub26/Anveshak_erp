@@ -15,6 +15,10 @@ import { MyTasksTab } from '@/components/employee/my-tasks-tab';
 import { MyDeliverablesTab } from '@/components/employee/my-deliverables-tab';
 import { MyMeetingsTab } from '@/components/employee/my-meetings-tab';
 import { MyResourcesTab } from '@/components/employee/my-resources-tab';
+import { AttendanceWidget } from '@/components/employee/attendance-widget';
+import { MyAttendanceTab } from '@/components/employee/my-attendance-tab';
+import { MyLeaveTab } from '@/components/employee/my-leave-tab';
+import { MyProfileTab } from '@/components/employee/my-profile-tab';
 import {
   UserCheck,
   BadgeCheck,
@@ -26,6 +30,8 @@ import {
   PackageCheck,
   Video,
   Paperclip,
+  Clock,
+  Calendar,
 } from 'lucide-react';
 
 interface SelfEmployeeProfile {
@@ -93,6 +99,8 @@ export default function EmployeeDashboardPage() {
   const [myDeliverables, setMyDeliverables] = useState<any[]>([]);
   const [myMeetings, setMyMeetings] = useState<any[]>([]);
   const [myResources, setMyResources] = useState<{ links: any[]; documents: any[] }>({ links: [], documents: [] });
+  const [leaveBalances, setLeaveBalances] = useState<any[]>([]);
+  const [pendingLeaveRequests, setPendingLeaveRequests] = useState<any[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -102,7 +110,7 @@ export default function EmployeeDashboardPage() {
     setLoading(true);
     setErrorMsg(null);
     try {
-      const [empRes, notifRes, projRes, taskRes, delivRes, meetRes, resRes] = await Promise.allSettled([
+      const [empRes, notifRes, projRes, taskRes, delivRes, meetRes, resRes, balRes, reqRes] = await Promise.allSettled([
         apiRequest<{ success: boolean; data: SelfEmployeeProfile }>('/hr/employees/me'),
         apiRequest<{ success: boolean; data: NotificationItem[] }>('/notifications'),
         apiRequest<{ success: boolean; data: any[] }>('/employee/projects'),
@@ -110,6 +118,8 @@ export default function EmployeeDashboardPage() {
         apiRequest<{ success: boolean; data: any[] }>('/employee/deliverables'),
         apiRequest<{ success: boolean; data: any[] }>('/employee/meetings'),
         apiRequest<{ success: boolean; data: any }>('/employee/resources'),
+        apiRequest<{ success: boolean; data: any[] }>('/leave/balances/me'),
+        apiRequest<{ success: boolean; data: { items: any[] } }>('/leave/requests/me'),
       ]);
 
       if (empRes.status === 'fulfilled' && empRes.value.data) {
@@ -126,6 +136,11 @@ export default function EmployeeDashboardPage() {
       if (delivRes.status === 'fulfilled' && delivRes.value?.data) setMyDeliverables(delivRes.value.data);
       if (meetRes.status === 'fulfilled' && meetRes.value?.data) setMyMeetings(meetRes.value.data);
       if (resRes.status === 'fulfilled' && resRes.value?.data) setMyResources(resRes.value.data);
+      if (balRes.status === 'fulfilled' && balRes.value?.data) setLeaveBalances(balRes.value.data);
+      if (reqRes.status === 'fulfilled' && reqRes.value?.data?.items) {
+        const pending = reqRes.value.data.items.filter((r: any) => r.status === 'PENDING');
+        setPendingLeaveRequests(pending);
+      }
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to load employee self-service dashboard.');
     } finally {
@@ -181,6 +196,9 @@ export default function EmployeeDashboardPage() {
 
   const workspaceTabs = [
     { id: 'overview', label: 'Dashboard Overview', icon: UserCheck },
+    { id: 'profile', label: 'My Profile', icon: UserCheck },
+    { id: 'attendance', label: 'My Attendance', icon: Clock },
+    { id: 'leave', label: 'My Leave', icon: Calendar },
     { id: 'tasks', label: 'My Tasks', count: myTasks.length, icon: ListTodo },
     { id: 'deliverables', label: 'My Deliverables', count: myDeliverables.length, icon: PackageCheck },
     { id: 'meetings', label: 'Upcoming Meetings', count: myMeetings.length, icon: Video },
@@ -222,7 +240,13 @@ export default function EmployeeDashboardPage() {
 
         {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
 
-        {activeTab === 'tasks' ? (
+        {activeTab === 'profile' ? (
+          <MyProfileTab />
+        ) : activeTab === 'attendance' ? (
+          <MyAttendanceTab />
+        ) : activeTab === 'leave' ? (
+          <MyLeaveTab />
+        ) : activeTab === 'tasks' ? (
           <MyTasksTab tasks={myTasks} onRefresh={fetchSelfData} />
         ) : activeTab === 'deliverables' ? (
           <MyDeliverablesTab deliverables={myDeliverables} myProjects={myProjects} onRefresh={fetchSelfData} />
@@ -233,19 +257,96 @@ export default function EmployeeDashboardPage() {
         ) : (
           /* OVERVIEW TAB */
           <div className="space-y-6">
-            {/* Metrics Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-              <Card>
-                <CardContent className="p-4 space-y-1">
-                  <span className="text-[#64748B] flex items-center font-medium">
-                    <FolderGit2 className="h-4 w-4 text-[#d49b38] mr-1.5" />
-                    Active Projects
-                  </span>
-                  <p className="font-extrabold text-[#0F172A] text-2xl">{myProjects.length || activeProjects.length}</p>
-                </CardContent>
-              </Card>
+            {/* 1. Quick Actions Bar */}
+            <div className="flex flex-wrap items-center gap-2.5 p-4 rounded-xl border border-[#E2E8F0] bg-white shadow-xs">
+              <span className="text-xs font-bold text-[#0F172A] uppercase tracking-wider mr-2">Quick Actions:</span>
+              <Button
+                size="sm"
+                onClick={() => setActiveTab('leave')}
+                className="bg-gradient-to-r from-[#d49b38] to-[#c48b28] text-[#151c2e] font-bold text-xs h-8"
+              >
+                <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                Apply for Leave
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setActiveTab('attendance')}
+                className="border-[#E2E8F0] text-[#0F172A] text-xs h-8"
+              >
+                <Clock className="h-3.5 w-3.5 mr-1.5 text-[#d49b38]" />
+                View Attendance
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => router.push('/employee/documents')}
+                className="border-[#E2E8F0] text-[#0F172A] text-xs h-8"
+              >
+                <Paperclip className="h-3.5 w-3.5 mr-1.5 text-[#d49b38]" />
+                My Documents
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setActiveTab('profile')}
+                className="border-[#E2E8F0] text-[#0F172A] text-xs h-8"
+              >
+                <UserCheck className="h-3.5 w-3.5 mr-1.5 text-[#d49b38]" />
+                My Profile
+              </Button>
+            </div>
 
-              <Card>
+            {/* 2. Today's Attendance Control Widget */}
+            <AttendanceWidget />
+
+            {/* 3. Leave Summary Section */}
+            <Card className="border border-[#E2E8F0] bg-white shadow-xs">
+              <CardContent className="p-5 space-y-4">
+                <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
+                  <h3 className="text-sm font-bold text-[#0F172A] flex items-center space-x-2">
+                    <Calendar className="h-4 w-4 text-[#d49b38]" />
+                    <span>My Leave Balances ({new Date().getFullYear()})</span>
+                  </h3>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setActiveTab('leave')}
+                    className="text-xs h-7 border-[#E2E8F0]"
+                  >
+                    Manage Leave ↗
+                  </Button>
+                </div>
+
+                {leaveBalances.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {leaveBalances.map((b) => (
+                      <div key={b.id} className="p-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-xs text-[#0F172A]">{b.leaveType.name}</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${b.leaveType.isPaid ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}`}>
+                            {b.leaveType.isPaid ? 'Paid' : 'Unpaid'}
+                          </span>
+                        </div>
+                        <div className="flex items-baseline space-x-1">
+                          <span className="text-xl font-extrabold text-[#d49b38]">{b.availableDays}</span>
+                          <span className="text-[11px] text-[#64748B]">Available</span>
+                        </div>
+                        <p className="text-[10px] text-[#64748B] border-t border-[#E2E8F0] pt-1 mt-1">
+                          {b.allocatedDays} Allocated • {b.usedDays} Used • {b.pendingDays} Pending
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-xs text-[#64748B]">No active leave balances assigned.</div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 4. My Work Metrics Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+              <Card className="cursor-pointer hover:border-[#d49b38] transition" onClick={() => setActiveTab('tasks')}>
                 <CardContent className="p-4 space-y-1">
                   <span className="text-[#64748B] flex items-center font-medium">
                     <ListTodo className="h-4 w-4 text-blue-600 mr-1.5" />
@@ -257,7 +358,7 @@ export default function EmployeeDashboardPage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="cursor-pointer hover:border-[#d49b38] transition" onClick={() => setActiveTab('deliverables')}>
                 <CardContent className="p-4 space-y-1">
                   <span className="text-[#64748B] flex items-center font-medium">
                     <PackageCheck className="h-4 w-4 text-purple-600 mr-1.5" />
@@ -269,7 +370,7 @@ export default function EmployeeDashboardPage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="cursor-pointer hover:border-[#d49b38] transition" onClick={() => setActiveTab('meetings')}>
                 <CardContent className="p-4 space-y-1">
                   <span className="text-[#64748B] flex items-center font-medium">
                     <Video className="h-4 w-4 text-emerald-600 mr-1.5" />
@@ -278,7 +379,47 @@ export default function EmployeeDashboardPage() {
                   <p className="font-extrabold text-emerald-600 text-2xl">{myMeetings.length}</p>
                 </CardContent>
               </Card>
+
+              <Card className="cursor-pointer hover:border-[#d49b38] transition" onClick={() => router.push('/employee/documents')}>
+                <CardContent className="p-4 space-y-1">
+                  <span className="text-[#64748B] flex items-center font-medium">
+                    <Paperclip className="h-4 w-4 text-[#d49b38] mr-1.5" />
+                    My Vault Documents
+                  </span>
+                  <p className="font-extrabold text-[#d49b38] text-2xl">{profile.documents?.length || 0}</p>
+                </CardContent>
+              </Card>
             </div>
+
+            {/* 5. Needs Your Attention Section */}
+            <Card className="border border-[#E2E8F0] bg-white shadow-xs">
+              <CardContent className="p-5 space-y-3">
+                <h3 className="text-sm font-bold text-[#0F172A] flex items-center space-x-2 border-b border-[#E2E8F0] pb-3">
+                  <AlertCircle className="h-4 w-4 text-amber-600" />
+                  <span>Needs Your Attention</span>
+                </h3>
+
+                {pendingLeaveRequests.length > 0 || myDeliverables.some((d) => d.status === 'REJECTED') ? (
+                  <div className="space-y-2 text-xs">
+                    {pendingLeaveRequests.map((req) => (
+                      <div key={req.id} className="p-3 rounded-lg border border-amber-200 bg-amber-50/50 flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <span className="font-bold text-[#0F172A]">{req.referenceCode} — Leave Application</span>
+                          <p className="text-[11px] text-[#64748B]">
+                            {req.leaveType.name} ({req.totalDays} day(s)) is pending HR approval.
+                          </p>
+                        </div>
+                        <Button size="sm" variant="outline" onClick={() => setActiveTab('leave')} className="text-xs h-7 border-amber-300">
+                          View Leave Status
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-xs text-[#64748B]">You&apos;re all caught up! ✨</div>
+                )}
+              </CardContent>
+            </Card>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left Column: My Projects & Skills */}
@@ -395,27 +536,31 @@ export default function EmployeeDashboardPage() {
                 </Card>
               </div>
 
-              {/* Right Column: Notifications */}
+              {/* Right Column: Recent Notifications */}
               <div>
-                <Card>
+                <Card className="border border-[#E2E8F0] bg-white shadow-xs">
                   <CardContent className="p-5 space-y-4">
-                    <h3 className="text-sm font-bold text-[#0F172A] flex items-center space-x-2 border-b border-[#E2E8F0] pb-3">
-                      <Bell className="h-4 w-4 text-[#d49b38]" />
-                      <span>My Notifications ({notifications.length})</span>
-                    </h3>
+                    <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
+                      <h3 className="text-sm font-bold text-[#0F172A] flex items-center space-x-2">
+                        <Bell className="h-4 w-4 text-[#d49b38]" />
+                        <span>Recent Notifications ({notifications.length})</span>
+                      </h3>
+                      <Link href="/notifications" className="text-xs text-[#d49b38] hover:underline font-semibold">
+                        View Inbox ↗
+                      </Link>
+                    </div>
 
                     {notifications.length > 0 ? (
                       <div className="space-y-2 text-xs">
                         {notifications.slice(0, 5).map((notif) => (
                           <div key={notif.id} className="p-3 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] space-y-1">
-                            <div className="font-bold text-[#0F172A]">{notif.title}</div>
-                            <div className="text-[11px] text-[#64748B]">{notif.message}</div>
+                            <div className="font-bold text-[#0F172A]">{notif.message}</div>
                             <div className="text-[10px] text-[#94a3b8]">{new Date(notif.createdAt).toLocaleDateString()}</div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="p-6 text-center text-xs text-[#94a3b8]">No unread notifications.</div>
+                      <div className="p-6 text-center text-xs text-[#94a3b8]">No notifications.</div>
                     )}
                   </CardContent>
                 </Card>

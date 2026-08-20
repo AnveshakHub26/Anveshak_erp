@@ -1,10 +1,11 @@
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
+import { createClient } from '@supabase/supabase-js';
 
 const prisma = new PrismaClient();
 
 async function cleanDatabase() {
-  console.log('🧹 Starting AnveshakHub Production ERP Database Purge...');
+  console.log('🧹 Starting AnveshakHub Production ERP Database Purge & Storage Reset...');
 
   const adminEmail = (process.env.BOOTSTRAP_ADMIN_EMAIL || 'anveshakhub26@gmail.com').toLowerCase();
   const adminPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD || 'Anveshak';
@@ -37,7 +38,13 @@ async function cleanDatabase() {
   const deletedProjects = await prisma.project.deleteMany({});
   console.log(`- Deleted ${deletedProjects.count} projects`);
 
-  // 2. Delete Problem Statements & Organizations
+  // 2. Delete Support Queries, Problem Statements & Organizations
+  const deletedQueryMessages = await prisma.supportQueryMessage.deleteMany({});
+  console.log(`- Deleted ${deletedQueryMessages.count} support query messages`);
+
+  const deletedSupportQueries = await prisma.supportQuery.deleteMany({});
+  console.log(`- Deleted ${deletedSupportQueries.count} support queries`);
+
   const deletedProblems = await prisma.problemStatement.deleteMany({});
   console.log(`- Deleted ${deletedProblems.count} problem statements`);
 
@@ -50,27 +57,51 @@ async function cleanDatabase() {
   const deletedOrgs = await prisma.organization.deleteMany({});
   console.log(`- Deleted ${deletedOrgs.count} organizations`);
 
-  // 3. Delete HR & Employee Records
+  // 3. Delete Workshops
+  const deletedWorkshops = await prisma.workshop.deleteMany({});
+  console.log(`- Deleted ${deletedWorkshops.count} workshops`);
+
+  // 4. Delete HR, Attendance & Leave Records
+  const deletedAttendanceBreaks = await prisma.attendanceBreak.deleteMany({});
+  console.log(`- Deleted ${deletedAttendanceBreaks.count} attendance breaks`);
+
+  const deletedAttendance = await prisma.attendance.deleteMany({});
+  console.log(`- Deleted ${deletedAttendance.count} attendance records`);
+
+  const deletedLeaveRequests = await prisma.leaveRequest.deleteMany({});
+  console.log(`- Deleted ${deletedLeaveRequests.count} leave requests`);
+
+  const deletedLeaveBalances = await prisma.leaveBalance.deleteMany({});
+  console.log(`- Deleted ${deletedLeaveBalances.count} leave balances`);
+
   const deletedEmpHist = await prisma.employmentHistory.deleteMany({});
   console.log(`- Deleted ${deletedEmpHist.count} employment history records`);
 
   const deletedEmployees = await prisma.employee.deleteMany({});
   console.log(`- Deleted ${deletedEmployees.count} employees`);
 
-  // 4. Delete Documents & Audit Logs & Notifications
+  // 5. Delete Documents & Folders
   const deletedDocVersions = await prisma.documentVersion.deleteMany({});
   console.log(`- Deleted ${deletedDocVersions.count} document versions`);
 
   const deletedDocuments = await prisma.document.deleteMany({});
   console.log(`- Deleted ${deletedDocuments.count} documents`);
 
+  const deletedFolders = await prisma.documentFolder.deleteMany({});
+  console.log(`- Deleted ${deletedFolders.count} document folders`);
+
+  // 6. Delete Notifications & Audit Logs
   const deletedNotifications = await prisma.notification.deleteMany({});
   console.log(`- Deleted ${deletedNotifications.count} notifications`);
 
   const deletedAuditLogs = await prisma.auditLog.deleteMany({});
   console.log(`- Deleted ${deletedAuditLogs.count} audit logs`);
 
-  // 5. Delete Non-Bootstrap Users & UserRoles
+  // 7. Reset System Counters to ensure sequence codes start at 000001
+  const deletedCounters = await prisma.systemCounter.deleteMany({});
+  console.log(`- Reset ${deletedCounters.count} system counters (sequences will restart at 000001)`);
+
+  // 8. Delete Non-Bootstrap Users & UserRoles
   const nonAdminUsers = await prisma.user.findMany({
     where: { NOT: { email: adminEmail } },
     select: { id: true, email: true },
@@ -87,10 +118,10 @@ async function cleanDatabase() {
     const deletedUsers = await prisma.user.deleteMany({
       where: { id: { in: nonAdminUserIds } },
     });
-    console.log(`- Deleted ${deletedUsers.count} non-admin users (${nonAdminUsers.map((u) => u.email).join(', ')})`);
+    console.log(`- Deleted ${deletedUsers.count} non-admin users`);
   }
 
-  // 6. Ensure Bootstrap Admin Account exists in ERP DB & is ACTIVE
+  // 9. Ensure Bootstrap Admin Account exists in ERP DB & is ACTIVE
   const adminRole = await prisma.role.findUnique({ where: { code: 'ADMIN' } });
   if (!adminRole) {
     throw new Error('ADMIN role missing from database. Run npx ts-node prisma/seed/seed.ts first.');
@@ -123,16 +154,14 @@ async function cleanDatabase() {
     },
   });
 
-  console.log(`✅ Cleaned Database: Preserved 1 Single Bootstrap ADMIN Account (${adminEmail}) with mustChangePassword = false.`);
+  console.log(`✅ Cleaned Database: Preserved Single Permanent Bootstrap ADMIN Account (${adminEmail}) with status = ACTIVE.`);
 
-  // 7. Ensure Supabase Auth identity exists & credential matches BOOTSTRAP_ADMIN_PASSWORD
+  // 10. Ensure Supabase Auth identity exists & credential matches BOOTSTRAP_ADMIN_PASSWORD
   const supaUrl = process.env.SUPABASE_URL;
   const supaServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (supaUrl && supaServiceKey) {
     try {
-      // Dynamic require to handle module pathing gracefully
-      const { createClient } = require('../apps/api/node_modules/@supabase/supabase-js');
       const supabase = createClient(supaUrl, supaServiceKey, {
         auth: { autoRefreshToken: false, persistSession: false },
       });
@@ -155,8 +184,19 @@ async function cleanDatabase() {
         });
         console.log(`✅ Supabase Auth identity created for bootstrap ADMIN (${adminEmail}).`);
       }
+
+      // Cleanup Storage Bucket Files
+      const bucketName = process.env.SUPABASE_STORAGE_BUCKET || 'anveshak-private-documents';
+      const { data: files, error: listErr } = await supabase.storage.from(bucketName).list('', { limit: 1000 });
+      if (!listErr && files && files.length > 0) {
+        const filePaths = files.map((f: any) => f.name);
+        await supabase.storage.from(bucketName).remove(filePaths);
+        console.log(`✅ Cleaned ${filePaths.length} test document files from Supabase Storage bucket '${bucketName}'.`);
+      } else {
+        console.log(`- Storage bucket '${bucketName}' is clean (0 test files found).`);
+      }
     } catch (supaErr: any) {
-      console.warn(`⚠️ Supabase Auth credential sync warning: ${supaErr.message}`);
+      console.warn(`⚠️ Supabase Auth/Storage sync warning: ${supaErr.message}`);
     }
   }
 

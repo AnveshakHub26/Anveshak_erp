@@ -1,5 +1,6 @@
 'use client';
 
+import { apiRequest } from '@/lib/api-client';
 import { useState } from 'react';
 import { ProjectMeeting, ProjectMember } from '@anveshak/types';
 import { Button } from '@/components/ui/button';
@@ -59,9 +60,8 @@ export function MeetingsTab({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/v1/projects/${projectId}/meetings`, {
+      await apiRequest(`/projects/${projectId}/meetings`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title,
           description: description || undefined,
@@ -72,8 +72,6 @@ export function MeetingsTab({
           participantEmployeeIds: selectedParticipants,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to schedule meeting');
 
       setShowModal(false);
       setTitle('');
@@ -91,10 +89,10 @@ export function MeetingsTab({
   const handleCancelMeeting = async (meetingId: string) => {
     if (isLocked) return;
     try {
-      const res = await fetch(`/api/v1/projects/${projectId}/meetings/${meetingId}/cancel`, {
+      await apiRequest(`/projects/${projectId}/meetings/${meetingId}/cancel`, {
         method: 'POST',
       });
-      if (res.ok) onRefresh();
+      onRefresh();
     } catch (err) {
       console.error('Failed to cancel meeting:', err);
     }

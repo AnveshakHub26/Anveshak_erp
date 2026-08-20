@@ -7,12 +7,15 @@ import { renderBaseEmailTemplate, escapeHtml } from '../../common/email/template
 import * as argon2 from 'argon2';
 import * as crypto from 'crypto';
 
+import { DocumentsService } from '../documents/documents.service';
+
 @Injectable()
 export class OrganizationsService {
   constructor(
     private prisma: PrismaService,
     @Optional() private supabaseService?: SupabaseService,
     @Optional() private emailService?: EmailService,
+    @Optional() private docsService?: DocumentsService,
   ) {}
 
   private async generateOrgNumber(): Promise<string> {
@@ -130,20 +133,16 @@ export class OrganizationsService {
         },
       });
 
-      // Link any uploaded registration documents to the organization entity
-      if (data.documentStorageKeys && data.documentStorageKeys.length > 0) {
-        for (const storageKey of data.documentStorageKeys) {
-          await tx.document.create({
-            data: {
-              entityType: 'Organization',
-              entityId: organization.id,
-              type: 'Registration',
-              storageKey,
-              visibility: 'PRIVATE',
-              uploadedBy: user.id,
-            },
-          });
-        }
+      // Link any uploaded registration documents to the organization entity using centralized DocumentsService helper
+      if (data.documentStorageKeys && data.documentStorageKeys.length > 0 && this.docsService) {
+        await this.docsService.linkDocumentsToEntity(
+          tx,
+          'Organization',
+          organization.id,
+          data.documentStorageKeys,
+          user.id,
+          'Registration',
+        );
       }
 
       await tx.auditLog.create({

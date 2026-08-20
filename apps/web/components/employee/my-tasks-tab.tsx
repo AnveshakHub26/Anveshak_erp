@@ -1,5 +1,6 @@
 'use client';
 
+import { apiRequest } from '@/lib/api-client';
 import { useState } from 'react';
 import { ProjectTask } from '@anveshak/types';
 import { Button } from '@/components/ui/button';
@@ -58,17 +59,14 @@ export function MyTasksTab({ tasks, onRefresh }: MyTasksTabProps) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/v1/employee/tasks/${selectedTask.id}/progress`, {
+      await apiRequest(`/employee/tasks/${selectedTask.id}/progress`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status,
           progressPct: Number(progressPct),
           actualHours: actualHours ? Number(actualHours) : undefined,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to update task progress');
 
       setSelectedTask(null);
       onRefresh();
