@@ -574,11 +574,11 @@ export class ProjectsService {
       reqTech = Array.from(new Set([...reqTech, ...manualTech]));
     }
 
-    // Candidate Search strictly considers ONLY Employee.status === 'ACTIVE'
-    const where: any = { status: 'ACTIVE' };
-
-    if (reqCategory) where.category = reqCategory;
-    if (reqEmploymentType) where.employmentType = reqEmploymentType;
+    // Candidate Search includes all active workforce members (ACTIVE, ONBOARDING, PROBATION)
+    // Never exclude candidates based on category, employmentType, or skills; rank priority-wise instead
+    const where: any = {
+      status: { in: ['ACTIVE', 'ONBOARDING', 'PROBATION'] },
+    };
 
     if (query.search && query.search.trim()) {
       const q = query.search.trim();
@@ -608,9 +608,11 @@ export class ProjectsService {
       const currentAllocationPct = emp.projectMemberships.reduce((sum, pm) => sum + (pm.allocationPct || 0), 0);
       const availableCapacityPct = Math.max(0, 100.0 - currentAllocationPct);
 
-      // Match Score Calculation
+      // Match Score & Capability Ranking Calculation
       let matchedSkillCount = 0;
       let matchedTechCount = 0;
+      let categoryMatch = 0;
+      let employmentTypeMatch = 0;
 
       if (reqSkills.length > 0 && emp.skills) {
         matchedSkillCount = reqSkills.filter((rs) =>
@@ -624,10 +626,34 @@ export class ProjectsService {
         ).length;
       }
 
-      const totalReqCriteria = reqSkills.length + reqTech.length;
+      if (reqCategory && emp.category === reqCategory) {
+        categoryMatch = 1;
+      }
+
+      if (reqEmploymentType && emp.employmentType === reqEmploymentType) {
+        employmentTypeMatch = 1;
+      }
+
+      const totalSkillTechReq = reqSkills.length + reqTech.length;
       let matchScore = 100;
-      if (totalReqCriteria > 0) {
-        matchScore = Math.round(((matchedSkillCount + matchedTechCount) / totalReqCriteria) * 100);
+
+      if (totalSkillTechReq > 0) {
+        const baseSkillPct = ((matchedSkillCount + matchedTechCount) / totalSkillTechReq) * 100;
+        matchScore = Math.round(baseSkillPct);
+      } else {
+        let criteriaCount = 0;
+        let matchedCriteria = 0;
+        if (reqCategory) {
+          criteriaCount++;
+          if (categoryMatch) matchedCriteria++;
+        }
+        if (reqEmploymentType) {
+          criteriaCount++;
+          if (employmentTypeMatch) matchedCriteria++;
+        }
+        if (criteriaCount > 0) {
+          matchScore = Math.round((matchedCriteria / criteriaCount) * 100);
+        }
       }
 
       const candidateObj = {
@@ -639,6 +665,7 @@ export class ProjectsService {
         designation: emp.designation,
         category: emp.category,
         employmentType: emp.employmentType,
+        status: emp.status,
         skills: emp.skills,
         technologies: emp.technologies,
         currentAllocationPct,
@@ -647,7 +674,6 @@ export class ProjectsService {
       };
 
       if (!isHrOrAdmin) {
-        // Strip sensitive internal contact details if requester is PM
         const { personalEmail, address, dateOfBirth, ...publicCandidate } = candidateObj as any;
         return publicCandidate;
       }
@@ -655,10 +681,11 @@ export class ProjectsService {
       return candidateObj;
     });
 
-    // Rank Candidates by Available Capacity and Skill Match Score
+    // Priority-wise Ranking: Match Score high -> low, Available Capacity high -> low, Full Name asc
     candidates.sort((a, b) => {
       if (b.matchScore !== a.matchScore) return b.matchScore - a.matchScore;
-      return b.availableCapacityPct - a.availableCapacityPct;
+      if (b.availableCapacityPct !== a.availableCapacityPct) return b.availableCapacityPct - a.availableCapacityPct;
+      return a.fullName.localeCompare(b.fullName);
     });
 
     return candidates;

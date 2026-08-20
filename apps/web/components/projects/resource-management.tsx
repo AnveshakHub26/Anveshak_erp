@@ -56,6 +56,7 @@ interface Candidate {
   designation: string;
   category: string;
   employmentType: string;
+  status?: string;
   skills: string[];
   technologies: string[];
   currentAllocationPct: number;
@@ -843,6 +844,11 @@ export function ResourceManagementTab({
                           <span className="font-mono font-bold text-[#d49b38] text-xs">{cand.employeeCode}</span>
                           <span className="font-bold text-[#0F172A]">{cand.fullName}</span>
                           <span className="px-2 py-0.5 rounded bg-[#F1F5F9] text-[10px] font-semibold">{cand.category}</span>
+                          {cand.status && cand.status !== 'ACTIVE' && (
+                            <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 text-[9px] font-bold">
+                              {cand.status}
+                            </span>
+                          )}
                         </div>
                         <p className="text-[11px] text-[#64748B] mt-0.5">
                           {cand.professionalRole} • {cand.department} ({cand.designation})
@@ -864,7 +870,7 @@ export function ResourceManagementTab({
                       </div>
                       <div>
                         <span className="text-[#64748B]">Available Capacity: </span>
-                        <span className={`font-bold ${canAssign ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
+                        <span className={`font-bold ${cand.availableCapacityPct >= targetAlloc ? 'text-[#10B981]' : 'text-amber-600'}`}>
                           {cand.availableCapacityPct}%
                         </span>
                       </div>
@@ -872,7 +878,7 @@ export function ResourceManagementTab({
 
                     {/* Action */}
                     <div className="flex items-center justify-between pt-1">
-                      <div className="flex flex-wrap gap-1 max-w-[70%]">
+                      <div className="flex flex-wrap gap-1 max-w-[65%]">
                         {cand.skills?.slice(0, 3).map((s, idx) => (
                           <span key={idx} className="px-1.5 py-0.5 rounded bg-[#F1F5F9] text-[9px] text-[#475569]">
                             {s}
@@ -880,27 +886,21 @@ export function ResourceManagementTab({
                         ))}
                       </div>
 
-                      {canAssign ? (
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            setAssigningCandidate(cand);
-                            setAssignForm({
-                              projectRole: selectedReqForCandidate?.professionalRole || cand.professionalRole,
-                              allocationPct: targetAlloc,
-                              startDate: selectedReqForCandidate?.startDate ? new Date(selectedReqForCandidate.startDate).toISOString().split('T')[0] : '',
-                              endDate: selectedReqForCandidate?.endDate ? new Date(selectedReqForCandidate.endDate).toISOString().split('T')[0] : '',
-                            });
-                          }}
-                          className="bg-[#10B981] hover:bg-[#059669] text-xs h-7"
-                        >
-                          ASSIGN MEMBER
-                        </Button>
-                      ) : (
-                        <span className="px-2 py-1 rounded bg-[#FEE2E2] text-[#DC2626] text-[10px] font-bold">
-                          INSUFFICIENT CAPACITY
-                        </span>
-                      )}
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setAssigningCandidate(cand);
+                          setAssignForm({
+                            projectRole: selectedReqForCandidate?.professionalRole || cand.professionalRole,
+                            allocationPct: targetAlloc,
+                            startDate: selectedReqForCandidate?.startDate ? new Date(selectedReqForCandidate.startDate).toISOString().split('T')[0] : '',
+                            endDate: selectedReqForCandidate?.endDate ? new Date(selectedReqForCandidate.endDate).toISOString().split('T')[0] : '',
+                          });
+                        }}
+                        className="bg-[#10B981] hover:bg-[#059669] text-xs h-7 shrink-0"
+                      >
+                        ASSIGN MEMBER
+                      </Button>
                     </div>
                   </div>
                 );
