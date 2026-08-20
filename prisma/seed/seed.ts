@@ -25,6 +25,29 @@ async function main() {
   }
   console.log('✅ Seeded 6 Official Business Verticals (BV-01 to BV-06)');
 
+  // 1b. Seed Permanent Internal Organization (AnveshakHub Enterprise)
+  const primaryBv = await prisma.businessVertical.findUnique({ where: { code: 'BV-01' } });
+  if (primaryBv) {
+    await prisma.organization.upsert({
+      where: { orgNumber: 'ORG-000000' },
+      update: {
+        legalName: 'AnveshakHub Enterprise',
+        tradeName: 'AnveshakHub',
+        status: 'APPROVED',
+      },
+      create: {
+        orgNumber: 'ORG-000000',
+        legalName: 'AnveshakHub Enterprise',
+        tradeName: 'AnveshakHub',
+        applicantType: 'Company',
+        type: 'Enterprise',
+        primaryBvId: primaryBv.id,
+        status: 'APPROVED',
+      },
+    });
+    console.log('✅ Seeded Permanent Internal Organization: AnveshakHub Enterprise (ORG-000000)');
+  }
+
   // 2. Seed System Roles (Product Design Specification v3.0 Master Roles)
   const roles = [
     { code: 'ADMIN', name: 'Admin', description: 'Full platform-level administration across all modules, approvals, organizations, users, roles, projects and governance.' },

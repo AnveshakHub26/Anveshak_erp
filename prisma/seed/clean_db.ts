@@ -54,8 +54,33 @@ async function cleanDatabase() {
   const deletedOrgBvs = await prisma.organizationBusinessVertical.deleteMany({});
   console.log(`- Deleted ${deletedOrgBvs.count} organization vertical assignments`);
 
-  const deletedOrgs = await prisma.organization.deleteMany({});
-  console.log(`- Deleted ${deletedOrgs.count} organizations`);
+  const deletedOrgs = await prisma.organization.deleteMany({
+    where: { NOT: { orgNumber: 'ORG-000000' } },
+  });
+  console.log(`- Deleted ${deletedOrgs.count} external test organizations`);
+
+  // Ensure Permanent Internal Organization (AnveshakHub Enterprise) exists & is APPROVED
+  const primaryBv = await prisma.businessVertical.findUnique({ where: { code: 'BV-01' } });
+  if (primaryBv) {
+    await prisma.organization.upsert({
+      where: { orgNumber: 'ORG-000000' },
+      update: {
+        legalName: 'AnveshakHub Enterprise',
+        tradeName: 'AnveshakHub',
+        status: 'APPROVED',
+      },
+      create: {
+        orgNumber: 'ORG-000000',
+        legalName: 'AnveshakHub Enterprise',
+        tradeName: 'AnveshakHub',
+        applicantType: 'Company',
+        type: 'Enterprise',
+        primaryBvId: primaryBv.id,
+        status: 'APPROVED',
+      },
+    });
+    console.log('✅ Preserved Permanent Internal Organization: AnveshakHub Enterprise (ORG-000000)');
+  }
 
   // 3. Delete Workshops
   const deletedWorkshops = await (prisma as any).workshop.deleteMany({});
