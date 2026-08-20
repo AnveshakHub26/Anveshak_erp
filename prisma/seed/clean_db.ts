@@ -39,10 +39,10 @@ async function cleanDatabase() {
   console.log(`- Deleted ${deletedProjects.count} projects`);
 
   // 2. Delete Support Queries, Problem Statements & Organizations
-  const deletedQueryMessages = await prisma.supportQueryMessage.deleteMany({});
+  const deletedQueryMessages = await (prisma as any).supportQueryMessage.deleteMany({});
   console.log(`- Deleted ${deletedQueryMessages.count} support query messages`);
 
-  const deletedSupportQueries = await prisma.supportQuery.deleteMany({});
+  const deletedSupportQueries = await (prisma as any).supportQuery.deleteMany({});
   console.log(`- Deleted ${deletedSupportQueries.count} support queries`);
 
   const deletedProblems = await prisma.problemStatement.deleteMany({});
@@ -58,20 +58,20 @@ async function cleanDatabase() {
   console.log(`- Deleted ${deletedOrgs.count} organizations`);
 
   // 3. Delete Workshops
-  const deletedWorkshops = await prisma.workshop.deleteMany({});
+  const deletedWorkshops = await (prisma as any).workshop.deleteMany({});
   console.log(`- Deleted ${deletedWorkshops.count} workshops`);
 
   // 4. Delete HR, Attendance & Leave Records
-  const deletedAttendanceBreaks = await prisma.attendanceBreak.deleteMany({});
+  const deletedAttendanceBreaks = await (prisma as any).attendanceBreak.deleteMany({});
   console.log(`- Deleted ${deletedAttendanceBreaks.count} attendance breaks`);
 
-  const deletedAttendance = await prisma.attendance.deleteMany({});
+  const deletedAttendance = await (prisma as any).attendance.deleteMany({});
   console.log(`- Deleted ${deletedAttendance.count} attendance records`);
 
-  const deletedLeaveRequests = await prisma.leaveRequest.deleteMany({});
+  const deletedLeaveRequests = await (prisma as any).leaveRequest.deleteMany({});
   console.log(`- Deleted ${deletedLeaveRequests.count} leave requests`);
 
-  const deletedLeaveBalances = await prisma.leaveBalance.deleteMany({});
+  const deletedLeaveBalances = await (prisma as any).leaveBalance.deleteMany({});
   console.log(`- Deleted ${deletedLeaveBalances.count} leave balances`);
 
   const deletedEmpHist = await prisma.employmentHistory.deleteMany({});
@@ -87,7 +87,7 @@ async function cleanDatabase() {
   const deletedDocuments = await prisma.document.deleteMany({});
   console.log(`- Deleted ${deletedDocuments.count} documents`);
 
-  const deletedFolders = await prisma.documentFolder.deleteMany({});
+  const deletedFolders = await (prisma as any).documentFolder.deleteMany({});
   console.log(`- Deleted ${deletedFolders.count} document folders`);
 
   // 6. Delete Notifications & Audit Logs
