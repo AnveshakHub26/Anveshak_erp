@@ -574,10 +574,10 @@ export class ProjectsService {
       reqTech = Array.from(new Set([...reqTech, ...manualTech]));
     }
 
-    // Candidate Search includes all active workforce members (ACTIVE, ONBOARDING, PROBATION)
-    // Never exclude candidates based on category, employmentType, or skills; rank priority-wise instead
+    // Candidate Search includes all current workforce members (excludes only RESIGNED and TERMINATED)
+    // Never exclude candidates based on category, employmentType, status, or skills; rank priority-wise instead
     const where: any = {
-      status: { in: ['ACTIVE', 'ONBOARDING', 'PROBATION'] },
+      status: { notIn: ['RESIGNED', 'TERMINATED'] },
     };
 
     if (query.search && query.search.trim()) {
