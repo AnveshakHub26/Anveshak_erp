@@ -183,9 +183,9 @@ export const Sidebar: React.FC<{ onItemClick?: () => void }> = ({ onItemClick })
   return (
     <div className="flex h-full w-full flex-col bg-[#151c2e] text-white">
       {/* Brand Header */}
-      <div className="flex h-16 items-center px-5 border-b border-[#182238] shrink-0">
-        <Link href={isOrgUser ? '/industry' : '/'} prefetch={true} className="flex items-center group" onClick={onItemClick}>
-          <AnveshakLogo size="md" showText={true} />
+      <div className="flex h-16 items-center px-4 border-b border-[#182238] shrink-0 overflow-hidden">
+        <Link href={isOrgUser ? '/industry' : '/'} prefetch={true} className="flex items-center group max-w-full overflow-hidden" onClick={onItemClick}>
+          <AnveshakLogo size="sm" showText={true} />
         </Link>
       </div>
 

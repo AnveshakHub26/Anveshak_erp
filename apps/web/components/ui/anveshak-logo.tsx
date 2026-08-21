@@ -18,11 +18,11 @@ export function AnveshakLogo({
   variant = 'auto',
 }: AnveshakLogoProps) {
   const dimensions = {
-    sm: { height: 26, width: 34, text: 'text-xs', sub: 'text-[9px]' },
-    md: { height: 36, width: 46, text: 'text-base', sub: 'text-[10px]' },
-    lg: { height: 50, width: 64, text: 'text-xl', sub: 'text-[11px]' },
-    xl: { height: 72, width: 92, text: 'text-2xl', sub: 'text-xs' },
-    '2xl': { height: 96, width: 122, text: 'text-3xl', sub: 'text-sm' },
+    sm: { height: 24, width: 30, text: 'text-xs', sub: 'text-[8px]', gap: 'gap-2' },
+    md: { height: 32, width: 40, text: 'text-sm', sub: 'text-[9px]', gap: 'gap-2.5' },
+    lg: { height: 50, width: 64, text: 'text-xl', sub: 'text-[11px]', gap: 'gap-3.5' },
+    xl: { height: 72, width: 92, text: 'text-2xl', sub: 'text-xs', gap: 'gap-4' },
+    '2xl': { height: 96, width: 122, text: 'text-3xl', sub: 'text-sm', gap: 'gap-5' },
   }[size];
 
   // Determine silver pillar fill based on background variant
@@ -33,7 +33,7 @@ export function AnveshakLogo({
   const textClass = textColor || (isLightBg ? 'text-slate-900' : 'text-white');
 
   return (
-    <div className={`inline-flex items-center gap-3.5 ${className}`}>
+    <div className={`inline-flex items-center ${dimensions.gap} ${className}`}>
       {/* Precision Vector AH Monogram with High-Contrast Gradients */}
       <svg
         width={dimensions.width}
@@ -107,10 +107,10 @@ export function AnveshakLogo({
       </svg>
 
       {showText && (
-        <div className="flex flex-col whitespace-nowrap select-none overflow-hidden">
+        <div className="flex flex-col whitespace-nowrap select-none overflow-hidden min-w-0">
           <div className={`font-extrabold tracking-tight ${dimensions.text} ${textClass} flex items-center gap-1.5 whitespace-nowrap`}>
             <span>AnveshakHub</span>
-            <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[9px] font-bold text-amber-500 ring-1 ring-amber-500/30 uppercase tracking-wider whitespace-nowrap">
+            <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[8px] font-extrabold text-amber-500 ring-1 ring-amber-500/30 uppercase tracking-wider whitespace-nowrap">
               Enterprise
             </span>
           </div>
