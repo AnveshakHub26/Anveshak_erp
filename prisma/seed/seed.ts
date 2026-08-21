@@ -146,6 +146,89 @@ async function main() {
   });
 
   console.log(`✅ Seeded Bootstrap Admin Account (${superAdminEmail}) mapped to single Supabase Auth identity with ADMIN role.`);
+
+  // 5. Seed Active Leave Type Master Data Records
+  const leaveTypes = [
+    {
+      code: 'CASUAL',
+      name: 'Casual Leave',
+      description: 'Casual leave for personal or short notice matters',
+      isPaid: true,
+      annualAllocation: 12,
+      isActive: true,
+    },
+    {
+      code: 'SICK',
+      name: 'Sick Leave',
+      description: 'Paid medical leave for illness or health recuperation',
+      isPaid: true,
+      annualAllocation: 12,
+      isActive: true,
+    },
+    {
+      code: 'ANNUAL',
+      name: 'Annual Leave',
+      description: 'Privilege/Annual leave accrued for extended vacations or personal time off',
+      isPaid: true,
+      annualAllocation: 18,
+      isActive: true,
+    },
+    {
+      code: 'MATERNITY',
+      name: 'Maternity Leave',
+      description: 'Paid maternity leave for female employees',
+      isPaid: true,
+      annualAllocation: 180,
+      isActive: true,
+    },
+    {
+      code: 'PATERNITY',
+      name: 'Paternity Leave',
+      description: 'Paid paternity leave for male employees',
+      isPaid: true,
+      annualAllocation: 15,
+      isActive: true,
+    },
+    {
+      code: 'STUDY',
+      name: 'Study / Training Leave',
+      description: 'Leave for professional development, certifications, or higher studies',
+      isPaid: true,
+      annualAllocation: 10,
+      isActive: true,
+    },
+    {
+      code: 'UNPAID',
+      name: 'Unpaid Leave (LOP)',
+      description: 'Unpaid leave taken when paid leave balances are exhausted',
+      isPaid: false,
+      annualAllocation: 0,
+      isActive: true,
+    },
+  ];
+
+  for (const lt of leaveTypes) {
+    await prisma.leaveType.upsert({
+      where: { code: lt.code },
+      update: {
+        name: lt.name,
+        description: lt.description,
+        isPaid: lt.isPaid,
+        annualAllocation: lt.annualAllocation,
+        isActive: lt.isActive,
+      },
+      create: {
+        code: lt.code,
+        name: lt.name,
+        description: lt.description,
+        isPaid: lt.isPaid,
+        annualAllocation: lt.annualAllocation,
+        isActive: lt.isActive,
+      },
+    });
+  }
+  console.log(`✅ Seeded ${leaveTypes.length} Active Leave Type Master Data Records`);
+
   console.log('🎉 Master data seeding complete. Zero fake business records created!');
 }
 
