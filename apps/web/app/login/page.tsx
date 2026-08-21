@@ -11,6 +11,7 @@ import { useAuthStore, getDefaultRedirectForUser } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PublicShell } from '@/components/layout/public-shell';
+import { AnveshakLogo } from '@/components/ui/anveshak-logo';
 import { Eye, EyeOff, Lock, Mail, ShieldCheck } from 'lucide-react';
 
 export default function Fnd02LoginPage() {
@@ -82,9 +83,9 @@ export default function Fnd02LoginPage() {
           {/* Login Card */}
           <div className="rounded-2xl border border-[#E2E8F0] bg-white p-8 sm:p-10 shadow-sm">
             {/* Header */}
-            <div className="mb-8 text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#d49b38] to-[#c48b28] font-extrabold text-[#151c2e] text-2xl shadow-md">
-                AH
+            <div className="mb-8 text-center flex flex-col items-center">
+              <div className="mb-4">
+                <AnveshakLogo size="xl" showText={false} />
               </div>
               <h1 className="text-2xl font-bold tracking-tight text-[#0F172A] sm:text-3xl">
                 Sign In to AnveshakHub

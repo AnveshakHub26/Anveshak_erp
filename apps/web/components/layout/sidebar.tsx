@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { usePermissions } from '@/hooks/usePermissions';
 import { cn } from '@/lib/utils';
+import { AnveshakLogo } from '@/components/ui/anveshak-logo';
 import {
   Building2,
   FolderGit2,
@@ -182,17 +183,9 @@ export const Sidebar: React.FC<{ onItemClick?: () => void }> = ({ onItemClick })
   return (
     <div className="flex h-full w-full flex-col bg-[#151c2e] text-white">
       {/* Brand Header */}
-      <div className="flex h-16 items-center px-6 border-b border-[#182238] shrink-0">
-        <Link href={isOrgUser ? '/industry' : '/'} prefetch={true} className="flex items-center space-x-3 group" onClick={onItemClick}>
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#d49b38] to-[#c48b28] flex items-center justify-center font-extrabold text-[#151c2e] text-sm shadow-md group-hover:scale-105 transition-transform">
-            AH
-          </div>
-          <div className="flex flex-col">
-            <span className="font-extrabold text-base tracking-tight text-white">AnveshakHub</span>
-            <span className="text-[10px] text-[#d49b38] font-semibold tracking-wider uppercase">
-              {isOrgUser ? 'Client Portal' : 'Enterprise ERP'}
-            </span>
-          </div>
+      <div className="flex h-16 items-center px-5 border-b border-[#182238] shrink-0">
+        <Link href={isOrgUser ? '/industry' : '/'} prefetch={true} className="flex items-center group" onClick={onItemClick}>
+          <AnveshakLogo size="md" showText={true} />
         </Link>
       </div>
 

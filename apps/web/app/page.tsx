@@ -29,6 +29,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
+import { AnveshakLogo } from '@/components/ui/anveshak-logo';
 
 export default function Fnd01LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -174,20 +175,7 @@ export default function Fnd01LandingPage() {
             href="/"
             className="flex items-center space-x-3 focus:outline-none focus:ring-2 focus:ring-[#d49b38] rounded-lg p-1 transition-opacity hover:opacity-95"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#d49b38] to-[#c48b28] font-bold text-[#151c2e] text-base shadow-sm">
-              AH
-            </div>
-            <div className="flex flex-col">
-              <span className="text-lg font-bold tracking-tight text-white flex items-center">
-                Anveshak Hub
-                <span className="ml-2 rounded-full border border-[#d49b38]/40 bg-[#d49b38]/10 px-2 py-0.5 text-[10px] font-semibold text-[#d49b38] uppercase">
-                  Enterprise
-                </span>
-              </span>
-              <span className="text-[10px] font-medium text-[#94a3b8] tracking-wide">
-                Bridging Innovation, Enterprise & Academia
-              </span>
-            </div>
+            <AnveshakLogo size="md" showText={true} />
           </Link>
 
           {/* Desktop Navigation CTAs */}
@@ -293,70 +281,59 @@ export default function Fnd01LandingPage() {
                 </div>
               </div>
 
-              {/* Right Column: Real Enterprise Product Preview Mockup */}
+              {/* Right Column: Executive Hand-Crafted Enterprise Showcase */}
               <div className="lg:col-span-5">
-                <div className="rounded-2xl border border-[#E2E8F0] bg-[#151c2e] p-5 shadow-2xl text-white space-y-4">
-                  {/* Top Mockup Title Bar */}
-                  <div className="flex items-center justify-between border-b border-[#182238] pb-3">
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl space-y-5">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div className="flex items-center space-x-2">
-                      <div className="h-3 w-3 rounded-full bg-red-500/80" />
-                      <div className="h-3 w-3 rounded-full bg-yellow-500/80" />
-                      <div className="h-3 w-3 rounded-full bg-green-500/80" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">Enterprise OS Telemetry</span>
                     </div>
-                    <span className="text-[11px] font-medium text-[#94a3b8]">AnveshakHub Enterprise</span>
-                  </div>
-
-                  {/* Dashboard Preview Header */}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-xs font-bold text-white">Innovation Operating System</div>
-                      <div className="text-[10px] text-[#94a3b8]">Active Platform Verticals</div>
-                    </div>
-                    <span className="rounded-full bg-[#d49b38] px-2 py-0.5 text-[10px] font-bold text-[#151c2e]">
+                    <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-extrabold text-amber-700 ring-1 ring-amber-200">
                       LIVE SYSTEM
                     </span>
                   </div>
 
-                  {/* Metrics Cards Grid */}
-                  <div className="grid grid-cols-2 gap-3 pt-1">
-                    <div className="rounded-xl border border-[#182238] bg-[#182238]/80 p-3">
-                      <div className="text-[10px] text-[#94a3b8] flex items-center justify-between">
-                        <span>Service Verticals</span>
-                        <BarChart3 className="h-3.5 w-3.5 text-[#d49b38]" />
+                  {/* 6 Business Verticals Direct Access Badges */}
+                  <div className="space-y-2">
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">6 Official Service Verticals</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-xs hover:border-indigo-300 transition-all">
+                        <div className="font-bold text-slate-900">Research &amp; Deep Tech</div>
+                        <div className="text-[10px] text-indigo-600 font-semibold mt-0.5">BV-01 • Research Projects</div>
                       </div>
-                      <div className="text-lg font-bold text-white mt-1">6 Active</div>
-                      <div className="text-[9px] text-[#d49b38]">BV-01 to BV-06</div>
-                    </div>
-                    <div className="rounded-xl border border-[#182238] bg-[#182238]/80 p-3">
-                      <div className="text-[10px] text-[#94a3b8] flex items-center justify-between">
-                        <span>TRL Framework</span>
-                        <Activity className="h-3.5 w-3.5 text-[#d49b38]" />
+                      <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-xs hover:border-indigo-300 transition-all">
+                        <div className="font-bold text-slate-900">IP &amp; Knowledge</div>
+                        <div className="text-[10px] text-indigo-600 font-semibold mt-0.5">BV-02 • Patents &amp; Lit</div>
                       </div>
-                      <div className="text-lg font-bold text-white mt-1">TRL 1 - 9</div>
-                      <div className="text-[9px] text-emerald-400">Validated Pipeline</div>
+                      <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-xs hover:border-indigo-300 transition-all">
+                        <div className="font-bold text-slate-900">Startup Incubation</div>
+                        <div className="text-[10px] text-indigo-600 font-semibold mt-0.5">BV-03 • Commercialize</div>
+                      </div>
+                      <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-xs hover:border-indigo-300 transition-all">
+                        <div className="font-bold text-slate-900">Consulting &amp; Advisory</div>
+                        <div className="text-[10px] text-indigo-600 font-semibold mt-0.5">BV-04 • Roadmaps</div>
+                      </div>
+                      <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-xs hover:border-indigo-300 transition-all">
+                        <div className="font-bold text-slate-900">Design &amp; Prototype</div>
+                        <div className="text-[10px] text-indigo-600 font-semibold mt-0.5">BV-05 • Full-Stack</div>
+                      </div>
+                      <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-xs hover:border-indigo-300 transition-all">
+                        <div className="font-bold text-slate-900">Upskilling &amp; Training</div>
+                        <div className="text-[10px] text-indigo-600 font-semibold mt-0.5">BV-06 • Workshops</div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Operational Status Box */}
-                  <div className="rounded-xl border border-[#182238] bg-[#182238]/50 p-3 space-y-2 text-xs">
-                    <div className="flex items-center justify-between text-[11px] font-semibold text-white">
-                      <span>Enterprise Security & Audit</span>
-                      <ShieldCheck className="h-4 w-4 text-[#d49b38]" />
+                  {/* Core Platform Capabilities */}
+                  <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 space-y-2 text-xs">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-900">
+                      <span>TRL 1 - 9 Innovation Framework</span>
+                      <ShieldCheck className="h-4 w-4 text-indigo-600" />
                     </div>
-                    <div className="space-y-1 text-[10px] text-[#94a3b8]">
-                      <div className="flex items-center space-x-1.5">
-                        <Check className="h-3 w-3 text-[#d49b38]" />
-                        <span>Single Unified ADMIN Authorization Model</span>
-                      </div>
-                      <div className="flex items-center space-x-1.5">
-                        <Check className="h-3 w-3 text-[#d49b38]" />
-                        <span>Private S3 Object Storage & Virus Scanning</span>
-                      </div>
-                      <div className="flex items-center space-x-1.5">
-                        <Check className="h-3 w-3 text-[#d49b38]" />
-                        <span>Argon2id Encrypted Session Authentication</span>
-                      </div>
-                    </div>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      End-to-end research governance with automated document scanning, multi-tenant industry organization portals, and immutable audit logs.
+                    </p>
                   </div>
                 </div>
               </div>

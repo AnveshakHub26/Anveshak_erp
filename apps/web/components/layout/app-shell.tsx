@@ -17,6 +17,8 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 
+import { BrandLoader } from './brand-loader';
+
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
   const router = useRouter();
@@ -35,21 +37,9 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     }
   }, [isInitializing, isAuthenticated, pathname, router]);
 
-  // Show a sleek enterprise loading screen while initializing session
+  // Show a sleek executive brand loading screen while initializing session
   if (isInitializing) {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center bg-[#151c2e] text-white">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#d49b38] to-[#c48b28] flex items-center justify-center font-extrabold text-[#151c2e] text-xl shadow-lg animate-pulse">
-            AH
-          </div>
-          <div className="space-y-1 text-center">
-            <h3 className="text-sm font-bold tracking-wide">AnveshakHub Enterprise ERP</h3>
-            <p className="text-xs text-[#94a3b8]">Verifying secure session tokens...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <BrandLoader subtitle="Verifying AnveshakHub Enterprise Authorization..." durationMs={1200} />;
   }
 
   // If unauthenticated, return empty container while router redirects

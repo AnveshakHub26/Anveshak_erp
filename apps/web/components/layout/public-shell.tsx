@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { ArrowLeft, Home, Calendar, LogIn, Building2, Menu, X } from 'lucide-react';
+import { AnveshakLogo } from '@/components/ui/anveshak-logo';
 
 interface PublicShellProps {
   children: React.ReactNode;
@@ -32,20 +33,7 @@ export function PublicShell({ children }: PublicShellProps) {
               href="/"
               className="flex items-center gap-2 sm:gap-3 focus:outline-none focus:ring-2 focus:ring-[#d49b38] rounded-lg p-1 transition-opacity hover:opacity-90 shrink-0"
             >
-              <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#d49b38] to-[#c48b28] font-bold text-[#151c2e] text-sm shadow-sm">
-                AH
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm sm:text-base font-bold tracking-tight text-white flex items-center gap-1.5">
-                  Anveshak Hub
-                  <span className="rounded-full border border-[#d49b38]/40 bg-[#d49b38]/10 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-semibold text-[#d49b38] uppercase">
-                    Enterprise
-                  </span>
-                </span>
-                <span className="hidden sm:block text-[10px] font-medium text-[#94a3b8] tracking-wide">
-                  Bridging Innovation, Enterprise &amp; Academia
-                </span>
-              </div>
+              <AnveshakLogo size="md" showText={true} />
             </Link>
 
             {/* Back & Home pills */}
