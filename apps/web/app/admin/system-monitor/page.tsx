@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -29,6 +29,11 @@ import {
   Zap,
   Eye,
   FileSearch,
+  Radio,
+  PauseCircle,
+  PlayCircle,
+  UserCheck,
+  TrendingUp,
 } from 'lucide-react';
 
 interface MetricsData {
@@ -106,6 +111,10 @@ export default function SystemMonitorPage() {
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<'overview' | 'active-users' | 'documents' | 'employees' | 'organizations' | 'projects' | 'health' | 'audit'>('overview');
+
+  // Real-time Live Telemetry Auto-Polling (Default: ON, interval 10s)
+  const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Data States
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
@@ -219,10 +228,10 @@ export default function SystemMonitorPage() {
     }
   };
 
-  // Fetch Data based on tab
-  const loadTabData = useCallback(async () => {
+  // Fetch Data based on active tab
+  const loadTabData = useCallback(async (isSilent = false) => {
     if (!isVerified) return;
-    setLoadingData(true);
+    if (!isSilent) setLoadingData(true);
 
     try {
       if (activeTab === 'overview') {
@@ -255,16 +264,27 @@ export default function SystemMonitorPage() {
         setAuditLogs(res.data?.items || []);
         setAuditTotal(res.data?.total || 0);
       }
+      setLastUpdated(new Date());
     } catch (err) {
       console.error('Error loading System Monitor data:', err);
     } finally {
-      setLoadingData(false);
+      if (!isSilent) setLoadingData(false);
     }
   }, [isVerified, activeTab, docSearch, empSearch, orgSearch, prjSearch, auditSearch]);
 
+  // Initial tab load
   useEffect(() => {
-    loadTabData();
+    loadTabData(false);
   }, [loadTabData]);
+
+  // Real-time Live Polling Effect (Every 10 seconds)
+  useEffect(() => {
+    if (!isVerified || !autoRefresh) return;
+    const interval = setInterval(() => {
+      loadTabData(true);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [isVerified, autoRefresh, loadTabData]);
 
   // Global Search Handler
   const handleGlobalSearch = async (query: string) => {
@@ -288,7 +308,7 @@ export default function SystemMonitorPage() {
   if (isInitializing) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <RefreshCw className="h-8 w-8 animate-spin text-indigo-500" />
+        <RefreshCw className="h-8 w-8 animate-spin text-indigo-600" />
       </div>
     );
   }
@@ -297,40 +317,42 @@ export default function SystemMonitorPage() {
   const isAdmin = user?.roles?.includes('ADMIN');
   if (!isAdmin) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
-        <ShieldAlert className="mb-4 h-16 w-16 text-rose-500" />
-        <h1 className="text-2xl font-bold text-slate-100">403 — Unauthorized Access</h1>
-        <p className="mt-2 max-w-md text-slate-400">
-          The System Monitor & Admin Control Center is restricted strictly to Administrator role accounts.
+      <div className="flex min-h-[65vh] flex-col items-center justify-center px-4 text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 ring-1 ring-rose-200">
+          <ShieldAlert className="h-9 w-9" />
+        </div>
+        <h1 className="text-2xl font-bold text-slate-900">403 — Restricted System Access</h1>
+        <p className="mt-2 max-w-md text-sm text-slate-600">
+          The System Control Center & Telemetry Monitor is restricted strictly to authorized Administrator accounts.
         </p>
         <Link
           href="/employee/dashboard"
-          className="mt-6 rounded-lg bg-indigo-600 px-5 py-2.5 font-medium text-white shadow hover:bg-indigo-500"
+          className="mt-6 rounded-lg bg-indigo-600 px-5 py-2.5 text-xs font-semibold text-white shadow hover:bg-indigo-500 transition-all"
         >
-          Return to Dashboard
+          Return to Employee Workspace
         </Link>
       </div>
     );
   }
 
-  // Security Gate Prompt (If PIN not verified)
+  // Security Gate Verification Card (If not unlocked)
   if (!isVerified) {
     return (
       <div className="flex min-h-[75vh] flex-col items-center justify-center px-4">
-        <div className="w-full max-w-md rounded-xl border border-slate-800 bg-slate-900/90 p-8 shadow-2xl backdrop-blur">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-xl">
           <div className="mb-6 text-center">
-            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-400 ring-1 ring-indigo-500/20">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#151c2e] text-[#d49b38] shadow-md">
               <ShieldCheck className="h-8 w-8" />
             </div>
-            <h2 className="text-xl font-bold text-slate-100">System Monitor Security Gate</h2>
-            <p className="mt-1 text-sm text-slate-400">
-              Secondary identity verification required to unlock enterprise control metrics.
+            <h2 className="text-xl font-bold text-slate-900">Admin Control Center Gate</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Secondary security verification required to view enterprise system metrics.
             </p>
           </div>
 
           <form onSubmit={handleVerifyPin} className="space-y-4">
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-300">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-700">
                 Security PIN / Password
               </label>
               <div className="relative">
@@ -340,14 +362,14 @@ export default function SystemMonitorPage() {
                   onChange={(e) => setPinInput(e.target.value)}
                   placeholder="Enter monitor password..."
                   required
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2.5 pl-10 text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-2.5 pl-10 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600/20"
                 />
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
               </div>
             </div>
 
             {pinError && (
-              <div className="flex items-center gap-2 rounded-lg bg-rose-500/10 p-3 text-sm text-rose-400">
+              <div className="flex items-center gap-2 rounded-lg bg-rose-50 p-3 text-xs font-medium text-rose-700 border border-rose-200">
                 <AlertCircle className="h-4 w-4 shrink-0" />
                 <span>{pinError}</span>
               </div>
@@ -356,29 +378,29 @@ export default function SystemMonitorPage() {
             <button
               type="submit"
               disabled={pinLoading}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 py-2.5 font-medium text-white shadow-lg hover:bg-indigo-500 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#151c2e] py-2.5 text-xs font-semibold text-white shadow-md hover:bg-[#1e293b] disabled:opacity-50 transition-all"
             >
-              {pinLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
-              Unlock Control Center
+              {pinLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4 text-[#d49b38]" />}
+              Authenticate & Unlock Control Center
             </button>
           </form>
 
-          <div className="mt-6 border-t border-slate-800 pt-4 text-center">
+          <div className="mt-6 border-t border-slate-100 pt-4 text-center">
             <button
               onClick={() => setShowForgotForm(true)}
-              className="text-xs font-medium text-indigo-400 hover:text-indigo-300"
+              className="text-xs font-semibold text-indigo-600 hover:text-indigo-700"
             >
-              Forgot Monitor Password?
+              Forgot Monitor Security Password?
             </button>
           </div>
 
           {/* Forgot Password Modal */}
           {showForgotForm && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-              <div className="w-full max-w-sm rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
-                <h3 className="text-lg font-bold text-slate-100">Forgot Monitor Password</h3>
-                <p className="mt-1 text-xs text-slate-400">
-                  Password recovery instructions will be sent to the permanent administrator email address.
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+              <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-6 shadow-2xl">
+                <h3 className="text-base font-bold text-slate-900">Forgot Security Password</h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  Password reset instructions will be sent to the administrator email address.
                 </p>
                 <form onSubmit={handleForgotPassword} className="mt-4 space-y-4">
                   <input
@@ -386,10 +408,10 @@ export default function SystemMonitorPage() {
                     value={forgotEmail}
                     onChange={(e) => setForgotEmail(e.target.value)}
                     placeholder="anveshakhub26@gmail.com"
-                    className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3.5 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"
+                    className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none"
                   />
                   {settingsMessage && (
-                    <div className={`text-xs ${settingsMessage.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    <div className={`text-xs font-medium ${settingsMessage.type === 'success' ? 'text-emerald-600' : 'text-rose-600'}`}>
                       {settingsMessage.text}
                     </div>
                   )}
@@ -397,9 +419,9 @@ export default function SystemMonitorPage() {
                     <button
                       type="submit"
                       disabled={settingsLoading}
-                      className="flex-1 rounded-lg bg-indigo-600 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+                      className="flex-1 rounded-lg bg-indigo-600 py-2 text-xs font-semibold text-white hover:bg-indigo-500 shadow"
                     >
-                      Send Recovery Email
+                      Dispatch Reset Email
                     </button>
                     <button
                       type="button"
@@ -407,7 +429,7 @@ export default function SystemMonitorPage() {
                         setShowForgotForm(false);
                         setSettingsMessage(null);
                       }}
-                      className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700"
+                      className="rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200"
                     >
                       Close
                     </button>
@@ -421,131 +443,182 @@ export default function SystemMonitorPage() {
     );
   }
 
-  // Verified Admin Control Center
+  // Verified & Unlocked Admin Control Center UI
   return (
-    <div className="space-y-6 px-2 py-4 sm:px-4 lg:px-6">
-      {/* Top Header */}
-      <div className="flex flex-col gap-4 rounded-xl border border-slate-800 bg-slate-900/60 p-5 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400 ring-1 ring-indigo-500/20">
-              <ShieldAlert className="h-4 w-4" />
-            </span>
-            <h1 className="text-xl font-bold text-slate-100">System Monitor & Admin Control Center</h1>
+    <div className="space-y-6">
+      {/* Page Title & Control Bar */}
+      <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-xs sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center space-x-3.5">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#151c2e] text-[#d49b38] shadow-xs">
+            <ShieldCheck className="h-6 w-6" />
           </div>
-          <p className="mt-1 text-xs text-slate-400">
-            Realtime enterprise telemetry, workforce health, active user sessions, and authoritative ERP access.
-          </p>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold tracking-tight text-slate-900">
+                System Monitor & Admin Control Center
+              </h1>
+              {/* Realtime Live Pulse Badge */}
+              <div
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-all ${
+                  autoRefresh
+                    ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-100'
+                    : 'bg-amber-50 text-amber-700 ring-1 ring-amber-200 hover:bg-amber-100'
+                }`}
+                title={autoRefresh ? 'Live Polling Active (Every 10s). Click to pause.' : 'Live Polling Paused. Click to activate.'}
+              >
+                {autoRefresh ? (
+                  <>
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+                    </span>
+                    <span>Live Telemetry</span>
+                  </>
+                ) : (
+                  <>
+                    <PauseCircle className="h-3 w-3 text-amber-600" />
+                    <span>Sync Paused</span>
+                  </>
+                )}
+              </div>
+            </div>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Realtime database telemetry, workforce metrics, active user activity, and authoritative ERP routing.
+              {lastUpdated && <span className="ml-2 font-mono text-[10px] text-slate-400">Updated: {lastUpdated.toLocaleTimeString()}</span>}
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Global Search Input */}
+          {/* Global Quick Search Input */}
           <div className="relative w-full sm:w-64">
             <input
               type="text"
               value={globalQuery}
               onChange={(e) => handleGlobalSearch(e.target.value)}
-              placeholder="Global search EMP, PRJ, Org..."
-              className="w-full rounded-lg border border-slate-700 bg-slate-950 py-1.5 pl-9 pr-3 text-xs text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none"
+              placeholder="Search EMP, PRJ, Org, Docs..."
+              className="w-full rounded-lg border border-slate-300 bg-slate-50 py-1.5 pl-9 pr-3 text-xs text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600"
             />
-            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-500" />
-            {globalSearching && <RefreshCw className="absolute right-2.5 top-2 h-3.5 w-3.5 animate-spin text-indigo-400" />}
+            <Search className="absolute left-3 top-2 h-3.5 w-3.5 text-slate-400" />
+            {globalSearching && <RefreshCw className="absolute right-3 top-2 h-3.5 w-3.5 animate-spin text-indigo-600" />}
           </div>
 
           <button
             onClick={() => setShowSettingsModal(true)}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-700"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-all"
           >
-            <Key className="h-3.5 w-3.5 text-slate-400" />
+            <Key className="h-3.5 w-3.5 text-slate-500" />
             Security Settings
           </button>
 
           <button
-            onClick={loadTabData}
-            className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white shadow hover:bg-indigo-500"
+            onClick={() => loadTabData(false)}
+            disabled={loadingData}
+            className="flex items-center gap-1.5 rounded-lg bg-[#151c2e] px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-[#1e293b] disabled:opacity-50 transition-all"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${loadingData ? 'animate-spin' : ''}`} />
-            Refresh
+            <RefreshCw className={`h-3.5 w-3.5 text-[#d49b38] ${loadingData ? 'animate-spin' : ''}`} />
+            Sync Now
           </button>
         </div>
       </div>
 
       {/* Global Search Results Popup */}
       {globalResults && (
-        <div className="rounded-xl border border-indigo-500/30 bg-slate-900 p-4 shadow-xl">
-          <div className="mb-3 flex items-center justify-between border-b border-slate-800 pb-2">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-400">Global Search Results for "{globalQuery}"</h3>
-            <button onClick={() => setGlobalResults(null)} className="text-xs text-slate-400 hover:text-slate-200">
-              Clear
+        <div className="rounded-xl border border-indigo-200 bg-white p-5 shadow-lg">
+          <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-700">Search Results for "{globalQuery}"</h3>
+            <button onClick={() => setGlobalResults(null)} className="text-xs font-semibold text-slate-400 hover:text-slate-600">
+              Clear Results
             </button>
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             {/* Employees */}
             <div>
-              <h4 className="mb-1 text-xs font-semibold text-slate-300">Employees ({globalResults.employees?.length || 0})</h4>
-              {globalResults.employees?.map((emp) => (
-                <Link
-                  key={emp.id}
-                  href={`/hr/employees/${emp.id}`}
-                  className="block rounded-md p-2 text-xs hover:bg-slate-800"
-                >
-                  <div className="font-medium text-indigo-300">{emp.fullName}</div>
-                  <div className="text-slate-400">{emp.employeeCode} • {emp.department || 'N/A'}</div>
-                </Link>
-              ))}
+              <h4 className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">Employees ({globalResults.employees?.length || 0})</h4>
+              {globalResults.employees?.length === 0 ? (
+                <p className="text-xs text-slate-400">No matching employees</p>
+              ) : (
+                globalResults.employees?.map((emp) => (
+                  <Link
+                    key={emp.id}
+                    href={`/hr/employees/${emp.id}`}
+                    className="block rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-xs hover:border-indigo-300 hover:bg-indigo-50/50 transition-all my-1"
+                  >
+                    <div className="font-semibold text-slate-900">{emp.fullName}</div>
+                    <div className="text-[11px] text-slate-500 font-mono">{emp.employeeCode} • {emp.department || 'N/A'}</div>
+                  </Link>
+                ))
+              )}
             </div>
 
             {/* Organizations */}
             <div>
-              <h4 className="mb-1 text-xs font-semibold text-slate-300">Organizations ({globalResults.organizations?.length || 0})</h4>
-              {globalResults.organizations?.map((org) => (
-                <Link
-                  key={org.id}
-                  href="/organizations"
-                  className="block rounded-md p-2 text-xs hover:bg-slate-800"
-                >
-                  <div className="font-medium text-indigo-300">{org.legalName}</div>
-                  <div className="text-slate-400">{org.orgNumber} • {org.status}</div>
-                </Link>
-              ))}
+              <h4 className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">Organizations ({globalResults.organizations?.length || 0})</h4>
+              {globalResults.organizations?.length === 0 ? (
+                <p className="text-xs text-slate-400">No matching organizations</p>
+              ) : (
+                globalResults.organizations?.map((org) => (
+                  <Link
+                    key={org.id}
+                    href="/organizations"
+                    className="block rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-xs hover:border-indigo-300 hover:bg-indigo-50/50 transition-all my-1"
+                  >
+                    <div className="font-semibold text-slate-900">{org.legalName}</div>
+                    <div className="text-[11px] text-slate-500 font-mono">{org.orgNumber} • {org.status}</div>
+                  </Link>
+                ))
+              )}
             </div>
 
             {/* Projects */}
             <div>
-              <h4 className="mb-1 text-xs font-semibold text-slate-300">Projects ({globalResults.projects?.length || 0})</h4>
-              {globalResults.projects?.map((prj) => (
-                <Link
-                  key={prj.id}
-                  href={`/projects/${prj.id}`}
-                  className="block rounded-md p-2 text-xs hover:bg-slate-800"
-                >
-                  <div className="font-medium text-indigo-300">{prj.title}</div>
-                  <div className="text-slate-400">{prj.projectCode} • {prj.status}</div>
-                </Link>
-              ))}
+              <h4 className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">Projects ({globalResults.projects?.length || 0})</h4>
+              {globalResults.projects?.length === 0 ? (
+                <p className="text-xs text-slate-400">No matching projects</p>
+              ) : (
+                globalResults.projects?.map((prj) => (
+                  <Link
+                    key={prj.id}
+                    href={`/projects/${prj.id}`}
+                    className="block rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-xs hover:border-indigo-300 hover:bg-indigo-50/50 transition-all my-1"
+                  >
+                    <div className="font-semibold text-slate-900">{prj.title}</div>
+                    <div className="text-[11px] text-slate-500 font-mono">{prj.projectCode} • {prj.status}</div>
+                  </Link>
+                ))
+              )}
             </div>
 
             {/* Documents */}
             <div>
-              <h4 className="mb-1 text-xs font-semibold text-slate-300">Documents ({globalResults.documents?.length || 0})</h4>
-              {globalResults.documents?.map((doc) => (
-                <div key={doc.id} className="rounded-md p-2 text-xs text-slate-300">
-                  <div className="font-medium text-indigo-300">{doc.storageKey}</div>
-                  <div className="text-slate-400">{doc.type} • {doc.entityType}</div>
-                </div>
-              ))}
+              <h4 className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">Documents ({globalResults.documents?.length || 0})</h4>
+              {globalResults.documents?.length === 0 ? (
+                <p className="text-xs text-slate-400">No matching documents</p>
+              ) : (
+                globalResults.documents?.map((doc) => (
+                  <Link
+                    key={doc.id}
+                    href="/documents"
+                    className="block rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-xs hover:border-indigo-300 hover:bg-indigo-50/50 transition-all my-1"
+                  >
+                    <div className="font-semibold text-slate-900 truncate">{doc.storageKey}</div>
+                    <div className="text-[11px] text-slate-500">{doc.type} • {doc.entityType}</div>
+                  </Link>
+                ))
+              )}
             </div>
           </div>
         </div>
       )}
 
       {/* Control Center Navigation Tabs */}
-      <div className="flex border-b border-slate-800 overflow-x-auto">
+      <div className="flex border-b border-slate-200 overflow-x-auto bg-white rounded-xl p-1 shadow-xs border border-slate-200">
         {[
           { id: 'overview', label: 'ERP Overview', icon: Activity },
-          { id: 'active-users', label: 'Active Users', icon: Users },
+          { id: 'active-users', label: 'Active Sessions', icon: Users },
           { id: 'documents', label: 'Global Documents', icon: FileSearch },
-          { id: 'employees', label: 'Workforce', icon: Users },
+          { id: 'employees', label: 'Workforce', icon: UserCheck },
           { id: 'organizations', label: 'Organizations', icon: Building2 },
           { id: 'projects', label: 'Projects', icon: FolderGit2 },
           { id: 'health', label: 'System Health', icon: Server },
@@ -557,111 +630,109 @@ export default function SystemMonitorPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs font-medium whitespace-nowrap transition-colors ${
+              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold whitespace-nowrap transition-all ${
                 isActive
-                  ? 'border-indigo-500 bg-indigo-500/10 text-indigo-400'
-                  : 'border-transparent text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                  ? 'bg-[#151c2e] text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
               }`}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className={`h-4 w-4 ${isActive ? 'text-[#d49b38]' : 'text-slate-400'}`} />
               {tab.label}
             </button>
           );
         })}
       </div>
 
-      {/* TAB CONTENT SECTIONS */}
-
-      {/* 1. ERP OVERVIEW TAB */}
+      {/* TAB 1: ERP OVERVIEW METRICS GRID & QUICK NAVIGATION */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
           {/* Real Metrics Cards Grid */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-            <MetricCard label="Total Employees" value={metrics?.totalEmployees ?? 0} icon={Users} color="indigo" />
-            <MetricCard label="Active Employees" value={metrics?.activeEmployees ?? 0} icon={CheckCircle2} color="emerald" />
-            <MetricCard label="Exited Employees" value={metrics?.exitedEmployees ?? 0} icon={XCircle} color="slate" />
-            <MetricCard label="Total Organizations" value={metrics?.totalOrganizations ?? 0} icon={Building2} color="blue" />
-            <MetricCard label="Total Projects" value={metrics?.totalProjects ?? 0} icon={FolderGit2} color="purple" />
-            <MetricCard label="Active Projects" value={metrics?.activeProjects ?? 0} icon={Zap} color="amber" />
-            <MetricCard label="Completed Projects" value={metrics?.completedProjects ?? 0} icon={CheckCircle2} color="emerald" />
-            <MetricCard label="Projects On Hold" value={metrics?.projectsOnHold ?? 0} icon={Clock} color="rose" />
-            <MetricCard label="Total Documents" value={metrics?.totalDocuments ?? 0} icon={FileText} color="cyan" />
-            <MetricCard label="Document Folders" value={metrics?.totalFolders ?? 0} icon={FileSearch} color="sky" />
-            <MetricCard label="Pending Leave" value={metrics?.pendingLeaveRequests ?? 0} icon={Calendar} color="amber" />
-            <MetricCard label="Present Today" value={metrics?.attendancePresentToday ?? 0} icon={Clock} color="emerald" />
-            <MetricCard label="Working Now" value={metrics?.currentlyWorking ?? 0} icon={Activity} color="indigo" />
-            <MetricCard label="On Break" value={metrics?.currentlyOnBreak ?? 0} icon={Clock} color="amber" />
-            <MetricCard label="Attendance Done" value={metrics?.completedAttendance ?? 0} icon={CheckCircle2} color="blue" />
-            <MetricCard label="Total System Users" value={metrics?.totalUsers ?? 0} icon={Users} color="teal" />
-            <MetricCard label="Unread Alerts" value={metrics?.unreadNotifications ?? 0} icon={AlertCircle} color="rose" />
-            <MetricCard label="Failed Emails" value={metrics?.failedEmailsCount ?? 0} icon={Mail} color="rose" />
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+            <MetricCard label="Total Employees" value={metrics?.totalEmployees ?? 0} icon={Users} iconBg="bg-indigo-50" iconColor="text-indigo-600" />
+            <MetricCard label="Active Employees" value={metrics?.activeEmployees ?? 0} icon={CheckCircle2} iconBg="bg-emerald-50" iconColor="text-emerald-600" />
+            <MetricCard label="Exited Employees" value={metrics?.exitedEmployees ?? 0} icon={XCircle} iconBg="bg-slate-100" iconColor="text-slate-500" />
+            <MetricCard label="Total Organizations" value={metrics?.totalOrganizations ?? 0} icon={Building2} iconBg="bg-blue-50" iconColor="text-blue-600" />
+            <MetricCard label="Total Projects" value={metrics?.totalProjects ?? 0} icon={FolderGit2} iconBg="bg-purple-50" iconColor="text-purple-600" />
+            <MetricCard label="Active Projects" value={metrics?.activeProjects ?? 0} icon={Zap} iconBg="bg-amber-50" iconColor="text-amber-600" />
+            <MetricCard label="Completed Projects" value={metrics?.completedProjects ?? 0} icon={CheckCircle2} iconBg="bg-teal-50" iconColor="text-teal-600" />
+            <MetricCard label="Projects On Hold" value={metrics?.projectsOnHold ?? 0} icon={Clock} iconBg="bg-rose-50" iconColor="text-rose-600" />
+            <MetricCard label="Total Documents" value={metrics?.totalDocuments ?? 0} icon={FileText} iconBg="bg-sky-50" iconColor="text-sky-600" />
+            <MetricCard label="Document Folders" value={metrics?.totalFolders ?? 0} icon={FileSearch} iconBg="bg-cyan-50" iconColor="text-cyan-600" />
+            <MetricCard label="Pending Leave" value={metrics?.pendingLeaveRequests ?? 0} icon={Calendar} iconBg="bg-orange-50" iconColor="text-orange-600" />
+            <MetricCard label="Present Today" value={metrics?.attendancePresentToday ?? 0} icon={Clock} iconBg="bg-emerald-50" iconColor="text-emerald-600" />
+            <MetricCard label="Working Now" value={metrics?.currentlyWorking ?? 0} icon={Activity} iconBg="bg-indigo-50" iconColor="text-indigo-600" />
+            <MetricCard label="On Break" value={metrics?.currentlyOnBreak ?? 0} icon={Clock} iconBg="bg-amber-50" iconColor="text-amber-600" />
+            <MetricCard label="Attendance Done" value={metrics?.completedAttendance ?? 0} icon={CheckCircle2} iconBg="bg-blue-50" iconColor="text-blue-600" />
+            <MetricCard label="System Users" value={metrics?.totalUsers ?? 0} icon={Users} iconBg="bg-violet-50" iconColor="text-violet-600" />
+            <MetricCard label="Unread Alerts" value={metrics?.unreadNotifications ?? 0} icon={AlertCircle} iconBg="bg-rose-50" iconColor="text-rose-600" />
+            <MetricCard label="Failed Email Logs" value={metrics?.failedEmailsCount ?? 0} icon={Mail} iconBg="bg-red-50" iconColor="text-red-600" />
           </div>
 
           {/* Quick Navigation Cards to Authoritative ERP Pages */}
-          <div>
-            <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-300">Authoritative ERP Quick Navigation</h3>
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
+            <h3 className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-500">Authoritative ERP Quick Navigation</h3>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-              <QuickNavCard label="Employees" href="/hr" icon={Users} description="HR Directory & Profile Editing" />
-              <QuickNavCard label="Organizations" href="/organizations" icon={Building2} description="Client Organizations & Onboarding" />
-              <QuickNavCard label="Projects" href="/projects" icon={FolderGit2} description="Project Workspace & Deliverables" />
-              <QuickNavCard label="Documents" href="/documents" icon={FileText} description="Document Repository & Scanning" />
-              <QuickNavCard label="Attendance" href="/hr/attendance" icon={Clock} description="Workforce Time & Attendance Logs" />
-              <QuickNavCard label="Leave" href="/hr/leave" icon={Calendar} description="Leave Request Approvals" />
-              <QuickNavCard label="Users" href="/admin/approvals" icon={Users} description="System Users & RBAC Roles" />
-              <QuickNavCard label="Audit Logs" href="/admin/system-monitor" icon={ShieldCheck} description="Immutable Action Trails" />
+              <QuickNavCard label="Employees" href="/hr" icon={Users} description="Directory & profiles" />
+              <QuickNavCard label="Organizations" href="/organizations" icon={Building2} description="Client onboarding" />
+              <QuickNavCard label="Projects" href="/projects" icon={FolderGit2} description="Workspaces & tasks" />
+              <QuickNavCard label="Documents" href="/documents" icon={FileText} description="Document repository" />
+              <QuickNavCard label="Attendance" href="/hr/attendance" icon={Clock} description="Attendance logs" />
+              <QuickNavCard label="Leave" href="/hr/leave" icon={Calendar} description="Leave approvals" />
+              <QuickNavCard label="Users" href="/admin/approvals" icon={Users} description="Users & roles" />
+              <QuickNavCard label="Audit Logs" href="/admin/system-monitor" icon={ShieldCheck} description="Action trails" />
             </div>
           </div>
         </div>
       )}
 
-      {/* 2. ACTIVE USER MONITORING TAB */}
+      {/* TAB 2: ACTIVE USER MONITORING */}
       {activeTab === 'active-users' && (
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 shadow-lg">
-          <div className="mb-4 flex items-center justify-between">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
             <div>
-              <h3 className="text-base font-bold text-slate-100">Active Session Telemetry</h3>
-              <p className="text-xs text-slate-400">
-                Lightweight activity tracking (activity recorded within last 5 minutes). Zero Redis/Kafka polling overhead.
+              <h3 className="text-base font-bold text-slate-900">Active User Session Telemetry</h3>
+              <p className="text-xs text-slate-500">
+                Lightweight activity tracking (active within last 5 minutes). Zero Redis/Kafka polling overhead.
               </p>
             </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400 ring-1 ring-emerald-500/20">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              {activeUsers.length} Active Now
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200 self-start sm:self-auto">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              {activeUsers.length} Users Active Now
             </span>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-800 bg-slate-950 text-slate-400">
+              <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
                 <tr>
-                  <th className="p-3 font-semibold">User Email</th>
-                  <th className="p-3 font-semibold">Role</th>
-                  <th className="p-3 font-semibold">Current Route</th>
-                  <th className="p-3 font-semibold">Last Activity</th>
-                  <th className="p-3 font-semibold">Login Time</th>
-                  <th className="p-3 font-semibold">IP Address</th>
+                  <th className="p-3.5 font-bold">User Email</th>
+                  <th className="p-3.5 font-bold">Role</th>
+                  <th className="p-3.5 font-bold">Current Route</th>
+                  <th className="p-3.5 font-bold">Last Activity</th>
+                  <th className="p-3.5 font-bold">Login Time</th>
+                  <th className="p-3.5 font-bold">IP Address</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/50">
+              <tbody className="divide-y divide-slate-100">
                 {activeUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="p-4 text-center text-slate-500">
-                      No active sessions in the last 5 minutes.
+                    <td colSpan={6} className="p-6 text-center text-slate-400">
+                      No active sessions detected in the last 5 minutes.
                     </td>
                   </tr>
                 ) : (
                   activeUsers.map((u) => (
-                    <tr key={u.id} className="hover:bg-slate-800/40">
-                      <td className="p-3 font-medium text-slate-200">{u.email}</td>
-                      <td className="p-3">
-                        <span className="rounded bg-indigo-500/10 px-2 py-0.5 text-[10px] font-bold text-indigo-400">
+                    <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="p-3.5 font-semibold text-slate-900">{u.email}</td>
+                      <td className="p-3.5">
+                        <span className="rounded bg-indigo-50 px-2.5 py-1 text-[11px] font-bold text-indigo-700 ring-1 ring-indigo-200">
                           {u.role}
                         </span>
                       </td>
-                      <td className="p-3 text-slate-300 font-mono text-[11px]">{u.currentRoute || '/dashboard'}</td>
-                      <td className="p-3 text-slate-400">{new Date(u.lastActivity).toLocaleTimeString()}</td>
-                      <td className="p-3 text-slate-400">{new Date(u.loginTime).toLocaleTimeString()}</td>
-                      <td className="p-3 text-slate-500">{u.ipAddress || 'Internal'}</td>
+                      <td className="p-3.5 text-slate-700 font-mono text-[11px]">{u.currentRoute || '/dashboard'}</td>
+                      <td className="p-3.5 text-slate-600 font-medium">{new Date(u.lastActivity).toLocaleTimeString()}</td>
+                      <td className="p-3.5 text-slate-500">{new Date(u.loginTime).toLocaleTimeString()}</td>
+                      <td className="p-3.5 text-slate-500 font-mono">{u.ipAddress || 'Internal'}</td>
                     </tr>
                   ))
                 )}
@@ -671,65 +742,65 @@ export default function SystemMonitorPage() {
         </div>
       )}
 
-      {/* 3. GLOBAL DOCUMENTS TAB */}
+      {/* TAB 3: GLOBAL DOCUMENTS */}
       {activeTab === 'documents' && (
-        <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-900/60 p-5 shadow-lg">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3">
             <div>
-              <h3 className="text-base font-bold text-slate-100">Global Document Center</h3>
-              <p className="text-xs text-slate-400">ADMIN global document search across all entities, folders, and uploaders ({docTotal} total).</p>
+              <h3 className="text-base font-bold text-slate-900">Global Document Center</h3>
+              <p className="text-xs text-slate-500">ADMIN global document search across all entities, folders, and uploaders ({docTotal} records).</p>
             </div>
             <input
               type="text"
               value={docSearch}
               onChange={(e) => setDocSearch(e.target.value)}
               placeholder="Search filename or storage key..."
-              className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none"
+              className="rounded-lg border border-slate-300 bg-slate-50 px-3.5 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none"
             />
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-800 bg-slate-950 text-slate-400">
+              <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
                 <tr>
-                  <th className="p-3 font-semibold">Storage Key / File</th>
-                  <th className="p-3 font-semibold">Document Type</th>
-                  <th className="p-3 font-semibold">Entity Type</th>
-                  <th className="p-3 font-semibold">Folder</th>
-                  <th className="p-3 font-semibold">Uploader</th>
-                  <th className="p-3 font-semibold">Scan Status</th>
-                  <th className="p-3 font-semibold">Visibility</th>
-                  <th className="p-3 font-semibold">Action</th>
+                  <th className="p-3.5 font-bold">Storage Key / File</th>
+                  <th className="p-3.5 font-bold">Type</th>
+                  <th className="p-3.5 font-bold">Entity</th>
+                  <th className="p-3.5 font-bold">Folder</th>
+                  <th className="p-3.5 font-bold">Uploader</th>
+                  <th className="p-3.5 font-bold">Scan Status</th>
+                  <th className="p-3.5 font-bold">Visibility</th>
+                  <th className="p-3.5 font-bold">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/50">
+              <tbody className="divide-y divide-slate-100">
                 {documents.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-4 text-center text-slate-500">
-                      No documents found matching search criteria.
+                    <td colSpan={8} className="p-6 text-center text-slate-400">
+                      No documents found.
                     </td>
                   </tr>
                 ) : (
                   documents.map((doc) => (
-                    <tr key={doc.id} className="hover:bg-slate-800/40">
-                      <td className="p-3 font-medium text-indigo-300 max-w-xs truncate">{doc.storageKey}</td>
-                      <td className="p-3 text-slate-300">{doc.type}</td>
-                      <td className="p-3 text-slate-400">{doc.entityType}</td>
-                      <td className="p-3 text-slate-400">{doc.folder?.name || 'Root'}</td>
-                      <td className="p-3 text-slate-400">{doc.uploader?.email || 'System'}</td>
-                      <td className="p-3">
-                        <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
+                    <tr key={doc.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="p-3.5 font-semibold text-slate-900 max-w-xs truncate">{doc.storageKey}</td>
+                      <td className="p-3.5 text-slate-700">{doc.type}</td>
+                      <td className="p-3.5 text-slate-600">{doc.entityType}</td>
+                      <td className="p-3.5 text-slate-600">{doc.folder?.name || 'Root'}</td>
+                      <td className="p-3.5 text-slate-600">{doc.uploader?.email || 'System'}</td>
+                      <td className="p-3.5">
+                        <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-200">
                           {doc.scanStatus}
                         </span>
                       </td>
-                      <td className="p-3 text-slate-400">{doc.visibility}</td>
-                      <td className="p-3">
+                      <td className="p-3.5 text-slate-600">{doc.visibility}</td>
+                      <td className="p-3.5">
                         <Link
                           href="/documents"
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-400 hover:text-indigo-300"
+                          className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800"
                         >
                           <Eye className="h-3.5 w-3.5" />
-                          Open Document
+                          View
                         </Link>
                       </td>
                     </tr>
@@ -741,55 +812,55 @@ export default function SystemMonitorPage() {
         </div>
       )}
 
-      {/* 4. WORKFORCE MONITOR TAB */}
+      {/* TAB 4: WORKFORCE MONITOR */}
       {activeTab === 'employees' && (
-        <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-900/60 p-5 shadow-lg">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3">
             <div>
-              <h3 className="text-base font-bold text-slate-100">Workforce & Employee Overview</h3>
-              <p className="text-xs text-slate-400">Consolidated employee status and activity monitor ({empTotal} records).</p>
+              <h3 className="text-base font-bold text-slate-900">Workforce & Employee Overview</h3>
+              <p className="text-xs text-slate-500">Consolidated employee status and activity telemetry ({empTotal} records).</p>
             </div>
             <input
               type="text"
               value={empSearch}
               onChange={(e) => setEmpSearch(e.target.value)}
               placeholder="Search code, name, dept..."
-              className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none"
+              className="rounded-lg border border-slate-300 bg-slate-50 px-3.5 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none"
             />
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-800 bg-slate-950 text-slate-400">
+              <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
                 <tr>
-                  <th className="p-3 font-semibold">Code</th>
-                  <th className="p-3 font-semibold">Full Name</th>
-                  <th className="p-3 font-semibold">Work Email</th>
-                  <th className="p-3 font-semibold">Department</th>
-                  <th className="p-3 font-semibold">Designation</th>
-                  <th className="p-3 font-semibold">Status</th>
-                  <th className="p-3 font-semibold">Last Login</th>
-                  <th className="p-3 font-semibold">Action</th>
+                  <th className="p-3.5 font-bold">Code</th>
+                  <th className="p-3.5 font-bold">Full Name</th>
+                  <th className="p-3.5 font-bold">Work Email</th>
+                  <th className="p-3.5 font-bold">Department</th>
+                  <th className="p-3.5 font-bold">Designation</th>
+                  <th className="p-3.5 font-bold">Status</th>
+                  <th className="p-3.5 font-bold">Last Login</th>
+                  <th className="p-3.5 font-bold">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/50">
+              <tbody className="divide-y divide-slate-100">
                 {employees.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-slate-800/40">
-                    <td className="p-3 font-mono font-semibold text-indigo-400">{emp.employeeCode}</td>
-                    <td className="p-3 font-medium text-slate-200">{emp.fullName}</td>
-                    <td className="p-3 text-slate-300">{emp.workEmail}</td>
-                    <td className="p-3 text-slate-400">{emp.department || 'N/A'}</td>
-                    <td className="p-3 text-slate-400">{emp.designation || 'N/A'}</td>
-                    <td className="p-3">
-                      <span className={`rounded px-2 py-0.5 text-[10px] font-bold ${emp.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+                  <tr key={emp.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="p-3.5 font-mono font-bold text-indigo-600">{emp.employeeCode}</td>
+                    <td className="p-3.5 font-semibold text-slate-900">{emp.fullName}</td>
+                    <td className="p-3.5 text-slate-700">{emp.workEmail}</td>
+                    <td className="p-3.5 text-slate-600">{emp.department || 'N/A'}</td>
+                    <td className="p-3.5 text-slate-600">{emp.designation || 'N/A'}</td>
+                    <td className="p-3.5">
+                      <span className={`rounded px-2 py-0.5 text-[10px] font-bold ${emp.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' : 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'}`}>
                         {emp.status}
                       </span>
                     </td>
-                    <td className="p-3 text-slate-400">{emp.lastLogin ? new Date(emp.lastLogin).toLocaleString() : 'Never'}</td>
-                    <td className="p-3">
+                    <td className="p-3.5 text-slate-500">{emp.lastLogin ? new Date(emp.lastLogin).toLocaleString() : 'Never'}</td>
+                    <td className="p-3.5">
                       <Link
                         href={`/hr/employees/${emp.id}`}
-                        className="inline-flex items-center gap-1 rounded bg-indigo-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-indigo-500"
+                        className="inline-flex items-center gap-1 rounded-md bg-indigo-600 px-3 py-1 text-[11px] font-semibold text-white shadow-xs hover:bg-indigo-500 transition-all"
                       >
                         Open Employee
                       </Link>
@@ -802,53 +873,53 @@ export default function SystemMonitorPage() {
         </div>
       )}
 
-      {/* 5. ORGANIZATIONS MONITOR TAB */}
+      {/* TAB 5: ORGANIZATIONS MONITOR */}
       {activeTab === 'organizations' && (
-        <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-900/60 p-5 shadow-lg">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3">
             <div>
-              <h3 className="text-base font-bold text-slate-100">Organization Telemetry</h3>
-              <p className="text-xs text-slate-400">Enterprise client organizations summary ({orgTotal} registered).</p>
+              <h3 className="text-base font-bold text-slate-900">Organization Telemetry</h3>
+              <p className="text-xs text-slate-500">Enterprise client organizations summary ({orgTotal} registered).</p>
             </div>
             <input
               type="text"
               value={orgSearch}
               onChange={(e) => setOrgSearch(e.target.value)}
               placeholder="Search legal name, ORG number..."
-              className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none"
+              className="rounded-lg border border-slate-300 bg-slate-50 px-3.5 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none"
             />
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-800 bg-slate-950 text-slate-400">
+              <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
                 <tr>
-                  <th className="p-3 font-semibold">Org Code</th>
-                  <th className="p-3 font-semibold">Legal Name</th>
-                  <th className="p-3 font-semibold">Status</th>
-                  <th className="p-3 font-semibold">Projects</th>
-                  <th className="p-3 font-semibold">User Count</th>
-                  <th className="p-3 font-semibold">Created Date</th>
-                  <th className="p-3 font-semibold">Action</th>
+                  <th className="p-3.5 font-bold">Org Code</th>
+                  <th className="p-3.5 font-bold">Legal Name</th>
+                  <th className="p-3.5 font-bold">Status</th>
+                  <th className="p-3.5 font-bold">Projects</th>
+                  <th className="p-3.5 font-bold">User Count</th>
+                  <th className="p-3.5 font-bold">Created Date</th>
+                  <th className="p-3.5 font-bold">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/50">
+              <tbody className="divide-y divide-slate-100">
                 {organizations.map((org) => (
-                  <tr key={org.id} className="hover:bg-slate-800/40">
-                    <td className="p-3 font-mono font-semibold text-indigo-400">{org.orgNumber}</td>
-                    <td className="p-3 font-medium text-slate-200">{org.legalName}</td>
-                    <td className="p-3">
-                      <span className="rounded bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-400">
+                  <tr key={org.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="p-3.5 font-mono font-bold text-indigo-600">{org.orgNumber}</td>
+                    <td className="p-3.5 font-semibold text-slate-900">{org.legalName}</td>
+                    <td className="p-3.5">
+                      <span className="rounded bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 ring-1 ring-blue-200">
                         {org.status}
                       </span>
                     </td>
-                    <td className="p-3 font-semibold text-slate-300">{org.projectCount}</td>
-                    <td className="p-3 font-semibold text-slate-300">{org.userCount}</td>
-                    <td className="p-3 text-slate-400">{new Date(org.createdAt).toLocaleDateString()}</td>
-                    <td className="p-3">
+                    <td className="p-3.5 font-bold text-slate-900">{org.projectCount}</td>
+                    <td className="p-3.5 font-bold text-slate-900">{org.userCount}</td>
+                    <td className="p-3.5 text-slate-500">{new Date(org.createdAt).toLocaleDateString()}</td>
+                    <td className="p-3.5">
                       <Link
                         href="/organizations"
-                        className="inline-flex items-center gap-1 rounded bg-indigo-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-indigo-500"
+                        className="inline-flex items-center gap-1 rounded-md bg-indigo-600 px-3 py-1 text-[11px] font-semibold text-white shadow-xs hover:bg-indigo-500 transition-all"
                       >
                         Open Organization
                       </Link>
@@ -861,53 +932,53 @@ export default function SystemMonitorPage() {
         </div>
       )}
 
-      {/* 6. PROJECTS MONITOR TAB */}
+      {/* TAB 6: PROJECTS MONITOR */}
       {activeTab === 'projects' && (
-        <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-900/60 p-5 shadow-lg">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3">
             <div>
-              <h3 className="text-base font-bold text-slate-100">Project Telemetry Overview</h3>
-              <p className="text-xs text-slate-400">Consolidated project workspaces monitor ({prjTotal} active).</p>
+              <h3 className="text-base font-bold text-slate-900">Project Telemetry Overview</h3>
+              <p className="text-xs text-slate-500">Consolidated project workspaces monitor ({prjTotal} active).</p>
             </div>
             <input
               type="text"
               value={prjSearch}
               onChange={(e) => setPrjSearch(e.target.value)}
               placeholder="Search code, title..."
-              className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none"
+              className="rounded-lg border border-slate-300 bg-slate-50 px-3.5 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none"
             />
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-800 bg-slate-950 text-slate-400">
+              <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
                 <tr>
-                  <th className="p-3 font-semibold">Project Code</th>
-                  <th className="p-3 font-semibold">Title</th>
-                  <th className="p-3 font-semibold">Organization</th>
-                  <th className="p-3 font-semibold">Status</th>
-                  <th className="p-3 font-semibold">Team Size</th>
-                  <th className="p-3 font-semibold">Last Activity</th>
-                  <th className="p-3 font-semibold">Action</th>
+                  <th className="p-3.5 font-bold">Project Code</th>
+                  <th className="p-3.5 font-bold">Title</th>
+                  <th className="p-3.5 font-bold">Organization</th>
+                  <th className="p-3.5 font-bold">Status</th>
+                  <th className="p-3.5 font-bold">Team Size</th>
+                  <th className="p-3.5 font-bold">Last Activity</th>
+                  <th className="p-3.5 font-bold">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/50">
+              <tbody className="divide-y divide-slate-100">
                 {projects.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-800/40">
-                    <td className="p-3 font-mono font-semibold text-indigo-400">{p.projectCode}</td>
-                    <td className="p-3 font-medium text-slate-200">{p.title}</td>
-                    <td className="p-3 text-slate-300">{p.organizationName}</td>
-                    <td className="p-3">
-                      <span className="rounded bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-400">
+                  <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="p-3.5 font-mono font-bold text-indigo-600">{p.projectCode}</td>
+                    <td className="p-3.5 font-semibold text-slate-900">{p.title}</td>
+                    <td className="p-3.5 text-slate-700">{p.organizationName}</td>
+                    <td className="p-3.5">
+                      <span className="rounded bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 ring-1 ring-amber-200">
                         {p.status}
                       </span>
                     </td>
-                    <td className="p-3 font-semibold text-slate-300">{p.teamSize} members</td>
-                    <td className="p-3 text-slate-400">{new Date(p.lastActivity).toLocaleDateString()}</td>
-                    <td className="p-3">
+                    <td className="p-3.5 font-semibold text-slate-800">{p.teamSize} members</td>
+                    <td className="p-3.5 text-slate-500">{new Date(p.lastActivity).toLocaleDateString()}</td>
+                    <td className="p-3.5">
                       <Link
                         href={`/projects/${p.id}`}
-                        className="inline-flex items-center gap-1 rounded bg-indigo-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-indigo-500"
+                        className="inline-flex items-center gap-1 rounded-md bg-indigo-600 px-3 py-1 text-[11px] font-semibold text-white shadow-xs hover:bg-indigo-500 transition-all"
                       >
                         Open Project
                       </Link>
@@ -920,7 +991,7 @@ export default function SystemMonitorPage() {
         </div>
       )}
 
-      {/* 7. SYSTEM HEALTH & PERFORMANCE TAB */}
+      {/* TAB 7: SYSTEM HEALTH & PERFORMANCE */}
       {activeTab === 'health' && health && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -933,19 +1004,19 @@ export default function SystemMonitorPage() {
           </div>
 
           {/* Infrastructure Dashboard External Links */}
-          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 shadow-lg">
-            <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-300">External Infrastructure Dashboards</h3>
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
+            <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">External Infrastructure Dashboards</h3>
             <div className="flex flex-wrap gap-3">
               {health.infrastructureLinks.supabase && (
                 <a
                   href={health.infrastructureLinks.supabase}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 text-xs font-semibold text-slate-200 hover:border-indigo-500 hover:text-indigo-400"
+                  className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-800 hover:border-indigo-400 hover:bg-indigo-50/50 hover:text-indigo-700 transition-all"
                 >
-                  <Database className="h-4 w-4 text-emerald-400" />
+                  <Database className="h-4 w-4 text-emerald-600" />
                   Supabase Dashboard
-                  <ExternalLink className="h-3 w-3 text-slate-500" />
+                  <ExternalLink className="h-3 w-3 text-slate-400" />
                 </a>
               )}
               {health.infrastructureLinks.grafana && (
@@ -953,11 +1024,11 @@ export default function SystemMonitorPage() {
                   href={health.infrastructureLinks.grafana}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 text-xs font-semibold text-slate-200 hover:border-indigo-500 hover:text-indigo-400"
+                  className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-800 hover:border-indigo-400 hover:bg-indigo-50/50 hover:text-indigo-700 transition-all"
                 >
-                  <Server className="h-4 w-4 text-amber-400" />
+                  <Server className="h-4 w-4 text-amber-600" />
                   Grafana Monitoring
-                  <ExternalLink className="h-3 w-3 text-slate-500" />
+                  <ExternalLink className="h-3 w-3 text-slate-400" />
                 </a>
               )}
               {health.infrastructureLinks.sentry && (
@@ -965,11 +1036,11 @@ export default function SystemMonitorPage() {
                   href={health.infrastructureLinks.sentry}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 text-xs font-semibold text-slate-200 hover:border-indigo-500 hover:text-indigo-400"
+                  className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-800 hover:border-indigo-400 hover:bg-indigo-50/50 hover:text-indigo-700 transition-all"
                 >
-                  <AlertCircle className="h-4 w-4 text-rose-400" />
+                  <AlertCircle className="h-4 w-4 text-rose-600" />
                   Sentry Error Tracking
-                  <ExternalLink className="h-3 w-3 text-slate-500" />
+                  <ExternalLink className="h-3 w-3 text-slate-400" />
                 </a>
               )}
             </div>
@@ -977,42 +1048,42 @@ export default function SystemMonitorPage() {
         </div>
       )}
 
-      {/* 8. SECURITY & AUDIT TAB */}
+      {/* TAB 8: SECURITY & AUDIT LOGS */}
       {activeTab === 'audit' && (
-        <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-900/60 p-5 shadow-lg">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3">
             <div>
-              <h3 className="text-base font-bold text-slate-100">Immutable Audit Trail</h3>
-              <p className="text-xs text-slate-400">Security event history and admin action logs ({auditTotal} events).</p>
+              <h3 className="text-base font-bold text-slate-900">Immutable Audit Trail</h3>
+              <p className="text-xs text-slate-500">Security event history and admin action logs ({auditTotal} events recorded).</p>
             </div>
             <input
               type="text"
               value={auditSearch}
               onChange={(e) => setAuditSearch(e.target.value)}
               placeholder="Search action or entity..."
-              className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none"
+              className="rounded-lg border border-slate-300 bg-slate-50 px-3.5 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none"
             />
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-800 bg-slate-950 text-slate-400">
+              <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
                 <tr>
-                  <th className="p-3 font-semibold">Timestamp</th>
-                  <th className="p-3 font-semibold">Action</th>
-                  <th className="p-3 font-semibold">Entity Type</th>
-                  <th className="p-3 font-semibold">Entity ID</th>
-                  <th className="p-3 font-semibold">Actor Email</th>
+                  <th className="p-3.5 font-bold">Timestamp</th>
+                  <th className="p-3.5 font-bold">Action</th>
+                  <th className="p-3.5 font-bold">Entity Type</th>
+                  <th className="p-3.5 font-bold">Entity ID</th>
+                  <th className="p-3.5 font-bold">Actor Email</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/50">
+              <tbody className="divide-y divide-slate-100">
                 {auditLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-slate-800/40">
-                    <td className="p-3 text-slate-400">{new Date(log.createdAt).toLocaleString()}</td>
-                    <td className="p-3 font-semibold text-indigo-400">{log.action}</td>
-                    <td className="p-3 text-slate-300">{log.entityType}</td>
-                    <td className="p-3 text-slate-400 font-mono text-[11px]">{log.entityId}</td>
-                    <td className="p-3 text-slate-300">{log.actor?.email || 'System'}</td>
+                  <tr key={log.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="p-3.5 text-slate-500 font-mono">{new Date(log.createdAt).toLocaleString()}</td>
+                    <td className="p-3.5 font-bold text-indigo-700">{log.action}</td>
+                    <td className="p-3.5 text-slate-700">{log.entityType}</td>
+                    <td className="p-3.5 text-slate-600 font-mono text-[11px]">{log.entityId}</td>
+                    <td className="p-3.5 text-slate-700 font-semibold">{log.actor?.email || 'System'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1023,16 +1094,16 @@ export default function SystemMonitorPage() {
 
       {/* SECURITY SETTINGS MODAL */}
       {showSettingsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
-          <div className="w-full max-w-md rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-slate-100">System Monitor Security Settings</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900">Security Settings</h3>
               <button
                 onClick={() => {
                   setShowSettingsModal(false);
                   setSettingsMessage(null);
                 }}
-                className="text-slate-400 hover:text-slate-200"
+                className="text-slate-400 hover:text-slate-600"
               >
                 ✕
               </button>
@@ -1040,31 +1111,31 @@ export default function SystemMonitorPage() {
 
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-300">Current Monitor Password</label>
+                <label className="mb-1 block text-xs font-semibold text-slate-700">Current Monitor Password</label>
                 <input
                   type="password"
                   value={oldPin}
                   onChange={(e) => setOldPin(e.target.value)}
                   placeholder="Enter current PIN..."
                   required
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3.5 py-2 text-xs text-slate-100 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-300">New Monitor Password (min 6 chars)</label>
+                <label className="mb-1 block text-xs font-semibold text-slate-700">New Monitor Password (min 6 chars)</label>
                 <input
                   type="password"
                   value={newPin}
                   onChange={(e) => setNewPin(e.target.value)}
                   placeholder="Enter new PIN..."
                   required
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3.5 py-2 text-xs text-slate-100 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:border-indigo-600 focus:bg-white focus:outline-none"
                 />
               </div>
 
               {settingsMessage && (
-                <div className={`rounded-lg p-3 text-xs ${settingsMessage.type === 'success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+                <div className={`rounded-lg p-3 text-xs font-medium ${settingsMessage.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
                   {settingsMessage.text}
                 </div>
               )}
@@ -1073,7 +1144,7 @@ export default function SystemMonitorPage() {
                 <button
                   type="submit"
                   disabled={settingsLoading}
-                  className="flex-1 rounded-lg bg-indigo-600 py-2 text-xs font-medium text-white hover:bg-indigo-500"
+                  className="flex-1 rounded-lg bg-indigo-600 py-2 text-xs font-semibold text-white hover:bg-indigo-500 shadow-xs"
                 >
                   Change Password
                 </button>
@@ -1083,7 +1154,7 @@ export default function SystemMonitorPage() {
                     setShowSettingsModal(false);
                     setSettingsMessage(null);
                   }}
-                  className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-xs font-medium text-slate-300 hover:bg-slate-700"
+                  className="rounded-lg border border-slate-300 bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200"
                 >
                   Cancel
                 </button>
@@ -1097,14 +1168,28 @@ export default function SystemMonitorPage() {
 }
 
 // Subcomponents
-function MetricCard({ label, value, icon: Icon, color }: { label: string; value: number; icon: any; color: string }) {
+function MetricCard({
+  label,
+  value,
+  icon: Icon,
+  iconBg,
+  iconColor,
+}: {
+  label: string;
+  value: number;
+  icon: any;
+  iconBg: string;
+  iconColor: string;
+}) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3.5 shadow backdrop-blur">
+    <div className="group rounded-xl border border-slate-200 bg-white p-4 shadow-xs hover:border-indigo-300 hover:shadow-md transition-all">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase">{label}</span>
-        <Icon className="h-4 w-4 text-slate-400" />
+        <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-600">{label}</span>
+        <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${iconBg} ${iconColor}`}>
+          <Icon className="h-4 w-4" />
+        </div>
       </div>
-      <div className="mt-2 text-xl font-bold text-slate-100">{value}</div>
+      <div className="mt-3 text-3xl font-extrabold text-slate-900 group-hover:text-indigo-600 transition-colors">{value}</div>
     </div>
   );
 }
@@ -1113,14 +1198,16 @@ function QuickNavCard({ label, href, icon: Icon, description }: { label: string;
   return (
     <Link
       href={href}
-      className="group rounded-xl border border-slate-800 bg-slate-900/40 p-3.5 shadow transition hover:border-indigo-500/50 hover:bg-slate-800/60"
+      className="group rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 shadow-2xs transition-all hover:border-indigo-400 hover:bg-white hover:shadow-md"
     >
-      <div className="mb-2 flex items-center justify-between">
-        <Icon className="h-4 w-4 text-indigo-400 group-hover:scale-110 transition-transform" />
-        <ExternalLink className="h-3 w-3 text-slate-500 group-hover:text-indigo-300" />
+      <div className="mb-2.5 flex items-center justify-between">
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+          <Icon className="h-4 w-4" />
+        </div>
+        <ExternalLink className="h-3 w-3 text-slate-400 group-hover:text-indigo-600" />
       </div>
-      <div className="font-semibold text-xs text-slate-200 group-hover:text-indigo-400">{label}</div>
-      <div className="mt-1 text-[10px] text-slate-400 line-clamp-2">{description}</div>
+      <div className="font-bold text-xs text-slate-900 group-hover:text-indigo-600 transition-colors">{label}</div>
+      <div className="mt-0.5 text-[10px] text-slate-500 line-clamp-1">{description}</div>
     </Link>
   );
 }
@@ -1131,24 +1218,24 @@ function HealthServiceCard({ name, status, info }: { name: string; status: strin
   const isNotConfigured = status === 'NOT_CONFIGURED';
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow">
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
       <div className="flex items-center justify-between">
-        <span className="font-bold text-xs text-slate-200">{name}</span>
+        <span className="font-bold text-xs text-slate-900">{name}</span>
         <span
-          className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+          className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold tracking-wide ${
             isOk
-              ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20'
+              ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
               : isDegraded
-              ? 'bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20'
+              ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
               : isNotConfigured
-              ? 'bg-slate-800 text-slate-400'
-              : 'bg-rose-500/10 text-rose-400 ring-1 ring-rose-500/20'
+              ? 'bg-slate-100 text-slate-500 ring-1 ring-slate-200'
+              : 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'
           }`}
         >
           {status}
         </span>
       </div>
-      <div className="mt-2 text-xs text-slate-400 font-mono truncate">{info}</div>
+      <div className="mt-2 text-xs text-slate-500 font-mono truncate">{info}</div>
     </div>
   );
 }
