@@ -4,96 +4,117 @@ import React from 'react';
 
 interface AnveshakLogoProps {
   className?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   showText?: boolean;
   textColor?: string;
+  variant?: 'dark-bg' | 'light-bg' | 'auto';
 }
 
 export function AnveshakLogo({
   className = '',
   size = 'md',
   showText = true,
-  textColor = 'text-white',
+  textColor,
+  variant = 'auto',
 }: AnveshakLogoProps) {
   const dimensions = {
-    sm: { height: 28, width: 36, text: 'text-sm' },
-    md: { height: 38, width: 48, text: 'text-base' },
-    lg: { height: 48, width: 62, text: 'text-xl' },
-    xl: { height: 64, width: 84, text: 'text-2xl' },
+    sm: { height: 26, width: 34, text: 'text-xs', sub: 'text-[9px]' },
+    md: { height: 36, width: 46, text: 'text-base', sub: 'text-[10px]' },
+    lg: { height: 50, width: 64, text: 'text-xl', sub: 'text-[11px]' },
+    xl: { height: 72, width: 92, text: 'text-2xl', sub: 'text-xs' },
+    '2xl': { height: 96, width: 122, text: 'text-3xl', sub: 'text-sm' },
   }[size];
 
+  // Determine silver pillar fill based on background variant
+  const isLightBg = variant === 'light-bg';
+  const silverStart = isLightBg ? '#334155' : '#FFFFFF';
+  const silverMid = isLightBg ? '#475569' : '#CBD5E1';
+  const silverEnd = isLightBg ? '#64748B' : '#94A3B8';
+  const textClass = textColor || (isLightBg ? 'text-slate-900' : 'text-white');
+
   return (
-    <div className={`inline-flex items-center gap-3 ${className}`}>
-      {/* Precision Vector AH Monogram */}
+    <div className={`inline-flex items-center gap-3.5 ${className}`}>
+      {/* Precision Vector AH Monogram with High-Contrast Gradients */}
       <svg
         width={dimensions.width}
         height={dimensions.height}
-        viewBox="0 0 100 80"
+        viewBox="0 0 110 85"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         className="shrink-0 drop-shadow-md transition-transform hover:scale-105"
       >
         <defs>
-          {/* Amber / Orange Gradient for Left A Leg */}
-          <linearGradient id="ahAmber" x1="0%" y1="100%" x2="50%" y2="0%">
+          {/* Amber / Gold Gradient for Left Leg of 'A' */}
+          <linearGradient id={`ahAmber_${size}`} x1="0%" y1="100%" x2="60%" y2="0%">
             <stop offset="0%" stopColor="#D97706" />
-            <stop offset="50%" stopColor="#F59E0B" />
+            <stop offset="45%" stopColor="#E07A1E" />
+            <stop offset="85%" stopColor="#F59E0B" />
             <stop offset="100%" stopColor="#FBBF24" />
           </linearGradient>
 
           {/* Cyan / Sky Blue Gradient for Middle Diagonal Ribbon */}
-          <linearGradient id="ahCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={`ahCyan_${size}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#38BDF8" />
             <stop offset="50%" stopColor="#0284C7" />
-            <stop offset="100%" stopColor="#1E40AF" />
+            <stop offset="100%" stopColor="#1D4ED8" />
           </linearGradient>
 
-          {/* Brushed Metallic Silver Gradient for Right H Pillar */}
-          <linearGradient id="ahSilver" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#FFFFFF" />
-            <stop offset="40%" stopColor="#E2E8F0" />
-            <stop offset="100%" stopColor="#94A3B8" />
+          {/* High-Contrast Silver / Steel Metallic Gradient for 'H' Pillar */}
+          <linearGradient id={`ahSilver_${size}`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={silverStart} />
+            <stop offset="40%" stopColor={silverMid} />
+            <stop offset="100%" stopColor={silverEnd} />
           </linearGradient>
+
+          <filter id={`ahGlow_${size}`} x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#0F172A" floodOpacity="0.25" />
+          </filter>
         </defs>
 
-        {/* 1. Left Orange/Amber Diagonal Leg of 'A' */}
-        <polygon
-          points="5,70 30,20 44,20 28,70 17,70 24,50 14,50"
-          fill="url(#ahAmber)"
-        />
+        <g filter={`url(#ahGlow_${size})`}>
+          {/* 1. Left Orange/Amber Diagonal Leg of 'A' */}
+          <path
+            d="M 6 74 L 32 18 L 47 18 L 30 74 Z M 16 52 L 35 52 L 28 74 L 16 74 Z"
+            fill={`url(#ahAmber_${size})`}
+          />
 
-        {/* 2. Middle Cyan/Blue Angled Ribbon (Connecting A and H) */}
-        <polygon
-          points="32,20 46,20 68,60 52,60"
-          fill="url(#ahCyan)"
-        />
-        <polygon
-          points="42,20 56,20 72,50 58,50"
-          fill="url(#ahCyan)"
-          opacity="0.85"
-        />
+          {/* 2. Middle Cyan/Blue Angled Ribbon */}
+          <path
+            d="M 33 18 L 48 18 L 70 62 L 53 62 Z"
+            fill={`url(#ahCyan_${size})`}
+          />
+          <path
+            d="M 44 18 L 59 18 L 76 52 L 61 52 Z"
+            fill={`url(#ahCyan_${size})`}
+            opacity="0.88"
+          />
 
-        {/* 3. Right Metallic Silver Vertical Pillar of 'H' */}
-        <polygon
-          points="74,20 86,20 86,70 74,70"
-          fill="url(#ahSilver)"
-        />
-        {/* Horizontal Notch for H */}
-        <polygon
-          points="62,45 74,45 74,52 66,52"
-          fill="url(#ahSilver)"
-        />
+          {/* 3. Right High-Contrast Metallic Silver Vertical Pillar of 'H' */}
+          <path
+            d="M 76 18 L 92 18 L 92 74 L 76 74 Z"
+            fill={`url(#ahSilver_${size})`}
+            stroke={isLightBg ? '#1E293B' : '#0F172A'}
+            strokeWidth="0.8"
+          />
+          {/* Horizontal Notch for H */}
+          <path
+            d="M 63 44 L 76 44 L 76 52 L 67 52 Z"
+            fill={`url(#ahSilver_${size})`}
+            stroke={isLightBg ? '#1E293B' : '#0F172A'}
+            strokeWidth="0.8"
+          />
+        </g>
       </svg>
 
       {showText && (
         <div className="flex flex-col">
-          <div className={`font-extrabold tracking-tight ${dimensions.text} ${textColor} flex items-center gap-1.5`}>
+          <div className={`font-extrabold tracking-tight ${dimensions.text} ${textClass} flex items-center gap-1.5`}>
             <span>AnveshakHub</span>
-            <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-500 ring-1 ring-amber-500/30 uppercase tracking-wider">
+            <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 ring-1 ring-amber-500/30 uppercase tracking-wider">
               Enterprise
             </span>
           </div>
-          <span className="text-[10px] font-medium text-slate-400 tracking-wider uppercase">
+          <span className={`font-medium text-slate-400 tracking-wider uppercase ${dimensions.sub}`}>
             Bridging Innovation & Industry
           </span>
         </div>

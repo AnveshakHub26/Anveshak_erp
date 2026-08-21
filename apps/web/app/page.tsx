@@ -30,8 +30,10 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import { AnveshakLogo } from '@/components/ui/anveshak-logo';
+import { BrandLoader } from '@/components/layout/brand-loader';
 
 export default function Fnd01LandingPage() {
+  const [showSplash, setShowSplash] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedBvSearch, setSelectedBvSearch] = useState('');
   const [upcomingWorkshops, setUpcomingWorkshops] = useState<any[]>([]);
@@ -167,6 +169,15 @@ export default function Fnd01LandingPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col font-sans selection:bg-[#d49b38] selection:text-[#151c2e]">
+      {/* Brand Splash Loading Transition */}
+      {showSplash && (
+        <BrandLoader
+          onComplete={() => setShowSplash(false)}
+          durationMs={1600}
+          subtitle="Enterprise Operations Platform"
+        />
+      )}
+
       {/* 1. HEADER (Midnight Navy Header) */}
       <header className="sticky top-0 z-50 border-b border-[#182238] bg-[#151c2e] text-white shadow-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">

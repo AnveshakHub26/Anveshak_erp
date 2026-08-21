@@ -85,7 +85,7 @@ export default function Fnd02LoginPage() {
             {/* Header */}
             <div className="mb-8 text-center flex flex-col items-center">
               <div className="mb-4">
-                <AnveshakLogo size="xl" showText={false} />
+                <AnveshakLogo size="xl" showText={false} variant="light-bg" />
               </div>
               <h1 className="text-2xl font-bold tracking-tight text-[#0F172A] sm:text-3xl">
                 Sign In to AnveshakHub
