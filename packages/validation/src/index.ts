@@ -153,8 +153,12 @@ export type CreateEmployeeInput = z.infer<typeof CreateEmployeeSchema>;
 export const UpdateEmployeeSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
-  personalEmail: z.string().email().optional(),
+  workEmail: z.string().email().optional(),
+  personalEmail: z.string().email().optional().or(z.literal('')),
   phone: z.string().optional(),
+  gender: z.string().optional(),
+  dateOfBirth: z.string().optional(),
+  joiningDate: z.string().optional(),
   address: z.string().optional(),
   professionalRole: z.string().optional(),
   department: z.string().optional(),
@@ -167,6 +171,7 @@ export const UpdateEmployeeSchema = z.object({
   baseSalary: z.string().optional(),
   ndaStatus: z.enum(['PENDING', 'SIGNED_PHYSICAL', 'SIGNED_ELECTRONIC', 'EXPIRED']).optional(),
   ndaSignedAt: z.string().optional(),
+  password: z.string().optional(),
   remarks: z.string().optional(),
 });
 

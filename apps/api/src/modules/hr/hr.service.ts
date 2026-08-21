@@ -512,6 +512,9 @@ export class HRService {
     if (data.personalEmail !== undefined) updateData.personalEmail = data.personalEmail?.trim() || null;
     if (data.phone !== undefined) updateData.phone = data.phone?.trim() || null;
     if (data.address !== undefined) updateData.address = data.address?.trim() || null;
+    if (data.gender) updateData.gender = data.gender;
+    if (data.dateOfBirth) updateData.dateOfBirth = new Date(data.dateOfBirth);
+    if (data.joiningDate) updateData.joiningDate = new Date(data.joiningDate);
     if (data.professionalRole) updateData.professionalRole = data.professionalRole.trim();
     if (data.department) updateData.department = data.department.trim();
     if (data.designation) updateData.designation = data.designation.trim();
@@ -520,15 +523,48 @@ export class HRService {
     if (data.status) updateData.status = data.status as any;
     if (data.skills) updateData.skills = data.skills;
     if (data.technologies) updateData.technologies = data.technologies;
-    if (data.baseSalary !== undefined) updateData.baseSalary = data.baseSalary?.trim() || null;
+    if (data.baseSalary !== undefined) updateData.baseSalary = data.baseSalary ? String(data.baseSalary).trim() : null;
     if (data.ndaStatus) updateData.ndaStatus = data.ndaStatus as any;
     if (data.ndaSignedAt) updateData.ndaSignedAt = new Date(data.ndaSignedAt);
+
+    // Handle Work Email change if provided
+    let newWorkEmail: string | null = null;
+    if (data.workEmail && data.workEmail.trim().toLowerCase() !== existing.workEmail.toLowerCase()) {
+      newWorkEmail = data.workEmail.trim().toLowerCase();
+      const emailDup = await this.prisma.user.findUnique({ where: { email: newWorkEmail } });
+      if (emailDup && emailDup.id !== existing.userId) {
+        throw new ConflictException(`Work email '${newWorkEmail}' is already registered to another user.`);
+      }
+      updateData.workEmail = newWorkEmail;
+    }
+
+    // Handle Password update if provided
+    let newPasswordHash: string | null = null;
+    if ((data as any).password && (data as any).password.trim().length >= 6) {
+      newPasswordHash = await argon2.hash((data as any).password.trim(), { type: argon2.argon2id });
+    }
 
     const updated = await this.prisma.$transaction(async (tx) => {
       const emp = await tx.employee.update({
         where: { id },
         data: updateData,
       });
+
+      // Sync User record email / password hash if changed
+      if (newWorkEmail || newPasswordHash || data.status) {
+        const userUpdate: Prisma.UserUpdateInput = {};
+        if (newWorkEmail) userUpdate.email = newWorkEmail;
+        if (newPasswordHash) userUpdate.passwordHash = newPasswordHash;
+        if (data.status === 'ACTIVE' || data.status === 'ONBOARDING' || data.status === 'PROBATION') {
+          userUpdate.status = 'ACTIVE';
+        } else if (data.status === 'RESIGNED' || data.status === 'TERMINATED') {
+          userUpdate.status = 'INACTIVE';
+        }
+        await tx.user.update({
+          where: { id: existing.userId },
+          data: userUpdate,
+        });
+      }
 
       if (data.employmentType || data.status || data.designation) {
         await tx.employmentHistory.create({
@@ -538,7 +574,7 @@ export class HRService {
             newType: (data.employmentType as any) || existing.employmentType,
             newStatus: (data.status as any) || existing.status,
             newDesignation: data.designation?.trim() || existing.designation,
-            remarks: data.remarks?.trim() || 'HR updated profile fields.',
+            remarks: data.remarks?.trim() || 'HR updated profile master fields.',
             changedById: adminUser.id,
           },
         });
@@ -557,6 +593,22 @@ export class HRService {
 
       return emp;
     });
+
+    // Sync Supabase Auth Identity if email or password changed
+    if (this.supabaseService?.isOperational && existing.userId) {
+      try {
+        const supaPayload: any = {};
+        if (newWorkEmail) supaPayload.email = newWorkEmail;
+        if ((data as any).password) supaPayload.password = (data as any).password.trim();
+        if (Object.keys(supaPayload).length > 0) {
+          await this.supabaseService.ensureSupabaseAuthUser({
+            id: existing.userId,
+            email: newWorkEmail || existing.workEmail,
+            password: (data as any).password ? (data as any).password.trim() : undefined,
+          });
+        }
+      } catch {}
+    }
 
     return updated;
   }

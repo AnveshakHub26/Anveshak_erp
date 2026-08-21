@@ -173,21 +173,26 @@ export default function HREmployeeDetailPage() {
       if (res.data) {
         setEmployee(res.data);
         setEditForm({
-          firstName: res.data.firstName,
-          lastName: res.data.lastName,
+          firstName: res.data.firstName || '',
+          lastName: res.data.lastName || '',
+          workEmail: res.data.workEmail || '',
           personalEmail: res.data.personalEmail || '',
           phone: res.data.phone || '',
           dateOfBirth: res.data.dateOfBirth ? res.data.dateOfBirth.split('T')[0] : '',
-          gender: res.data.gender || 'Other',
+          gender: res.data.gender || 'Male',
           address: res.data.address || '',
-          professionalRole: res.data.professionalRole,
-          department: res.data.department,
-          designation: res.data.designation,
-          category: res.data.category,
-          employmentType: res.data.employmentType,
-          status: res.data.status,
+          professionalRole: res.data.professionalRole || '',
+          department: res.data.department || '',
+          designation: res.data.designation || '',
+          category: res.data.category || 'STAFF',
+          employmentType: res.data.employmentType || 'PERMANENT',
+          status: res.data.status || 'ACTIVE',
+          joiningDate: res.data.joiningDate ? res.data.joiningDate.split('T')[0] : '',
           baseSalary: res.data.baseSalary || '',
-          ndaStatus: res.data.ndaStatus,
+          ndaStatus: res.data.ndaStatus || 'PENDING',
+          skillsInput: Array.isArray(res.data.skills) ? res.data.skills.join(', ') : '',
+          techInput: Array.isArray(res.data.technologies) ? res.data.technologies.join(', ') : '',
+          password: '',
         });
         setRehireForm((prev) => ({
           ...prev,
@@ -218,15 +223,27 @@ export default function HREmployeeDetailPage() {
     setErrorMsg(null);
     try {
       const payload: any = { ...editForm };
-      if (payload.baseSalary) payload.baseSalary = parseFloat(payload.baseSalary);
+      if (editForm.skillsInput !== undefined) {
+        payload.skills = editForm.skillsInput.split(',').map((s: string) => s.trim()).filter(Boolean);
+        delete payload.skillsInput;
+      }
+      if (editForm.techInput !== undefined) {
+        payload.technologies = editForm.techInput.split(',').map((t: string) => t.trim()).filter(Boolean);
+        delete payload.techInput;
+      }
+      if (payload.baseSalary) payload.baseSalary = payload.baseSalary.toString();
       else delete payload.baseSalary;
+
+      if (!payload.password || !payload.password.trim()) {
+        delete payload.password;
+      }
 
       await apiRequest(`/api/v1/hr/employees/${employeeId}`, {
         method: 'PATCH',
         body: JSON.stringify(payload),
       });
 
-      setActionSuccess('Employee profile updated successfully.');
+      setActionSuccess('Employee master profile updated successfully.');
       setShowEditModal(false);
       fetchEmployeeDetail();
     } catch (err: any) {
@@ -865,91 +882,249 @@ export default function HREmployeeDetailPage() {
               </div>
 
               <form onSubmit={handleUpdateProfile} className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
+                {/* 1. Personal & Contact Details */}
+                <div className="space-y-2">
+                  <h4 className="text-[11px] font-bold tracking-wider text-[#d49b38] uppercase border-b border-[#182238] pb-1">
+                    Personal & Contact Information
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[#94a3b8] mb-1">First Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={editForm.firstName || ''}
+                        onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
+                        className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[#94a3b8] mb-1">Last Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={editForm.lastName || ''}
+                        onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
+                        className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[#94a3b8] mb-1">Work Email (Login Email) *</label>
+                      <input
+                        type="email"
+                        required
+                        value={editForm.workEmail || ''}
+                        onChange={(e) => setEditForm({ ...editForm, workEmail: e.target.value })}
+                        className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[#94a3b8] mb-1">Personal Email</label>
+                      <input
+                        type="email"
+                        value={editForm.personalEmail || ''}
+                        onChange={(e) => setEditForm({ ...editForm, personalEmail: e.target.value })}
+                        className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[#94a3b8] mb-1">Phone Number</label>
+                      <input
+                        type="text"
+                        value={editForm.phone || ''}
+                        onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                        className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[#94a3b8] mb-1">Date of Birth</label>
+                      <input
+                        type="date"
+                        value={editForm.dateOfBirth || ''}
+                        onChange={(e) => setEditForm({ ...editForm, dateOfBirth: e.target.value })}
+                        className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[#94a3b8] mb-1">Gender</label>
+                      <select
+                        value={editForm.gender || 'Male'}
+                        onChange={(e) => setEditForm({ ...editForm, gender: e.target.value })}
+                        className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
+                      >
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[#94a3b8] mb-1">Residential Address</label>
+                      <input
+                        type="text"
+                        value={editForm.address || ''}
+                        onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                        className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Employment & Role Master Details */}
+                <div className="space-y-2 pt-2">
+                  <h4 className="text-[11px] font-bold tracking-wider text-[#d49b38] uppercase border-b border-[#182238] pb-1">
+                    Employment &amp; Position Details
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[#94a3b8] mb-1">Professional Role *</label>
+                      <input
+                        type="text"
+                        required
+                        value={editForm.professionalRole || ''}
+                        onChange={(e) => setEditForm({ ...editForm, professionalRole: e.target.value })}
+                        className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[#94a3b8] mb-1">Department *</label>
+                      <input
+                        type="text"
+                        required
+                        value={editForm.department || ''}
+                        onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
+                        className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[#94a3b8] mb-1">Designation *</label>
+                      <input
+                        type="text"
+                        required
+                        value={editForm.designation || ''}
+                        onChange={(e) => setEditForm({ ...editForm, designation: e.target.value })}
+                        className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[#94a3b8] mb-1">Category</label>
+                      <select
+                        value={editForm.category || 'STAFF'}
+                        onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                        className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
+                      >
+                        <option value="EXPERT">EXPERT</option>
+                        <option value="INTERN">INTERN</option>
+                        <option value="STAFF">STAFF</option>
+                        <option value="EXECUTIVE">EXECUTIVE</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[#94a3b8] mb-1">Employment Type</label>
+                      <select
+                        value={editForm.employmentType || 'PERMANENT'}
+                        onChange={(e) => setEditForm({ ...editForm, employmentType: e.target.value })}
+                        className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
+                      >
+                        <option value="PERMANENT">PERMANENT</option>
+                        <option value="TEMPORARY">TEMPORARY</option>
+                        <option value="PROBATIONARY">PROBATIONARY</option>
+                        <option value="CONTRACT">CONTRACT</option>
+                        <option value="PART_TIME">PART TIME</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[#94a3b8] mb-1">Employment Status</label>
+                      <select
+                        value={editForm.status || 'ACTIVE'}
+                        onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                        className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
+                      >
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="ONBOARDING">ONBOARDING</option>
+                        <option value="PROBATION">PROBATION</option>
+                        <option value="ON_LEAVE">ON LEAVE</option>
+                        <option value="RESIGNED">RESIGNED</option>
+                        <option value="TERMINATED">TERMINATED</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[#94a3b8] mb-1">Joining Date</label>
+                      <input
+                        type="date"
+                        value={editForm.joiningDate || ''}
+                        onChange={(e) => setEditForm({ ...editForm, joiningDate: e.target.value })}
+                        className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[#94a3b8] mb-1">Base Salary / Compensation</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. ₹50,000 / month"
+                        value={editForm.baseSalary || ''}
+                        onChange={(e) => setEditForm({ ...editForm, baseSalary: e.target.value })}
+                        className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[#94a3b8] mb-1">NDA Status</label>
+                      <select
+                        value={editForm.ndaStatus || 'PENDING'}
+                        onChange={(e) => setEditForm({ ...editForm, ndaStatus: e.target.value })}
+                        className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
+                      >
+                        <option value="PENDING">PENDING</option>
+                        <option value="SIGNED_PHYSICAL">SIGNED PHYSICAL</option>
+                        <option value="SIGNED_ELECTRONIC">SIGNED ELECTRONIC</option>
+                        <option value="EXPIRED">EXPIRED</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Skills & Technologies */}
+                <div className="space-y-2 pt-2">
+                  <h4 className="text-[11px] font-bold tracking-wider text-[#d49b38] uppercase border-b border-[#182238] pb-1">
+                    Skills &amp; Technologies
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[#94a3b8] mb-1">Skills (comma-separated)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. React, TypeScript, Node.js"
+                        value={editForm.skillsInput || ''}
+                        onChange={(e) => setEditForm({ ...editForm, skillsInput: e.target.value })}
+                        className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[#94a3b8] mb-1">Technologies (comma-separated)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Full Stack, PostgreSQL, Cloud"
+                        value={editForm.techInput || ''}
+                        onChange={(e) => setEditForm({ ...editForm, techInput: e.target.value })}
+                        className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Admin Password Reset */}
+                <div className="space-y-2 pt-2">
+                  <h4 className="text-[11px] font-bold tracking-wider text-[#d49b38] uppercase border-b border-[#182238] pb-1">
+                    Admin Password Reset (Optional)
+                  </h4>
                   <div>
-                    <label className="block text-[#94a3b8] mb-1">First Name</label>
+                    <label className="block text-[#94a3b8] mb-1">Reset Account Password (min 6 characters)</label>
                     <input
-                      type="text"
-                      value={editForm.firstName || ''}
-                      onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
+                      type="password"
+                      placeholder="Leave blank to keep existing password"
+                      value={editForm.password || ''}
+                      onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
                       className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
                     />
-                  </div>
-                  <div>
-                    <label className="block text-[#94a3b8] mb-1">Last Name</label>
-                    <input
-                      type="text"
-                      value={editForm.lastName || ''}
-                      onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
-                      className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[#94a3b8] mb-1">Professional Role</label>
-                    <input
-                      type="text"
-                      value={editForm.professionalRole || ''}
-                      onChange={(e) => setEditForm({ ...editForm, professionalRole: e.target.value })}
-                      className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[#94a3b8] mb-1">Department</label>
-                    <input
-                      type="text"
-                      value={editForm.department || ''}
-                      onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
-                      className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[#94a3b8] mb-1">Designation</label>
-                    <input
-                      type="text"
-                      value={editForm.designation || ''}
-                      onChange={(e) => setEditForm({ ...editForm, designation: e.target.value })}
-                      className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[#94a3b8] mb-1">Category</label>
-                    <select
-                      value={editForm.category || 'STAFF'}
-                      onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                      className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
-                    >
-                      <option value="EXPERT">EXPERT</option>
-                      <option value="INTERN">INTERN</option>
-                      <option value="STAFF">STAFF</option>
-                      <option value="EXECUTIVE">EXECUTIVE</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[#94a3b8] mb-1">Employment Type</label>
-                    <select
-                      value={editForm.employmentType || 'PERMANENT'}
-                      onChange={(e) => setEditForm({ ...editForm, employmentType: e.target.value })}
-                      className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
-                    >
-                      <option value="PERMANENT">PERMANENT</option>
-                      <option value="TEMPORARY">TEMPORARY</option>
-                      <option value="PROBATIONARY">PROBATIONARY</option>
-                      <option value="CONTRACT">CONTRACT</option>
-                      <option value="PART_TIME">PART TIME</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[#94a3b8] mb-1">NDA Status</label>
-                    <select
-                      value={editForm.ndaStatus || 'PENDING'}
-                      onChange={(e) => setEditForm({ ...editForm, ndaStatus: e.target.value })}
-                      className="w-full rounded-lg border border-[#182238] bg-[#0b101b] px-3 py-2 text-white"
-                    >
-                      <option value="PENDING">PENDING</option>
-                      <option value="SIGNED_PHYSICAL">SIGNED PHYSICAL</option>
-                      <option value="SIGNED_ELECTRONIC">SIGNED ELECTRONIC</option>
-                      <option value="EXPIRED">EXPIRED</option>
-                    </select>
                   </div>
                 </div>
 
