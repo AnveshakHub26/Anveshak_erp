@@ -82,10 +82,28 @@ interface HealthData {
     email: { status: string; provider: string; host: string };
   };
   infrastructureLinks: {
-    supabase: string | null;
-    grafana: string | null;
+    supabaseProject: string | null;
+    supabaseDatabase: string | null;
+    supabaseStorage: string | null;
     sentry: string | null;
+    grafana: string | null;
   };
+}
+
+interface FailedEmailLog {
+  id: string;
+  category: string;
+  recipient: string;
+  subject: string;
+  provider: string;
+  status: string;
+  attempts: number;
+  maxAttempts: number;
+  lastError?: string | null;
+  messageId?: string | null;
+  sentAt?: string | null;
+  createdAt: string;
+  nextAttemptAt?: string | null;
 }
 
 export default function SystemMonitorPage() {
@@ -108,6 +126,14 @@ export default function SystemMonitorPage() {
   // Forgot Password State
   const [forgotEmail, setForgotEmail] = useState<string>('');
   const [showForgotForm, setShowForgotForm] = useState<boolean>(false);
+
+  // Failed Email Logs Diagnostic Modal State
+  const [showFailedEmailsModal, setShowFailedEmailsModal] = useState<boolean>(false);
+  const [failedEmails, setFailedEmails] = useState<FailedEmailLog[]>([]);
+  const [failedEmailsTotal, setFailedEmailsTotal] = useState<number>(0);
+  const [failedEmailsLoading, setFailedEmailsLoading] = useState<boolean>(false);
+  const [failedEmailsSearch, setFailedEmailsSearch] = useState<string>('');
+  const [selectedEmailDetail, setSelectedEmailDetail] = useState<FailedEmailLog | null>(null);
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<'overview' | 'active-users' | 'documents' | 'employees' | 'organizations' | 'projects' | 'health' | 'audit'>('overview');
@@ -301,6 +327,26 @@ export default function SystemMonitorPage() {
       setGlobalResults(null);
     } finally {
       setGlobalSearching(false);
+    }
+  };
+
+  // Fetch Failed Email Diagnostics
+  const fetchFailedEmailLogs = async (search = '') => {
+    setFailedEmailsLoading(true);
+    try {
+      const query = search ? `?search=${encodeURIComponent(search)}` : '';
+      const res = await apiRequest<{ success: boolean; data: { total: number; logs: FailedEmailLog[] } }>(
+        `/system-monitor/failed-emails${query}`
+      );
+      if (res.data) {
+        setFailedEmails(res.data.logs || []);
+        setFailedEmailsTotal(res.data.total || 0);
+      }
+    } catch {
+      setFailedEmails([]);
+      setFailedEmailsTotal(0);
+    } finally {
+      setFailedEmailsLoading(false);
     }
   };
 
@@ -665,8 +711,21 @@ export default function SystemMonitorPage() {
             <MetricCard label="Attendance Done" value={metrics?.completedAttendance ?? 0} icon={CheckCircle2} iconBg="bg-blue-50" iconColor="text-blue-600" />
             <MetricCard label="System Users" value={metrics?.totalUsers ?? 0} icon={Users} iconBg="bg-violet-50" iconColor="text-violet-600" />
             <MetricCard label="Unread Alerts" value={metrics?.unreadNotifications ?? 0} icon={AlertCircle} iconBg="bg-rose-50" iconColor="text-rose-600" />
-            <MetricCard label="Failed Email Logs" value={metrics?.failedEmailsCount ?? 0} icon={Mail} iconBg="bg-red-50" iconColor="text-red-600" />
+            <MetricCard
+              label="Failed Email Logs"
+              value={metrics?.failedEmailsCount ?? 0}
+              icon={Mail}
+              iconBg="bg-red-50"
+              iconColor="text-red-600"
+              onClick={() => {
+                setShowFailedEmailsModal(true);
+                fetchFailedEmailLogs('');
+              }}
+            />
           </div>
+
+          {/* Infrastructure & External Tools (Phase 6K) */}
+          <InfrastructureLinksCard links={health?.infrastructureLinks} />
 
           {/* Quick Navigation Cards to Authoritative ERP Pages */}
           <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
@@ -1003,48 +1062,8 @@ export default function SystemMonitorPage() {
             <HealthServiceCard name="SMTP Email Provider" status={health.services.email.status} info={`Host: ${health.services.email.host}`} />
           </div>
 
-          {/* Infrastructure Dashboard External Links */}
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
-            <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">External Infrastructure Dashboards</h3>
-            <div className="flex flex-wrap gap-3">
-              {health.infrastructureLinks.supabase && (
-                <a
-                  href={health.infrastructureLinks.supabase}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-800 hover:border-indigo-400 hover:bg-indigo-50/50 hover:text-indigo-700 transition-all"
-                >
-                  <Database className="h-4 w-4 text-emerald-600" />
-                  Supabase Dashboard
-                  <ExternalLink className="h-3 w-3 text-slate-400" />
-                </a>
-              )}
-              {health.infrastructureLinks.grafana && (
-                <a
-                  href={health.infrastructureLinks.grafana}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-800 hover:border-indigo-400 hover:bg-indigo-50/50 hover:text-indigo-700 transition-all"
-                >
-                  <Server className="h-4 w-4 text-amber-600" />
-                  Grafana Monitoring
-                  <ExternalLink className="h-3 w-3 text-slate-400" />
-                </a>
-              )}
-              {health.infrastructureLinks.sentry && (
-                <a
-                  href={health.infrastructureLinks.sentry}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-800 hover:border-indigo-400 hover:bg-indigo-50/50 hover:text-indigo-700 transition-all"
-                >
-                  <AlertCircle className="h-4 w-4 text-rose-600" />
-                  Sentry Error Tracking
-                  <ExternalLink className="h-3 w-3 text-slate-400" />
-                </a>
-              )}
-            </div>
-          </div>
+          {/* Infrastructure & External Tools (Phase 6K) */}
+          <InfrastructureLinksCard links={health.infrastructureLinks} />
         </div>
       )}
 
@@ -1163,6 +1182,186 @@ export default function SystemMonitorPage() {
           </div>
         </div>
       )}
+
+      {/* FAILED EMAIL LOGS DIAGNOSTIC MODAL (Phase 6K) */}
+      {showFailedEmailsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-4xl max-h-[90vh] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-900 px-6 py-4 text-white">
+              <div className="flex items-center space-x-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-rose-500/20 text-rose-400 ring-1 ring-rose-500/30">
+                  <Mail className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-white">Failed Email Logs Diagnostics</h3>
+                    <span className="rounded-full bg-rose-500/20 px-2.5 py-0.5 text-[10px] font-bold text-rose-300 ring-1 ring-rose-500/40 uppercase">
+                      {failedEmailsTotal} Failed Records
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Realtime failure logs from system EmailLog model. Credentials &amp; SMTP secrets remain sanitized.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowFailedEmailsModal(false);
+                  setSelectedEmailDetail(null);
+                }}
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-all"
+              >
+                <XCircle className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {/* Search & Refresh Bar */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <div className="relative w-full sm:w-72">
+                  <input
+                    type="text"
+                    value={failedEmailsSearch}
+                    onChange={(e) => {
+                      setFailedEmailsSearch(e.target.value);
+                      fetchFailedEmailLogs(e.target.value);
+                    }}
+                    placeholder="Search recipient, category, subject, error..."
+                    className="w-full rounded-lg border border-slate-300 bg-white py-1.5 pl-9 pr-3 text-xs text-slate-900 placeholder-slate-400 focus:border-rose-500 focus:outline-none"
+                  />
+                  <Search className="absolute left-3 top-2 h-3.5 w-3.5 text-slate-400" />
+                </div>
+
+                <button
+                  onClick={() => fetchFailedEmailLogs(failedEmailsSearch)}
+                  disabled={failedEmailsLoading}
+                  className="flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 disabled:opacity-50 transition-all self-end sm:self-auto"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 text-rose-400 ${failedEmailsLoading ? 'animate-spin' : ''}`} />
+                  Refresh Diagnostic Logs
+                </button>
+              </div>
+
+              {/* Records Table or Empty State */}
+              {failedEmailsLoading ? (
+                <div className="flex h-48 items-center justify-center text-slate-500 text-xs font-medium">
+                  <RefreshCw className="h-5 w-5 animate-spin text-rose-500 mr-2" />
+                  Fetching failed email logs...
+                </div>
+              ) : failedEmails.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 mb-3 ring-1 ring-emerald-200">
+                    <CheckCircle2 className="h-6 w-6" />
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-900">No Failed Emails</h4>
+                  <p className="mt-1 text-xs text-slate-500 max-w-sm">
+                    All outbound email notifications have been dispatched cleanly without transmission failures.
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+                  <table className="w-full text-left text-xs">
+                    <thead className="border-b border-slate-200 bg-slate-50 text-slate-700">
+                      <tr>
+                        <th className="p-3 font-bold">Category</th>
+                        <th className="p-3 font-bold">Recipient</th>
+                        <th className="p-3 font-bold">Subject</th>
+                        <th className="p-3 font-bold">Provider</th>
+                        <th className="p-3 font-bold">Attempts</th>
+                        <th className="p-3 font-bold">Error Message</th>
+                        <th className="p-3 font-bold">Attempted At</th>
+                        <th className="p-3 font-bold text-right">Details</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {failedEmails.map((log) => (
+                        <tr key={log.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="p-3 font-bold text-slate-900">
+                            <span className="rounded bg-rose-50 px-2 py-0.5 text-[10px] font-mono text-rose-700 border border-rose-200 uppercase">
+                              {log.category}
+                            </span>
+                          </td>
+                          <td className="p-3 font-medium text-slate-800 font-mono">{log.recipient}</td>
+                          <td className="p-3 text-slate-600 max-w-xs truncate">{log.subject || 'N/A'}</td>
+                          <td className="p-3 font-mono text-[11px] text-slate-500">{log.provider}</td>
+                          <td className="p-3 font-mono font-bold text-slate-700">
+                            {log.attempts}/{log.maxAttempts}
+                          </td>
+                          <td className="p-3 text-rose-600 max-w-xs truncate font-mono text-[11px]" title={log.lastError || ''}>
+                            {log.lastError || 'Unknown delivery failure'}
+                          </td>
+                          <td className="p-3 text-slate-400 font-mono text-[11px]">
+                            {new Date(log.createdAt).toLocaleString()}
+                          </td>
+                          <td className="p-3 text-right">
+                            <button
+                              onClick={() => setSelectedEmailDetail(log)}
+                              className="rounded bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-200 transition-all"
+                            >
+                              Inspect
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Selected Email Detailed Inspector Sub-modal */}
+              {selectedEmailDetail && (
+                <div className="rounded-xl border border-rose-200 bg-rose-50/40 p-4 space-y-2 text-xs">
+                  <div className="flex items-center justify-between font-bold text-slate-900 border-b border-rose-200 pb-2">
+                    <span className="flex items-center gap-1.5 text-rose-700">
+                      <AlertCircle className="h-4 w-4" />
+                      Detailed Diagnostic Record: {selectedEmailDetail.id}
+                    </span>
+                    <button
+                      onClick={() => setSelectedEmailDetail(null)}
+                      className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+                    >
+                      Close Detail
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-700 font-mono pt-1">
+                    <div><span className="font-bold text-slate-900">Event Category:</span> {selectedEmailDetail.category}</div>
+                    <div><span className="font-bold text-slate-900">Recipient Email:</span> {selectedEmailDetail.recipient}</div>
+                    <div><span className="font-bold text-slate-900">Subject Line:</span> {selectedEmailDetail.subject}</div>
+                    <div><span className="font-bold text-slate-900">Email Provider:</span> {selectedEmailDetail.provider}</div>
+                    <div><span className="font-bold text-slate-900">Retry Attempts:</span> {selectedEmailDetail.attempts} / {selectedEmailDetail.maxAttempts}</div>
+                    <div><span className="font-bold text-slate-900">Message ID:</span> {selectedEmailDetail.messageId || 'N/A'}</div>
+                    <div><span className="font-bold text-slate-900">Log Created:</span> {new Date(selectedEmailDetail.createdAt).toLocaleString()}</div>
+                    {selectedEmailDetail.nextAttemptAt && (
+                      <div><span className="font-bold text-slate-900">Next Scheduled Retry:</span> {new Date(selectedEmailDetail.nextAttemptAt).toLocaleString()}</div>
+                    )}
+                  </div>
+                  <div className="pt-2">
+                    <span className="font-bold text-slate-900 block mb-1">Full Error Diagnostic Trace:</span>
+                    <pre className="p-3 bg-slate-900 text-rose-300 rounded-lg overflow-x-auto text-[10px] font-mono whitespace-pre-wrap">
+                      {selectedEmailDetail.lastError || 'No error stack logged'}
+                    </pre>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="border-t border-slate-200 bg-slate-50 px-6 py-3 flex justify-end">
+              <button
+                onClick={() => {
+                  setShowFailedEmailsModal(false);
+                  setSelectedEmailDetail(null);
+                }}
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 shadow-2xs transition-all"
+              >
+                Close Diagnostic Viewer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1174,22 +1373,38 @@ function MetricCard({
   icon: Icon,
   iconBg,
   iconColor,
+  onClick,
 }: {
   label: string;
   value: number;
   icon: any;
   iconBg: string;
   iconColor: string;
+  onClick?: () => void;
 }) {
   return (
-    <div className="group rounded-xl border border-slate-200 bg-white p-4 shadow-xs hover:border-indigo-300 hover:shadow-md transition-all">
+    <div
+      onClick={onClick}
+      className={`group rounded-xl border border-slate-200 bg-white p-4 shadow-xs transition-all ${
+        onClick
+          ? 'cursor-pointer hover:border-rose-400 hover:shadow-md hover:ring-2 hover:ring-rose-400/20'
+          : 'hover:border-indigo-300 hover:shadow-md'
+      }`}
+    >
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-600">{label}</span>
         <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${iconBg} ${iconColor}`}>
           <Icon className="h-4 w-4" />
         </div>
       </div>
-      <div className="mt-3 text-3xl font-extrabold text-slate-900 group-hover:text-indigo-600 transition-colors">{value}</div>
+      <div className="mt-3 flex items-baseline justify-between">
+        <span className="text-3xl font-extrabold text-slate-900 group-hover:text-indigo-600 transition-colors">{value}</span>
+        {onClick && (
+          <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider group-hover:underline">
+            Inspect ↗
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -1236,6 +1451,100 @@ function HealthServiceCard({ name, status, info }: { name: string; status: strin
         </span>
       </div>
       <div className="mt-2 text-xs text-slate-500 font-mono truncate">{info}</div>
+    </div>
+  );
+}
+
+function InfrastructureLinksCard({ links }: { links?: HealthData['infrastructureLinks'] }) {
+  const items = [
+    {
+      label: 'Supabase Project',
+      url: links?.supabaseProject,
+      icon: Database,
+      color: 'text-emerald-600',
+    },
+    {
+      label: 'Supabase Database',
+      url: links?.supabaseDatabase,
+      icon: Server,
+      color: 'text-blue-600',
+    },
+    {
+      label: 'Supabase Storage',
+      url: links?.supabaseStorage,
+      icon: FileSearch,
+      color: 'text-cyan-600',
+    },
+    {
+      label: 'Sentry',
+      url: links?.sentry,
+      icon: AlertCircle,
+      color: 'text-rose-600',
+    },
+    {
+      label: 'Grafana',
+      url: links?.grafana,
+      icon: TrendingUp,
+      color: 'text-amber-600',
+    },
+  ];
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
+      <div className="mb-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 border-b border-slate-100 pb-3">
+        <div>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-2">
+            <Server className="h-4 w-4 text-indigo-600" />
+            Infrastructure &amp; External Tools
+          </h3>
+          <p className="mt-0.5 text-[11px] text-slate-500">
+            Administrator-only direct links to external infrastructure dashboards. No credentials are hardcoded or embedded.
+          </p>
+        </div>
+        <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-[10px] font-bold text-indigo-700 ring-1 ring-indigo-200 self-start sm:self-auto">
+          ADMIN ACCESS ONLY
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
+        {items.map((item, idx) => {
+          const Icon = item.icon;
+          const isConfigured = !!item.url;
+
+          if (isConfigured) {
+            return (
+              <a
+                key={idx}
+                href={item.url!}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50/80 p-3 text-xs font-semibold text-slate-800 hover:border-indigo-400 hover:bg-white hover:text-indigo-700 shadow-2xs hover:shadow-xs transition-all group"
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <Icon className={`h-4 w-4 shrink-0 ${item.color}`} />
+                  <span className="truncate">{item.label}</span>
+                </div>
+                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-400 group-hover:text-indigo-600 transition-colors" />
+              </a>
+            );
+          }
+
+          return (
+            <div
+              key={idx}
+              className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/40 p-3 text-xs font-medium text-slate-400"
+            >
+              <div className="flex items-center gap-2 truncate">
+                <Icon className="h-4 w-4 shrink-0 text-slate-300" />
+                <span className="truncate">{item.label}</span>
+              </div>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold text-slate-400 uppercase">
+                Not configured
+              </span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -203,4 +203,21 @@ export class SystemMonitorController {
     const data = await this.systemMonitorService.globalSearch(q);
     return { success: true, data };
   }
+
+  @Get('failed-emails')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'GET /api/v1/system-monitor/failed-emails — Failed Email Logs Diagnostics' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'search', required: false })
+  async getFailedEmails(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+  ) {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 20;
+    const data = await this.systemMonitorService.getFailedEmailLogs(pageNum, limitNum, search);
+    return { success: true, data };
+  }
 }

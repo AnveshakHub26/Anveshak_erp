@@ -546,6 +546,11 @@ export class SystemMonitorService {
     const smtpHost = process.env.SMTP_HOST;
     const emailStatus = smtpHost ? 'OPERATIONAL' : 'NOT_CONFIGURED';
 
+    const projectRef = supaUrl ? supaUrl.replace('https://', '').split('.')[0] : null;
+    const defaultSupabaseProject = projectRef ? `https://supabase.com/dashboard/project/${projectRef}` : null;
+    const defaultSupabaseDb = projectRef ? `https://supabase.com/dashboard/project/${projectRef}/editor` : null;
+    const defaultSupabaseStorage = projectRef ? `https://supabase.com/dashboard/project/${projectRef}/storage/buckets` : null;
+
     return {
       status: dbStatus === 'UNAVAILABLE' ? 'DEGRADED' : 'OPERATIONAL',
       uptimeSeconds: Math.floor(process.uptime()),
@@ -559,10 +564,66 @@ export class SystemMonitorService {
         email: { status: emailStatus, provider: process.env.EMAIL_PROVIDER || 'smtp', host: smtpHost || 'Not Configured' },
       },
       infrastructureLinks: {
-        supabase: supaUrl ? `${supaUrl.replace('.co', '.com')}` : 'https://app.supabase.com',
-        grafana: process.env.GRAFANA_URL || null,
-        sentry: process.env.SENTRY_DSN ? 'https://sentry.io' : null,
+        supabaseProject: process.env.SUPABASE_DASHBOARD_URL || defaultSupabaseProject,
+        supabaseDatabase: process.env.SUPABASE_DATABASE_URL || defaultSupabaseDb,
+        supabaseStorage: process.env.SUPABASE_STORAGE_URL || defaultSupabaseStorage,
+        sentry: process.env.SENTRY_DASHBOARD_URL || (process.env.SENTRY_DSN ? 'https://sentry.io' : null),
+        grafana: process.env.GRAFANA_DASHBOARD_URL || process.env.GRAFANA_URL || null,
       },
+    };
+  }
+
+  /**
+   * GET /api/v1/system-monitor/failed-emails — Failed Email Logs Diagnostic Viewer
+   */
+  async getFailedEmailLogs(page = 1, limit = 20, search?: string) {
+    const skip = (page - 1) * limit;
+    const where: Prisma.EmailLogWhereInput = {
+      status: 'FAILED',
+    };
+
+    if (search && search.trim()) {
+      const q = search.trim();
+      where.OR = [
+        { category: { contains: q, mode: 'insensitive' } },
+        { recipient: { contains: q, mode: 'insensitive' } },
+        { subject: { contains: q, mode: 'insensitive' } },
+        { lastError: { contains: q, mode: 'insensitive' } },
+        { provider: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    const [total, logs] = await Promise.all([
+      this.prisma.emailLog.count({ where }),
+      this.prisma.emailLog.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          category: true,
+          recipient: true,
+          subject: true,
+          provider: true,
+          status: true,
+          attempts: true,
+          maxAttempts: true,
+          lastError: true,
+          messageId: true,
+          sentAt: true,
+          createdAt: true,
+          nextAttemptAt: true,
+        },
+      }),
+    ]);
+
+    return {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
+      logs,
     };
   }
 
