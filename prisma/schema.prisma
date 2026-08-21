@@ -466,6 +466,23 @@ model SystemCounter {
   @@map("system_counters")
 }
 
+model UserActivity {
+  id           String    @id @default(uuid())
+  userId       String    @unique @map("user_id")
+  userEmail    String    @map("user_email")
+  userRole     String    @default("STAFF") @map("user_role")
+  lastActivity DateTime  @default(now()) @map("last_activity")
+  loginTime    DateTime  @default(now()) @map("login_time")
+  logoutTime   DateTime? @map("logout_time")
+  currentRoute String?   @map("current_route")
+  ipAddress    String?   @map("ip_address")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@index([lastActivity])
+  @@map("user_activities")
+}
+
 // ==========================================
 // HUMAN RESOURCES & WORKFORCE FOUNDATION
 // ==========================================

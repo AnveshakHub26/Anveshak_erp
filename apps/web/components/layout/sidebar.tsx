@@ -21,6 +21,7 @@ import {
   PhoneCall,
   PlusCircle,
   Clock,
+  ShieldAlert,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -33,6 +34,12 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   // Admin & Staff Navigation
+  {
+    label: 'System Monitor',
+    href: '/admin/system-monitor',
+    icon: ShieldAlert,
+    roles: ['ADMIN'],
+  },
   {
     label: 'Admin Approvals',
     href: '/admin/approvals',

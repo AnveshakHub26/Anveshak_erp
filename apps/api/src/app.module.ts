@@ -26,6 +26,7 @@ import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 
 import { EmailModule } from './common/email/email.module';
+import { SystemMonitorModule } from './modules/system-monitor/system-monitor.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { EmailModule } from './common/email/email.module';
     WorkshopsModule,
     AttendanceModule,
     LeaveModule,
+    SystemMonitorModule,
   ],
   providers: [
     {
