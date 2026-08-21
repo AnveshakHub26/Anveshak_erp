@@ -173,8 +173,7 @@ export default function Fnd01LandingPage() {
       {showSplash && (
         <BrandLoader
           onComplete={() => setShowSplash(false)}
-          durationMs={1600}
-          subtitle="Enterprise Operations Platform"
+          durationMs={850}
         />
       )}
 

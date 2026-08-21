@@ -39,7 +39,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   // Show a sleek executive brand loading screen while initializing session
   if (isInitializing) {
-    return <BrandLoader subtitle="Verifying AnveshakHub Enterprise Authorization..." durationMs={1200} />;
+    return <BrandLoader durationMs={850} />;
   }
 
   // If unauthenticated, return empty container while router redirects
