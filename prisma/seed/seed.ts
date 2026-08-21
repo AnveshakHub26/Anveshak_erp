@@ -208,7 +208,7 @@ async function main() {
   ];
 
   for (const lt of leaveTypes) {
-    await prisma.leaveType.upsert({
+    await (prisma as any).leaveType.upsert({
       where: { code: lt.code },
       update: {
         name: lt.name,
