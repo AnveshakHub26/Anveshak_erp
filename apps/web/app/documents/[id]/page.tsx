@@ -7,7 +7,6 @@ import { apiRequest } from '@/lib/api-client';
 import { FileText, Download, ShieldCheck, ShieldAlert, ArrowLeft, History, Lock, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
-import { PublicShell } from '@/components/layout/public-shell';
 
 export default function Fnd10DocumentViewerPage() {
   const params = useParams();
@@ -63,59 +62,37 @@ export default function Fnd10DocumentViewerPage() {
 
   if (loading) {
     return (
-      <PublicShell>
-        <div className="flex min-h-[calc(100vh-128px)] items-center justify-center text-sm text-[#64748B]">
-          Loading document metadata...
-        </div>
-      </PublicShell>
+      <div className="flex min-h-[50vh] items-center justify-center text-sm text-[#64748B]">
+        Loading document metadata...
+      </div>
     );
   }
 
   if (isUnauthorized) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] px-4 py-16 flex items-center justify-center">
-        <div className="mx-auto max-w-md rounded-2xl border border-[#E2E8F0] bg-white p-8 text-center shadow-sm space-y-4">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FEF3C7] border border-[#FDE68A]">
-            <Lock className="h-7 w-7 text-[#92400E]" />
+      <div className="mx-auto max-w-2xl py-12 px-4 space-y-6">
+        <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-8 text-center space-y-4">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-100 text-rose-600">
+            <Lock className="h-7 w-7" />
           </div>
-          <h1 className="text-2xl font-bold text-[#0F172A]">403 Forbidden Access</h1>
-          <p className="text-xs text-[#64748B]">
-            You are not authorized to view or download this private document.
+          <h1 className="text-xl font-bold text-slate-900">Access Restricted</h1>
+          <p className="text-xs text-slate-600 max-w-md mx-auto">
+            You do not have administrative authorization to view or download this security-scoped document.
           </p>
-          <div className="pt-2 flex justify-center space-x-3">
-            <Link href="/search">
-              <Button variant="outline" size="sm">Return to Search</Button>
-            </Link>
-            <Link href="/">
-              <Button variant="primary" size="sm">Go to Home</Button>
-            </Link>
-          </div>
+          <Link href="/documents">
+            <Button variant="outline" className="mt-2 text-xs font-semibold">
+              Return to Document Vault
+            </Button>
+          </Link>
         </div>
       </div>
     );
   }
 
-  if (serverError || !doc) {
+  if (!doc) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] px-4 py-16 text-[#0F172A] flex items-center justify-center">
-        <div className="mx-auto max-w-md rounded-xl border border-[#E2E8F0] bg-white p-8 text-center shadow-sm space-y-4">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#FDF2F2] text-[#B42318] border border-[#FECACA]">
-            <AlertTriangle className="h-6 w-6" />
-          </div>
-          <h1 className="text-xl font-bold text-[#0F172A]">
-            Document Unavailable
-          </h1>
-          <p className="text-xs text-[#64748B]">
-            {serverError || 'The requested document reference does not exist or was deleted.'}
-          </p>
-          <div className="pt-2 flex justify-center">
-            <Link href="/search">
-              <Button variant="outline" size="sm" className="border-[#E2E8F0] text-[#0F172A]">
-                Back to Search
-              </Button>
-            </Link>
-          </div>
-        </div>
+      <div className="mx-auto max-w-2xl py-12 px-4 space-y-6">
+        <Alert variant="error">Document record could not be found or has been purged.</Alert>
       </div>
     );
   }
@@ -123,119 +100,115 @@ export default function Fnd10DocumentViewerPage() {
   const isClean = doc.scanStatus === 'CLEAN';
 
   return (
-    <PublicShell>
-    <div className="min-h-[calc(100vh-128px)] bg-[#F8FAFC] px-4 py-8">
-    <div className="max-w-4xl mx-auto space-y-6">
-        <Link
-          href="/search"
-          className="inline-flex items-center text-xs font-semibold text-[#64748B] hover:text-[#d49b38] transition-colors"
-        >
-          <ArrowLeft className="mr-1.5 h-3.5 w-3.5 text-[#d49b38]" /> Back to Global Search
-        </Link>
+    <div className="max-w-4xl mx-auto space-y-6 pb-12">
+      <Link
+        href="/documents"
+        className="inline-flex items-center text-xs font-semibold text-slate-500 hover:text-[#d49b38] transition-colors"
+      >
+        <ArrowLeft className="mr-1.5 h-3.5 w-3.5 text-[#d49b38]" /> Back to Document Vault
+      </Link>
 
-        {/* Document Header Card */}
-        <div className="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0 border-b border-[#E2E8F0] pb-4 mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#d49b38] to-[#c48b28] text-[#151c2e] font-bold">
-                <FileText className="h-6 w-6" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-[#0F172A]">{doc.type}</h1>
-                <p className="text-xs text-[#64748B]">Entity: {doc.entityType} • Ref: {doc.entityId}</p>
-              </div>
+      {/* Document Header Card */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0 border-b border-slate-100 pb-4 mb-4">
+          <div className="flex items-center space-x-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#d49b38] to-[#c48b28] text-[#151c2e] font-bold">
+              <FileText className="h-6 w-6" />
             </div>
-
-            <Button
-              variant="primary"
-              onClick={handleDownload}
-              isLoading={downloading}
-              disabled={downloading || !isClean}
-              className="bg-gradient-to-r from-[#d49b38] to-[#c48b28] text-[#151c2e] font-bold"
-            >
-              <Download className="mr-2 h-4 w-4" /> Download Document
-            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">{doc.type}</h1>
+              <p className="text-xs text-slate-500">Entity: {doc.entityType} • Ref: {doc.entityId}</p>
+            </div>
           </div>
 
-          {/* Security Banner */}
-          {isClean ? (
-            <div className="flex items-center space-x-2 text-xs font-semibold text-[#2F6F52] bg-[#EBF5F0] p-3 rounded-lg border border-[#A3D9C0]">
-              <ShieldCheck className="h-4 w-4 shrink-0 text-[#2F6F52]" />
-              <span>Virus Scan Passed: File verified clean for authorized download.</span>
-            </div>
-          ) : (
-            <Alert variant="error">
-              <ShieldAlert className="h-4 w-4 mr-2" /> Security Warning: Document failed virus scan. Download is restricted.
-            </Alert>
-          )}
+          <Button
+            variant="primary"
+            onClick={handleDownload}
+            isLoading={downloading}
+            disabled={downloading || !isClean}
+            className="bg-gradient-to-r from-[#d49b38] to-[#c48b28] text-[#151c2e] font-bold"
+          >
+            <Download className="mr-2 h-4 w-4" /> Download Document
+          </Button>
         </div>
 
-        {/* Document Metadata Specifications */}
-        <div className="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm space-y-4">
-          <h2 className="text-lg font-bold text-[#0F172A] border-b border-[#E2E8F0] pb-3">
-            Metadata Specifications
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            <div>
-              <span className="font-semibold text-[#64748B]">Storage Key Path:</span>
-              <p className="font-mono text-[#0F172A] mt-0.5 break-all bg-[#F8FAFC] p-2.5 rounded-lg border border-[#E2E8F0]">
-                {doc.storageKey}
-              </p>
-            </div>
-            <div>
-              <span className="font-semibold text-[#64748B]">Visibility Scope:</span>
-              <p className="font-semibold text-[#0F172A] mt-0.5">{doc.visibility}</p>
-            </div>
-            <div>
-              <span className="font-semibold text-[#64748B]">Uploaded By:</span>
-              <p className="font-semibold text-[#0F172A] mt-0.5">{doc.uploader?.email || doc.uploadedBy}</p>
-            </div>
-            <div>
-              <span className="font-semibold text-[#64748B]">Upload Timestamp:</span>
-              <p className="font-semibold text-[#0F172A] mt-0.5">
-                {new Date(doc.createdAt).toLocaleString()}
-              </p>
-            </div>
+        {/* Security Banner */}
+        {isClean ? (
+          <div className="flex items-center space-x-2 text-xs font-semibold text-emerald-800 bg-emerald-50 p-3 rounded-xl border border-emerald-200">
+            <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />
+            <span>Virus Scan Passed: File verified clean for authorized download.</span>
           </div>
-        </div>
+        ) : (
+          <Alert variant="error">
+            <ShieldAlert className="h-4 w-4 mr-2" /> Security Warning: Document failed virus scan. Download is restricted.
+          </Alert>
+        )}
+      </div>
 
-        {/* Version History Table */}
-        <div className="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm space-y-4">
-          <div className="flex items-center space-x-2 border-b border-[#E2E8F0] pb-3">
-            <History className="h-4 w-4 text-[#d49b38]" />
-            <h2 className="text-lg font-bold text-[#0F172A]">
-              Version Audit History
-            </h2>
+      {/* Document Metadata Specifications */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+        <h2 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
+          Metadata Specifications
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div>
+            <span className="font-semibold text-slate-500">Storage Key Path:</span>
+            <p className="font-mono text-slate-900 mt-1 break-all bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              {doc.storageKey}
+            </p>
           </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC] text-[#64748B]">
-                  <th className="p-3 font-semibold uppercase tracking-wider text-[11px]">Version</th>
-                  <th className="p-3 font-semibold uppercase tracking-wider text-[11px]">Storage Path</th>
-                  <th className="p-3 font-semibold uppercase tracking-wider text-[11px]">SHA-256 Checksum</th>
-                  <th className="p-3 font-semibold uppercase tracking-wider text-[11px]">Timestamp</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#E2E8F0]">
-                {(doc.versions || []).map((ver: any) => (
-                  <tr key={ver.id || ver.version} className="hover:bg-[#F8FAFC] transition-colors">
-                    <td className="p-3 font-bold text-[#0F172A]">v{ver.version}</td>
-                    <td className="p-3 font-mono text-[#64748B]">{ver.storageKey}</td>
-                    <td className="p-3 font-mono text-[#64748B]">{ver.checksum}</td>
-                    <td className="p-3 text-[#64748B]">
-                      {new Date(ver.createdAt || doc.createdAt).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div>
+            <span className="font-semibold text-slate-500">Visibility Scope:</span>
+            <p className="font-semibold text-slate-900 mt-1">{doc.visibility}</p>
+          </div>
+          <div>
+            <span className="font-semibold text-slate-500">Uploaded By:</span>
+            <p className="font-semibold text-slate-900 mt-1">{doc.uploader?.email || doc.uploadedBy}</p>
+          </div>
+          <div>
+            <span className="font-semibold text-slate-500">Upload Timestamp:</span>
+            <p className="font-semibold text-slate-900 mt-1">
+              {new Date(doc.createdAt).toLocaleString()}
+            </p>
           </div>
         </div>
       </div>
+
+      {/* Version History Table */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+        <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+          <History className="h-4 w-4 text-[#d49b38]" />
+          <h2 className="text-base font-bold text-slate-900">
+            Version Audit History
+          </h2>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50 text-slate-700">
+                <th className="p-3 font-semibold uppercase tracking-wider text-[11px]">Version</th>
+                <th className="p-3 font-semibold uppercase tracking-wider text-[11px]">Storage Path</th>
+                <th className="p-3 font-semibold uppercase tracking-wider text-[11px]">SHA-256 Checksum</th>
+                <th className="p-3 font-semibold uppercase tracking-wider text-[11px]">Timestamp</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {(doc.versions || []).map((ver: any) => (
+                <tr key={ver.id || ver.version} className="hover:bg-slate-50 transition-colors">
+                  <td className="p-3 font-bold text-slate-900">v{ver.version}</td>
+                  <td className="p-3 font-mono text-slate-600">{ver.storageKey}</td>
+                  <td className="p-3 font-mono text-slate-600">{ver.checksum}</td>
+                  <td className="p-3 text-slate-500">
+                    {new Date(ver.createdAt || doc.createdAt).toLocaleString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
-    </PublicShell>
   );
 }

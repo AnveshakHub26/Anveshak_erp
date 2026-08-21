@@ -107,15 +107,15 @@ export function AnveshakLogo({
       </svg>
 
       {showText && (
-        <div className="flex flex-col">
-          <div className={`font-extrabold tracking-tight ${dimensions.text} ${textClass} flex items-center gap-1.5`}>
+        <div className="flex flex-col whitespace-nowrap select-none overflow-hidden">
+          <div className={`font-extrabold tracking-tight ${dimensions.text} ${textClass} flex items-center gap-1.5 whitespace-nowrap`}>
             <span>AnveshakHub</span>
-            <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 ring-1 ring-amber-500/30 uppercase tracking-wider">
+            <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[9px] font-bold text-amber-500 ring-1 ring-amber-500/30 uppercase tracking-wider whitespace-nowrap">
               Enterprise
             </span>
           </div>
-          <span className={`font-medium text-slate-400 tracking-wider uppercase ${dimensions.sub}`}>
-            Bridging Innovation & Industry
+          <span className={`font-semibold text-slate-400 tracking-wider uppercase whitespace-nowrap ${dimensions.sub}`}>
+            Bridging Innovation &amp; Industry
           </span>
         </div>
       )}
