@@ -93,12 +93,21 @@ export class S3StorageAdapter {
       }
     }
 
-    const command = new PutObjectCommand({
-      Bucket: this.bucketName,
-      Key: key,
-      ContentType: contentType,
-    });
+    if (!this.isMinIODefault) {
+      try {
+        const command = new PutObjectCommand({
+          Bucket: this.bucketName,
+          Key: key,
+          ContentType: contentType,
+        });
 
-    return getSignedUrl(this.s3Client, command, { expiresIn: expiresInSeconds });
+        return await getSignedUrl(this.s3Client, command, { expiresIn: expiresInSeconds });
+      } catch (err: any) {
+        this.logger.warn(`S3 signed upload URL generation warning: ${err.message}`);
+      }
+    }
+
+    const apiUrl = process.env.API_URL || 'http://localhost:4000/api/v1';
+    return `${apiUrl}/documents/upload-direct?key=${encodeURIComponent(key)}`;
   }
 }

@@ -166,11 +166,21 @@ export function FileUploadZone({
         uploadHeaders['Content-Type'] = selectedFile.type;
       }
 
-      const putRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: uploadHeaders,
-        body: selectedFile,
-      });
+      let putRes: Response;
+      try {
+        putRes = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: uploadHeaders,
+          body: selectedFile,
+        });
+      } catch (err: any) {
+        // Safe fallback try POST
+        putRes = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: uploadHeaders,
+          body: selectedFile,
+        });
+      }
 
       if (!putRes.ok && putRes.status !== 200 && putRes.status !== 204) {
         throw new Error(`Direct storage upload failed with status ${putRes.status}.`);

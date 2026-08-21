@@ -238,13 +238,32 @@ export default function HROnboardPage() {
         return;
       }
 
-      const headers = lines[0].split(',').map((h) => h.trim());
+      const parseCsvLine = (lineStr: string): string[] => {
+        const result: string[] = [];
+        let current = '';
+        let inQuotes = false;
+        for (let i = 0; i < lineStr.length; i++) {
+          const char = lineStr[i];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim().replace(/^"|"$/g, ''));
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        result.push(current.trim().replace(/^"|"$/g, ''));
+        return result;
+      };
+
+      const headers = parseCsvLine(lines[0]);
       const parsedRows: any[] = [];
       const validationErrors: string[] = [];
       const emailSet = new Set<string>();
 
       for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',').map((v) => v.trim());
+        const values = parseCsvLine(lines[i]);
         const rowObj: any = {};
 
         headers.forEach((h, idx) => {
