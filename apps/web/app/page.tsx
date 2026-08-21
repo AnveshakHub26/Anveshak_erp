@@ -30,7 +30,6 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import { AnveshakLogo } from '@/components/ui/anveshak-logo';
-import { BrandLoader } from '@/components/layout/brand-loader';
 
 export default function Fnd01LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

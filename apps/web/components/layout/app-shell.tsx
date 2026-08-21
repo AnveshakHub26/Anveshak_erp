@@ -15,9 +15,8 @@ import {
   Search,
   ChevronRight,
   ShieldCheck,
+  RefreshCw,
 } from 'lucide-react';
-
-import { BrandLoader } from './brand-loader';
 
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
@@ -37,9 +36,16 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     }
   }, [isInitializing, isAuthenticated, pathname, router]);
 
-  // Show a sleek executive brand loading screen while initializing session
+  // Clean ERP loading spinner during auth initialization
   if (isInitializing) {
-    return <BrandLoader durationMs={850} />;
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-[#151c2e] text-white">
+        <div className="flex items-center space-x-2 text-xs font-semibold text-slate-300">
+          <RefreshCw className="h-4 w-4 animate-spin text-[#d49b38]" />
+          <span>Loading AnveshakHub Enterprise...</span>
+        </div>
+      </div>
+    );
   }
 
   // If unauthenticated, return empty container while router redirects
