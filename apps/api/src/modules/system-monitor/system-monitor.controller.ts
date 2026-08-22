@@ -94,12 +94,16 @@ export class SystemMonitorController {
   @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'entityType', required: false })
   @ApiQuery({ name: 'category', required: false })
+  @ApiQuery({ name: 'visibility', required: false })
+  @ApiQuery({ name: 'scanStatus', required: false })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   async getGlobalDocuments(
     @Query('search') search?: string,
     @Query('entityType') entityType?: string,
     @Query('category') category?: string,
+    @Query('visibility') visibility?: string,
+    @Query('scanStatus') scanStatus?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
@@ -109,6 +113,8 @@ export class SystemMonitorController {
       search,
       entityType,
       category,
+      visibility,
+      scanStatus,
       page: pageNum,
       limit: limitNum,
     });

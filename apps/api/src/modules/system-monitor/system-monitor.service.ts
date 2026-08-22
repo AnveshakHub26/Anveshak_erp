@@ -249,11 +249,16 @@ export class SystemMonitorService {
       totalDocuments,
       totalFolders,
       pendingLeaveRequests,
+      totalLeaveRequests,
       todayAttendance,
+      totalAttendanceRecords,
       totalUsers,
       activeUsersCount,
       unreadNotifications,
+      totalNotifications,
       failedEmailsCount,
+      totalEmailLogs,
+      totalAuditLogs,
     ] = await Promise.all([
       this.prisma.employee.count(),
       this.prisma.employee.count({ where: { status: 'ACTIVE' } }),
@@ -266,14 +271,19 @@ export class SystemMonitorService {
       this.prisma.document.count(),
       this.prisma.documentFolder.count(),
       this.prisma.leaveRequest.count({ where: { status: 'PENDING' } }),
+      this.prisma.leaveRequest.count(),
       this.prisma.attendance.findMany({
         where: { attendanceDate: { gte: todayStart } },
         include: { breaks: true },
       }),
+      this.prisma.attendance.count(),
       this.prisma.user.count(),
       this.prisma.user.count({ where: { status: 'ACTIVE' } }),
       this.prisma.notification.count({ where: { readAt: null } }),
+      this.prisma.notification.count(),
       this.prisma.emailLog.count({ where: { status: 'FAILED' } }),
+      this.prisma.emailLog.count(),
+      this.prisma.auditLog.count(),
     ]);
 
     const attendancePresentToday = todayAttendance.length;
@@ -294,14 +304,19 @@ export class SystemMonitorService {
         totalDocuments,
         totalFolders,
         pendingLeaveRequests,
+        totalLeaveRequests,
         attendancePresentToday,
         currentlyWorking,
         currentlyOnBreak,
         completedAttendance,
+        totalAttendanceRecords,
         totalUsers,
         activeUsersCount,
         unreadNotifications,
+        totalNotifications,
         failedEmailsCount,
+        totalEmailLogs,
+        totalAuditLogs,
       },
     };
   }
@@ -336,7 +351,15 @@ export class SystemMonitorService {
   /**
    * GET /api/v1/system-monitor/documents — Admin Global Document Search
    */
-  async getGlobalDocuments(query: { search?: string; entityType?: string; category?: string; page?: number; limit?: number }) {
+  async getGlobalDocuments(query: {
+    search?: string;
+    entityType?: string;
+    category?: string;
+    visibility?: string;
+    scanStatus?: string;
+    page?: number;
+    limit?: number;
+  }) {
     const page = Number(query.page) || 1;
     const limit = Math.min(Number(query.limit) || 20, 100);
     const skip = (page - 1) * limit;
@@ -348,10 +371,15 @@ export class SystemMonitorService {
       where.OR = [
         { storageKey: { contains: q, mode: 'insensitive' } },
         { type: { contains: q, mode: 'insensitive' } },
+        { entityId: { contains: q, mode: 'insensitive' } },
+        { uploader: { email: { contains: q, mode: 'insensitive' } } },
       ];
     }
 
     if (query.entityType) where.entityType = query.entityType;
+    if (query.category) where.type = query.category;
+    if (query.visibility) where.visibility = query.visibility as any;
+    if (query.scanStatus) where.scanStatus = query.scanStatus as any;
 
     const [total, data] = await Promise.all([
       this.prisma.document.count({ where }),
@@ -363,7 +391,10 @@ export class SystemMonitorService {
         include: {
           uploader: { select: { id: true, email: true } },
           folder: { select: { id: true, name: true } },
-          versions: { select: { version: true, checksum: true, createdAt: true }, orderBy: { version: 'desc' }, take: 1 },
+          versions: {
+            select: { id: true, version: true, storageKey: true, checksum: true, createdAt: true },
+            orderBy: { version: 'desc' },
+          },
         },
       }),
     ]);
@@ -373,7 +404,7 @@ export class SystemMonitorService {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(total / limit) || 1,
     };
   }
 
@@ -551,6 +582,18 @@ export class SystemMonitorService {
     const defaultSupabaseDb = projectRef ? `https://supabase.com/dashboard/project/${projectRef}/editor` : null;
     const defaultSupabaseStorage = projectRef ? `https://supabase.com/dashboard/project/${projectRef}/storage/buckets` : null;
 
+    const supaProjectUrl = process.env.SUPABASE_DASHBOARD_URL || defaultSupabaseProject;
+    const supaDbUrl = process.env.SUPABASE_DATABASE_URL || defaultSupabaseDb;
+    const supaStorageUrl = process.env.SUPABASE_STORAGE_URL || defaultSupabaseStorage;
+    const sentryUrl = process.env.SENTRY_DASHBOARD_URL || (process.env.SENTRY_DSN ? 'https://sentry.io' : null);
+    const grafanaUrl = process.env.GRAFANA_DASHBOARD_URL || process.env.GRAFANA_URL || null;
+
+    const supaProjectStatus = supaUrl ? 'CONNECTED' : 'NOT_CONFIGURED';
+    const supaDbStatus = dbStatus === 'OPERATIONAL' ? 'CONNECTED' : dbStatus;
+    const supaStorageStatus = supaUrl && storageBucket ? 'CONNECTED' : 'NOT_CONFIGURED';
+    const sentryStatus = sentryUrl ? 'CONFIGURED' : 'NOT_CONFIGURED';
+    const grafanaStatus = grafanaUrl ? 'CONFIGURED' : 'NOT_CONFIGURED';
+
     return {
       status: dbStatus === 'UNAVAILABLE' ? 'DEGRADED' : 'OPERATIONAL',
       uptimeSeconds: Math.floor(process.uptime()),
@@ -564,11 +607,18 @@ export class SystemMonitorService {
         email: { status: emailStatus, provider: process.env.EMAIL_PROVIDER || 'smtp', host: smtpHost || 'Not Configured' },
       },
       infrastructureLinks: {
-        supabaseProject: process.env.SUPABASE_DASHBOARD_URL || defaultSupabaseProject,
-        supabaseDatabase: process.env.SUPABASE_DATABASE_URL || defaultSupabaseDb,
-        supabaseStorage: process.env.SUPABASE_STORAGE_URL || defaultSupabaseStorage,
-        sentry: process.env.SENTRY_DASHBOARD_URL || (process.env.SENTRY_DSN ? 'https://sentry.io' : null),
-        grafana: process.env.GRAFANA_DASHBOARD_URL || process.env.GRAFANA_URL || null,
+        supabaseProject: supaProjectUrl,
+        supabaseDatabase: supaDbUrl,
+        supabaseStorage: supaStorageUrl,
+        sentry: sentryUrl,
+        grafana: grafanaUrl,
+      },
+      infrastructureServices: {
+        supabaseProject: { label: 'Supabase Project', status: supaProjectStatus, url: supaProjectUrl },
+        supabaseDatabase: { label: 'Supabase Database', status: supaDbStatus, url: supaDbUrl },
+        supabaseStorage: { label: 'Supabase Storage', status: supaStorageStatus, url: supaStorageUrl },
+        sentry: { label: 'Sentry Error Tracking', status: sentryStatus, url: sentryUrl },
+        grafana: { label: 'Grafana Monitoring', status: grafanaStatus, url: grafanaUrl },
       },
     };
   }

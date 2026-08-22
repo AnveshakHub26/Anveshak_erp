@@ -48,14 +48,19 @@ interface MetricsData {
   totalDocuments: number;
   totalFolders: number;
   pendingLeaveRequests: number;
+  totalLeaveRequests?: number;
   attendancePresentToday: number;
   currentlyWorking: number;
   currentlyOnBreak: number;
   completedAttendance: number;
+  totalAttendanceRecords?: number;
   totalUsers: number;
   activeUsersCount: number;
   unreadNotifications: number;
+  totalNotifications?: number;
   failedEmailsCount: number;
+  totalEmailLogs?: number;
+  totalAuditLogs?: number;
 }
 
 interface ActiveUser {
@@ -67,6 +72,12 @@ interface ActiveUser {
   loginTime: string;
   currentRoute: string;
   ipAddress?: string;
+}
+
+interface InfrastructureServiceItem {
+  label: string;
+  status: 'CONNECTED' | 'CONFIGURED' | 'NOT_CONFIGURED' | 'UNAVAILABLE';
+  url: string | null;
 }
 
 interface HealthData {
@@ -87,6 +98,13 @@ interface HealthData {
     supabaseStorage: string | null;
     sentry: string | null;
     grafana: string | null;
+  };
+  infrastructureServices?: {
+    supabaseProject: InfrastructureServiceItem;
+    supabaseDatabase: InfrastructureServiceItem;
+    supabaseStorage: InfrastructureServiceItem;
+    sentry: InfrastructureServiceItem;
+    grafana: InfrastructureServiceItem;
   };
 }
 
@@ -724,8 +742,122 @@ export default function SystemMonitorPage() {
             />
           </div>
 
-          {/* Infrastructure & External Tools (Phase 6K) */}
-          <InfrastructureLinksCard links={health?.infrastructureLinks} />
+          {/* Infrastructure & External Tools (Phase 6L) */}
+          <InfrastructureLinksCard links={health?.infrastructureLinks} services={health?.infrastructureServices} />
+
+          {/* Phase 6L: Read-Only Data Management Overview */}
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                  <Database className="h-4 w-4 text-emerald-600" />
+                  Read-Only Enterprise Data Management Overview
+                </h3>
+                <p className="mt-0.5 text-[11px] text-slate-500">
+                  Real database entity record totals. Business modifications continue strictly through authoritative ERP modules.
+                </p>
+              </div>
+              {health?.infrastructureLinks?.supabaseDatabase && (
+                <a
+                  href={health.infrastructureLinks.supabaseDatabase}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 transition-all self-start sm:self-auto"
+                >
+                  <Server className="h-3.5 w-3.5 text-blue-400" />
+                  Open Supabase Database ↗
+                </a>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 shadow-2xs hover:bg-white transition-all">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Employees</span>
+                <div className="my-1.5 text-2xl font-extrabold text-slate-900">{metrics?.totalEmployees ?? 0}</div>
+                <Link href="/hr" className="text-[11px] font-bold text-indigo-600 hover:underline flex items-center gap-1">
+                  Open Module ↗
+                </Link>
+              </div>
+
+              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 shadow-2xs hover:bg-white transition-all">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Organizations</span>
+                <div className="my-1.5 text-2xl font-extrabold text-slate-900">{metrics?.totalOrganizations ?? 0}</div>
+                <Link href="/organizations" className="text-[11px] font-bold text-indigo-600 hover:underline flex items-center gap-1">
+                  Open Module ↗
+                </Link>
+              </div>
+
+              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 shadow-2xs hover:bg-white transition-all">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Projects</span>
+                <div className="my-1.5 text-2xl font-extrabold text-slate-900">{metrics?.totalProjects ?? 0}</div>
+                <Link href="/projects" className="text-[11px] font-bold text-indigo-600 hover:underline flex items-center gap-1">
+                  Open Module ↗
+                </Link>
+              </div>
+
+              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 shadow-2xs hover:bg-white transition-all">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Documents</span>
+                <div className="my-1.5 text-2xl font-extrabold text-slate-900">{metrics?.totalDocuments ?? 0}</div>
+                <Link href="/documents" className="text-[11px] font-bold text-indigo-600 hover:underline flex items-center gap-1">
+                  Open Module ↗
+                </Link>
+              </div>
+
+              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 shadow-2xs hover:bg-white transition-all">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">System Users</span>
+                <div className="my-1.5 text-2xl font-extrabold text-slate-900">{metrics?.totalUsers ?? 0}</div>
+                <Link href="/admin/approvals" className="text-[11px] font-bold text-indigo-600 hover:underline flex items-center gap-1">
+                  Open Module ↗
+                </Link>
+              </div>
+
+              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 shadow-2xs hover:bg-white transition-all">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Leave Requests</span>
+                <div className="my-1.5 text-2xl font-extrabold text-slate-900">{metrics?.totalLeaveRequests ?? metrics?.pendingLeaveRequests ?? 0}</div>
+                <Link href="/hr/leave" className="text-[11px] font-bold text-indigo-600 hover:underline flex items-center gap-1">
+                  Open Module ↗
+                </Link>
+              </div>
+
+              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 shadow-2xs hover:bg-white transition-all">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Attendance Log</span>
+                <div className="my-1.5 text-2xl font-extrabold text-slate-900">{metrics?.totalAttendanceRecords ?? metrics?.attendancePresentToday ?? 0}</div>
+                <Link href="/hr/attendance" className="text-[11px] font-bold text-indigo-600 hover:underline flex items-center gap-1">
+                  Open Module ↗
+                </Link>
+              </div>
+
+              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 shadow-2xs hover:bg-white transition-all">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Notifications</span>
+                <div className="my-1.5 text-2xl font-extrabold text-slate-900">{metrics?.totalNotifications ?? metrics?.unreadNotifications ?? 0}</div>
+                <Link href="/notifications" className="text-[11px] font-bold text-indigo-600 hover:underline flex items-center gap-1">
+                  Open Module ↗
+                </Link>
+              </div>
+
+              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 shadow-2xs hover:bg-white transition-all">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Audit Trails</span>
+                <div className="my-1.5 text-2xl font-extrabold text-slate-900">{metrics?.totalAuditLogs ?? 0}</div>
+                <button onClick={() => setActiveTab('audit')} className="text-[11px] font-bold text-indigo-600 hover:underline flex items-center gap-1 text-left">
+                  Inspect Audit ↗
+                </button>
+              </div>
+
+              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 shadow-2xs hover:bg-white transition-all">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Email Logs</span>
+                <div className="my-1.5 text-2xl font-extrabold text-slate-900">{metrics?.totalEmailLogs ?? 0}</div>
+                <button
+                  onClick={() => {
+                    setShowFailedEmailsModal(true);
+                    fetchFailedEmailLogs('');
+                  }}
+                  className="text-[11px] font-bold text-rose-600 hover:underline flex items-center gap-1 text-left"
+                >
+                  Inspect Failed ↗
+                </button>
+              </div>
+            </div>
+          </div>
 
           {/* Quick Navigation Cards to Authoritative ERP Pages */}
           <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
@@ -1062,8 +1194,8 @@ export default function SystemMonitorPage() {
             <HealthServiceCard name="SMTP Email Provider" status={health.services.email.status} info={`Host: ${health.services.email.host}`} />
           </div>
 
-          {/* Infrastructure & External Tools (Phase 6K) */}
-          <InfrastructureLinksCard links={health.infrastructureLinks} />
+          {/* Infrastructure & External Tools (Phase 6L) */}
+          <InfrastructureLinksCard links={health.infrastructureLinks} services={health.infrastructureServices} />
         </div>
       )}
 
@@ -1455,35 +1587,46 @@ function HealthServiceCard({ name, status, info }: { name: string; status: strin
   );
 }
 
-function InfrastructureLinksCard({ links }: { links?: HealthData['infrastructureLinks'] }) {
+function InfrastructureLinksCard({
+  links,
+  services,
+}: {
+  links?: HealthData['infrastructureLinks'];
+  services?: HealthData['infrastructureServices'];
+}) {
   const items = [
     {
       label: 'Supabase Project',
-      url: links?.supabaseProject,
+      url: links?.supabaseProject || services?.supabaseProject?.url,
+      status: services?.supabaseProject?.status || (links?.supabaseProject ? 'CONNECTED' : 'NOT_CONFIGURED'),
       icon: Database,
       color: 'text-emerald-600',
     },
     {
       label: 'Supabase Database',
-      url: links?.supabaseDatabase,
+      url: links?.supabaseDatabase || services?.supabaseDatabase?.url,
+      status: services?.supabaseDatabase?.status || (links?.supabaseDatabase ? 'CONNECTED' : 'NOT_CONFIGURED'),
       icon: Server,
       color: 'text-blue-600',
     },
     {
       label: 'Supabase Storage',
-      url: links?.supabaseStorage,
+      url: links?.supabaseStorage || services?.supabaseStorage?.url,
+      status: services?.supabaseStorage?.status || (links?.supabaseStorage ? 'CONNECTED' : 'NOT_CONFIGURED'),
       icon: FileSearch,
       color: 'text-cyan-600',
     },
     {
       label: 'Sentry',
-      url: links?.sentry,
+      url: links?.sentry || services?.sentry?.url,
+      status: services?.sentry?.status || (links?.sentry ? 'CONFIGURED' : 'NOT_CONFIGURED'),
       icon: AlertCircle,
       color: 'text-rose-600',
     },
     {
       label: 'Grafana',
-      url: links?.grafana,
+      url: links?.grafana || services?.grafana?.url,
+      status: services?.grafana?.status || (links?.grafana ? 'CONFIGURED' : 'NOT_CONFIGURED'),
       icon: TrendingUp,
       color: 'text-amber-600',
     },
@@ -1506,41 +1649,50 @@ function InfrastructureLinksCard({ links }: { links?: HealthData['infrastructure
         </span>
       </div>
 
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {items.map((item, idx) => {
           const Icon = item.icon;
           const isConfigured = !!item.url;
 
-          if (isConfigured) {
-            return (
-              <a
-                key={idx}
-                href={item.url!}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50/80 p-3 text-xs font-semibold text-slate-800 hover:border-indigo-400 hover:bg-white hover:text-indigo-700 shadow-2xs hover:shadow-xs transition-all group"
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <Icon className={`h-4 w-4 shrink-0 ${item.color}`} />
-                  <span className="truncate">{item.label}</span>
-                </div>
-                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-400 group-hover:text-indigo-600 transition-colors" />
-              </a>
-            );
-          }
+          const badgeStyle =
+            item.status === 'CONNECTED'
+              ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
+              : item.status === 'CONFIGURED'
+              ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200'
+              : item.status === 'UNAVAILABLE'
+              ? 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'
+              : 'bg-slate-100 text-slate-500 ring-1 ring-slate-200';
 
           return (
             <div
               key={idx}
-              className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/40 p-3 text-xs font-medium text-slate-400"
+              className="flex flex-col justify-between rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 shadow-2xs hover:bg-white hover:border-indigo-300 hover:shadow-xs transition-all space-y-3"
             >
-              <div className="flex items-center gap-2 truncate">
-                <Icon className="h-4 w-4 shrink-0 text-slate-300" />
-                <span className="truncate">{item.label}</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 truncate">
+                  <Icon className={`h-4 w-4 shrink-0 ${item.color}`} />
+                  <span className="font-bold text-xs text-slate-900 truncate">{item.label}</span>
+                </div>
+                <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${badgeStyle}`}>
+                  {item.status.replace('_', ' ')}
+                </span>
               </div>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold text-slate-400 uppercase">
-                Not configured
-              </span>
+
+              {isConfigured ? (
+                <a
+                  href={item.url!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between rounded-lg bg-indigo-50/80 px-3 py-1.5 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-600 hover:text-white transition-all group"
+                >
+                  <span>Open Dashboard</span>
+                  <ExternalLink className="h-3 w-3 text-indigo-500 group-hover:text-white transition-colors" />
+                </a>
+              ) : (
+                <div className="rounded-lg bg-slate-100 px-3 py-1.5 text-center text-[11px] font-medium text-slate-400">
+                  Not Configured
+                </div>
+              )}
             </div>
           );
         })}
