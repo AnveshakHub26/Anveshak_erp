@@ -30,9 +30,9 @@ export class EmailService {
   /**
    * Category Helper 1: Organization Onboarding Approval Email
    */
-  async sendOrganizationApprovalEmail(toEmail: string, orgName: string, orgNumber: string) {
+  async sendOrganizationApprovalEmail(toEmail: string, orgName: string, orgNumber: string, customIdempotencyKey?: string) {
     const loginUrl = process.env.APP_URL ? `${process.env.APP_URL}/login` : 'http://localhost:3000/login';
-    const idempotencyKey = `org-approval-${orgNumber}-${Date.now()}`;
+    const idempotencyKey = customIdempotencyKey || `org-approval-${orgNumber}`;
     const tpl = renderOrganizationApprovalTemplate(toEmail, orgName, orgNumber, loginUrl);
 
     return this.sendTransactionalEmail({

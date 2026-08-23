@@ -160,8 +160,10 @@ export default function SystemMonitorPage() {
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  // Data States
+  // Data States (Phase 6M)
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [systemAlerts, setSystemAlerts] = useState<any[]>([]);
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
   const [health, setHealth] = useState<HealthData | null>(null);
   const [documents, setDocuments] = useState<any[]>([]);
@@ -279,8 +281,14 @@ export default function SystemMonitorPage() {
 
     try {
       if (activeTab === 'overview') {
-        const res = await apiRequest<any>('/system-monitor/metrics');
-        setMetrics(res.data?.overview || null);
+        const [metricsRes, activityRes, alertsRes] = await Promise.all([
+          apiRequest<any>('/system-monitor/metrics'),
+          apiRequest<any>('/system-monitor/recent-activity?limit=8'),
+          apiRequest<any>('/system-monitor/alerts'),
+        ]);
+        setMetrics(metricsRes.data?.overview || null);
+        setRecentActivity(activityRes.data || []);
+        setSystemAlerts(alertsRes.data || []);
       } else if (activeTab === 'active-users') {
         const res = await apiRequest<any>('/system-monitor/active-users');
         setActiveUsers(res.data || []);
@@ -707,28 +715,109 @@ export default function SystemMonitorPage() {
         })}
       </div>
 
-      {/* TAB 1: ERP OVERVIEW METRICS GRID & QUICK NAVIGATION */}
+      {/* TAB 1: ERP OVERVIEW METRICS GRID, ALERTS, OPERATIONS & QUICK NAVIGATION */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
-          {/* Real Metrics Cards Grid */}
+          {/* Phase 6M: Real System Alerts Banner */}
+          {systemAlerts.length > 0 && (
+            <div className="space-y-2">
+              {systemAlerts.map((alert) => (
+                <div
+                  key={alert.id}
+                  className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border p-4 shadow-xs transition-all ${
+                    alert.severity === 'critical'
+                      ? 'border-rose-200 bg-rose-50/80 text-rose-900'
+                      : alert.severity === 'warning'
+                      ? 'border-amber-200 bg-amber-50/80 text-amber-900'
+                      : 'border-blue-200 bg-blue-50/80 text-blue-900'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <AlertCircle
+                      className={`h-5 w-5 shrink-0 mt-0.5 ${
+                        alert.severity === 'critical'
+                          ? 'text-rose-600'
+                          : alert.severity === 'warning'
+                          ? 'text-amber-600'
+                          : 'text-blue-600'
+                      }`}
+                    />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-extrabold text-xs tracking-wide uppercase">{alert.title}</span>
+                        <span
+                          className={`rounded px-1.5 py-0.2 text-[9px] font-extrabold uppercase ${
+                            alert.severity === 'critical'
+                              ? 'bg-rose-600 text-white'
+                              : alert.severity === 'warning'
+                              ? 'bg-amber-600 text-white'
+                              : 'bg-blue-600 text-white'
+                          }`}
+                        >
+                          {alert.severity}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-xs text-slate-700">{alert.description}</p>
+                    </div>
+                  </div>
+
+                  {alert.actionType === 'MODAL' ? (
+                    <button
+                      onClick={() => {
+                        setShowFailedEmailsModal(true);
+                        fetchFailedEmailLogs('');
+                      }}
+                      className="inline-flex items-center gap-1 shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-slate-900 shadow-2xs hover:bg-slate-50 transition-all border border-slate-200 self-start sm:self-auto"
+                    >
+                      {alert.actionText} ↗
+                    </button>
+                  ) : alert.actionRoute?.startsWith('http') ? (
+                    <a
+                      href={alert.actionRoute}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-slate-900 shadow-2xs hover:bg-slate-50 transition-all border border-slate-200 self-start sm:self-auto"
+                    >
+                      {alert.actionText} ↗
+                    </a>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        if (alert.actionRoute === '#health') {
+                          setActiveTab('health');
+                        } else if (alert.actionRoute) {
+                          router.push(alert.actionRoute);
+                        }
+                      }}
+                      className="inline-flex items-center gap-1 shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-slate-900 shadow-2xs hover:bg-slate-50 transition-all border border-slate-200 self-start sm:self-auto"
+                    >
+                      {alert.actionText} ↗
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Real Metrics Cards Grid (Clickable to Authoritative Pages) */}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-            <MetricCard label="Total Employees" value={metrics?.totalEmployees ?? 0} icon={Users} iconBg="bg-indigo-50" iconColor="text-indigo-600" />
-            <MetricCard label="Active Employees" value={metrics?.activeEmployees ?? 0} icon={CheckCircle2} iconBg="bg-emerald-50" iconColor="text-emerald-600" />
-            <MetricCard label="Exited Employees" value={metrics?.exitedEmployees ?? 0} icon={XCircle} iconBg="bg-slate-100" iconColor="text-slate-500" />
-            <MetricCard label="Total Organizations" value={metrics?.totalOrganizations ?? 0} icon={Building2} iconBg="bg-blue-50" iconColor="text-blue-600" />
-            <MetricCard label="Total Projects" value={metrics?.totalProjects ?? 0} icon={FolderGit2} iconBg="bg-purple-50" iconColor="text-purple-600" />
-            <MetricCard label="Active Projects" value={metrics?.activeProjects ?? 0} icon={Zap} iconBg="bg-amber-50" iconColor="text-amber-600" />
-            <MetricCard label="Completed Projects" value={metrics?.completedProjects ?? 0} icon={CheckCircle2} iconBg="bg-teal-50" iconColor="text-teal-600" />
-            <MetricCard label="Projects On Hold" value={metrics?.projectsOnHold ?? 0} icon={Clock} iconBg="bg-rose-50" iconColor="text-rose-600" />
-            <MetricCard label="Total Documents" value={metrics?.totalDocuments ?? 0} icon={FileText} iconBg="bg-sky-50" iconColor="text-sky-600" />
-            <MetricCard label="Document Folders" value={metrics?.totalFolders ?? 0} icon={FileSearch} iconBg="bg-cyan-50" iconColor="text-cyan-600" />
-            <MetricCard label="Pending Leave" value={metrics?.pendingLeaveRequests ?? 0} icon={Calendar} iconBg="bg-orange-50" iconColor="text-orange-600" />
-            <MetricCard label="Present Today" value={metrics?.attendancePresentToday ?? 0} icon={Clock} iconBg="bg-emerald-50" iconColor="text-emerald-600" />
-            <MetricCard label="Working Now" value={metrics?.currentlyWorking ?? 0} icon={Activity} iconBg="bg-indigo-50" iconColor="text-indigo-600" />
-            <MetricCard label="On Break" value={metrics?.currentlyOnBreak ?? 0} icon={Clock} iconBg="bg-amber-50" iconColor="text-amber-600" />
-            <MetricCard label="Attendance Done" value={metrics?.completedAttendance ?? 0} icon={CheckCircle2} iconBg="bg-blue-50" iconColor="text-blue-600" />
-            <MetricCard label="System Users" value={metrics?.totalUsers ?? 0} icon={Users} iconBg="bg-violet-50" iconColor="text-violet-600" />
-            <MetricCard label="Unread Alerts" value={metrics?.unreadNotifications ?? 0} icon={AlertCircle} iconBg="bg-rose-50" iconColor="text-rose-600" />
+            <MetricCard label="Total Employees" value={metrics?.totalEmployees ?? 0} icon={Users} iconBg="bg-indigo-50" iconColor="text-indigo-600" onClick={() => router.push('/hr')} />
+            <MetricCard label="Active Employees" value={metrics?.activeEmployees ?? 0} icon={CheckCircle2} iconBg="bg-emerald-50" iconColor="text-emerald-600" onClick={() => router.push('/hr')} />
+            <MetricCard label="Exited Employees" value={metrics?.exitedEmployees ?? 0} icon={XCircle} iconBg="bg-slate-100" iconColor="text-slate-500" onClick={() => router.push('/hr')} />
+            <MetricCard label="Total Organizations" value={metrics?.totalOrganizations ?? 0} icon={Building2} iconBg="bg-blue-50" iconColor="text-blue-600" onClick={() => router.push('/organizations')} />
+            <MetricCard label="Total Projects" value={metrics?.totalProjects ?? 0} icon={FolderGit2} iconBg="bg-purple-50" iconColor="text-purple-600" onClick={() => router.push('/projects')} />
+            <MetricCard label="Active Projects" value={metrics?.activeProjects ?? 0} icon={Zap} iconBg="bg-amber-50" iconColor="text-amber-600" onClick={() => router.push('/projects')} />
+            <MetricCard label="Completed Projects" value={metrics?.completedProjects ?? 0} icon={CheckCircle2} iconBg="bg-teal-50" iconColor="text-teal-600" onClick={() => router.push('/projects')} />
+            <MetricCard label="Projects On Hold" value={metrics?.projectsOnHold ?? 0} icon={Clock} iconBg="bg-rose-50" iconColor="text-rose-600" onClick={() => router.push('/projects')} />
+            <MetricCard label="Total Documents" value={metrics?.totalDocuments ?? 0} icon={FileText} iconBg="bg-sky-50" iconColor="text-sky-600" onClick={() => router.push('/documents')} />
+            <MetricCard label="Document Folders" value={metrics?.totalFolders ?? 0} icon={FileSearch} iconBg="bg-cyan-50" iconColor="text-cyan-600" onClick={() => router.push('/documents')} />
+            <MetricCard label="Pending Leave" value={metrics?.pendingLeaveRequests ?? 0} icon={Calendar} iconBg="bg-orange-50" iconColor="text-orange-600" onClick={() => router.push('/hr/leave')} />
+            <MetricCard label="Present Today" value={metrics?.attendancePresentToday ?? 0} icon={Clock} iconBg="bg-emerald-50" iconColor="text-emerald-600" onClick={() => router.push('/hr/attendance')} />
+            <MetricCard label="Working Now" value={metrics?.currentlyWorking ?? 0} icon={Activity} iconBg="bg-indigo-50" iconColor="text-indigo-600" onClick={() => router.push('/hr/attendance')} />
+            <MetricCard label="On Break" value={metrics?.currentlyOnBreak ?? 0} icon={Clock} iconBg="bg-amber-50" iconColor="text-amber-600" onClick={() => router.push('/hr/attendance')} />
+            <MetricCard label="Attendance Done" value={metrics?.completedAttendance ?? 0} icon={CheckCircle2} iconBg="bg-blue-50" iconColor="text-blue-600" onClick={() => router.push('/hr/attendance')} />
+            <MetricCard label="System Users" value={metrics?.totalUsers ?? 0} icon={Users} iconBg="bg-violet-50" iconColor="text-violet-600" onClick={() => router.push('/admin/approvals')} />
+            <MetricCard label="Unread Alerts" value={metrics?.unreadNotifications ?? 0} icon={AlertCircle} iconBg="bg-rose-50" iconColor="text-rose-600" onClick={() => router.push('/notifications')} />
             <MetricCard
               label="Failed Email Logs"
               value={metrics?.failedEmailsCount ?? 0}
@@ -744,6 +833,60 @@ export default function SystemMonitorPage() {
 
           {/* Infrastructure & External Tools (Phase 6L) */}
           <InfrastructureLinksCard links={health?.infrastructureLinks} services={health?.infrastructureServices} />
+
+          {/* Phase 6M: Operations & Recent Audit Activity Feed */}
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-indigo-600" />
+                  Recent Operations &amp; Audit Events
+                </h3>
+                <p className="mt-0.5 text-[11px] text-slate-500">
+                  Live administrative action trail from core ERP modules.
+                </p>
+              </div>
+              <button
+                onClick={() => setActiveTab('audit')}
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
+              >
+                View Full Audit Trail ↗
+              </button>
+            </div>
+
+            <div className="divide-y divide-slate-100">
+              {recentActivity.length === 0 ? (
+                <div className="py-6 text-center text-xs text-slate-400">No recent operations recorded yet.</div>
+              ) : (
+                recentActivity.map((act) => (
+                  <div key={act.id} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2 hover:bg-slate-50/50 px-2 rounded-lg transition-colors">
+                    <div className="flex items-start gap-3">
+                      <span className="mt-0.5 rounded bg-indigo-50 px-2 py-0.5 text-[10px] font-extrabold text-indigo-700 ring-1 ring-indigo-200 uppercase tracking-wide shrink-0">
+                        {act.action}
+                      </span>
+                      <div>
+                        <div className="flex items-center gap-2 text-xs text-slate-900 font-medium">
+                          <span className="font-semibold">{act.actorEmail}</span>
+                          <span className="text-slate-400">•</span>
+                          <span className="text-slate-600 font-mono text-[11px]">{act.entityType}</span>
+                        </div>
+                        <div className="text-[11px] text-slate-400 mt-0.5">{new Date(act.createdAt).toLocaleString()}</div>
+                      </div>
+                    </div>
+
+                    {act.targetRoute && (
+                      <Link
+                        href={act.targetRoute}
+                        className="inline-flex items-center gap-1 rounded bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-indigo-600 hover:text-white transition-all self-start sm:self-auto shrink-0"
+                      >
+                        Open Record ↗
+                      </Link>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
 
           {/* Phase 6L: Read-Only Data Management Overview */}
           <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
@@ -985,10 +1128,32 @@ export default function SystemMonitorPage() {
                         </span>
                       </td>
                       <td className="p-3.5 text-slate-600">{doc.visibility}</td>
-                      <td className="p-3.5">
+                      <td className="p-3.5 flex items-center gap-2">
+                        {doc.entityType === 'EMPLOYEE' && doc.entityId ? (
+                          <Link
+                            href={`/hr/employees/${doc.entityId}`}
+                            className="inline-flex items-center gap-1 rounded bg-indigo-50 px-2.5 py-1 text-[11px] font-bold text-indigo-700 hover:bg-indigo-600 hover:text-white transition-all shrink-0"
+                          >
+                            Open Record ↗
+                          </Link>
+                        ) : doc.entityType === 'PROJECT' && doc.entityId ? (
+                          <Link
+                            href={`/projects/${doc.entityId}`}
+                            className="inline-flex items-center gap-1 rounded bg-indigo-50 px-2.5 py-1 text-[11px] font-bold text-indigo-700 hover:bg-indigo-600 hover:text-white transition-all shrink-0"
+                          >
+                            Open Record ↗
+                          </Link>
+                        ) : doc.entityType === 'ORGANIZATION' ? (
+                          <Link
+                            href="/organizations"
+                            className="inline-flex items-center gap-1 rounded bg-indigo-50 px-2.5 py-1 text-[11px] font-bold text-indigo-700 hover:bg-indigo-600 hover:text-white transition-all shrink-0"
+                          >
+                            Open Record ↗
+                          </Link>
+                        ) : null}
                         <Link
-                          href="/documents"
-                          className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800"
+                          href={`/documents/${doc.id}`}
+                          className="inline-flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-indigo-600 shrink-0"
                         >
                           <Eye className="h-3.5 w-3.5" />
                           View

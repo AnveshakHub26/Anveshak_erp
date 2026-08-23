@@ -768,4 +768,123 @@ export class SystemMonitorService {
 
     return { employees, organizations, projects, documents };
   }
+
+  /**
+   * GET /api/v1/system-monitor/recent-activity — Operations & Recent Audit Activity Feed (Phase 6M)
+   */
+  async getRecentActivity(limit = 10) {
+    const logs = await this.prisma.auditLog.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      include: {
+        actor: { select: { id: true, email: true } },
+      },
+    });
+
+    return logs.map((log) => {
+      let targetRoute: string | null = null;
+
+      if (log.entityType === 'EMPLOYEE' && log.entityId) {
+        targetRoute = `/hr/employees/${log.entityId}`;
+      } else if (log.entityType === 'PROJECT' && log.entityId) {
+        targetRoute = `/projects/${log.entityId}`;
+      } else if (log.entityType === 'ORGANIZATION') {
+        targetRoute = `/organizations`;
+      } else if (log.entityType === 'DOCUMENT' && log.entityId) {
+        targetRoute = `/documents/${log.entityId}`;
+      } else if (log.entityType === 'LEAVE_REQUEST') {
+        targetRoute = `/hr/leave`;
+      } else if (log.entityType === 'ATTENDANCE') {
+        targetRoute = `/hr/attendance`;
+      } else if (log.entityType === 'USER') {
+        targetRoute = `/admin/approvals`;
+      }
+
+      return {
+        id: log.id,
+        action: log.action,
+        actorEmail: log.actor?.email || 'System / Service',
+        entityType: log.entityType || 'SYSTEM',
+        entityId: log.entityId || null,
+        createdAt: log.createdAt,
+        targetRoute,
+        payload: log.afterJson || log.beforeJson || null,
+      };
+    });
+  }
+
+  /**
+   * GET /api/v1/system-monitor/alerts — Real System Alerts (Phase 6M)
+   */
+  async getSystemAlerts() {
+    const alerts: Array<{
+      id: string;
+      severity: 'critical' | 'warning' | 'info';
+      title: string;
+      description: string;
+      actionText: string;
+      actionRoute?: string;
+      actionType?: 'MODAL' | 'NAVIGATE';
+    }> = [];
+
+    const [failedEmailsCount, pendingLeaveCount] = await Promise.all([
+      this.prisma.emailLog.count({ where: { status: 'FAILED' } }),
+      this.prisma.leaveRequest.count({ where: { status: 'PENDING' } }),
+    ]);
+
+    // 1. Failed Email Delivery Alert
+    if (failedEmailsCount > 0) {
+      alerts.push({
+        id: 'ALERT_FAILED_EMAILS',
+        severity: 'critical',
+        title: `${failedEmailsCount} Outbound Email Transmission ${failedEmailsCount === 1 ? 'Failure' : 'Failures'}`,
+        description: `Outbound notifications failed delivery. Inspect diagnostic stack traces to retry transmission.`,
+        actionText: 'Inspect Failed Emails',
+        actionType: 'MODAL',
+      });
+    }
+
+    // 2. High Pending Leave Approvals Alert
+    if (pendingLeaveCount > 5) {
+      alerts.push({
+        id: 'ALERT_PENDING_LEAVE',
+        severity: 'warning',
+        title: `${pendingLeaveCount} Pending Workforce Leave Requests`,
+        description: `Employee leave applications require administrative authorization.`,
+        actionText: 'Open Leave Approvals',
+        actionRoute: '/hr/leave',
+        actionType: 'NAVIGATE',
+      });
+    }
+
+    // 3. Database Ping & Health Check
+    try {
+      const dbStart = Date.now();
+      await this.prisma.$queryRaw`SELECT 1`;
+      const dbLatency = Date.now() - dbStart;
+      if (dbLatency > 1000) {
+        alerts.push({
+          id: 'ALERT_DB_LATENCY',
+          severity: 'warning',
+          title: `PostgreSQL Query Latency Elevated (${dbLatency}ms)`,
+          description: `Database query execution time exceeded 1000ms threshold. Monitor system telemetry.`,
+          actionText: 'Inspect Health',
+          actionRoute: '#health',
+          actionType: 'NAVIGATE',
+        });
+      }
+    } catch (err: any) {
+      alerts.push({
+        id: 'ALERT_DB_DOWN',
+        severity: 'critical',
+        title: 'PostgreSQL Database Connection Warning',
+        description: err.message || 'Database query ping failed. Check database credentials.',
+        actionText: 'Open Supabase DB',
+        actionRoute: process.env.SUPABASE_DATABASE_URL || 'https://supabase.com/dashboard',
+        actionType: 'NAVIGATE',
+      });
+    }
+
+    return alerts;
+  }
 }

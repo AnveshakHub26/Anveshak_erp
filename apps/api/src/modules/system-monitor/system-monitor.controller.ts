@@ -226,4 +226,22 @@ export class SystemMonitorController {
     const data = await this.systemMonitorService.getFailedEmailLogs(pageNum, limitNum, search);
     return { success: true, data };
   }
+
+  @Get('recent-activity')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'GET /api/v1/system-monitor/recent-activity — Operations & Recent Activity Feed' })
+  @ApiQuery({ name: 'limit', required: false })
+  async getRecentActivity(@Query('limit') limit?: string) {
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+    const data = await this.systemMonitorService.getRecentActivity(limitNum);
+    return { success: true, data };
+  }
+
+  @Get('alerts')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'GET /api/v1/system-monitor/alerts — Real System Alerts' })
+  async getSystemAlerts() {
+    const data = await this.systemMonitorService.getSystemAlerts();
+    return { success: true, data };
+  }
 }
