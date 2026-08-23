@@ -244,4 +244,12 @@ export class SystemMonitorController {
     const data = await this.systemMonitorService.getSystemAlerts();
     return { success: true, data };
   }
+
+  @Post('clear-failed-emails')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'POST /api/v1/system-monitor/clear-failed-emails — Dismiss/Clear failed email logs' })
+  async clearFailedEmails() {
+    const data = await this.systemMonitorService.clearFailedEmailLogs();
+    return { success: true, data };
+  }
 }

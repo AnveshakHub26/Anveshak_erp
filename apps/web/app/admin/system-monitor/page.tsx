@@ -376,6 +376,18 @@ export default function SystemMonitorPage() {
     }
   };
 
+  // Clear / Dismiss Failed Email Logs
+  const handleClearFailedEmailLogs = async () => {
+    try {
+      await apiRequest('/system-monitor/clear-failed-emails', { method: 'POST' });
+      setShowFailedEmailsModal(false);
+      fetchFailedEmailLogs('');
+      loadTabData(true);
+    } catch {
+      // Fallback
+    }
+  };
+
   // Auth Guard check
   if (isInitializing) {
     return (
@@ -762,15 +774,23 @@ export default function SystemMonitorPage() {
                   </div>
 
                   {alert.actionType === 'MODAL' ? (
-                    <button
-                      onClick={() => {
-                        setShowFailedEmailsModal(true);
-                        fetchFailedEmailLogs('');
-                      }}
-                      className="inline-flex items-center gap-1 shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-slate-900 shadow-2xs hover:bg-slate-50 transition-all border border-slate-200 self-start sm:self-auto"
-                    >
-                      {alert.actionText} ↗
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+                      <button
+                        onClick={() => {
+                          setShowFailedEmailsModal(true);
+                          fetchFailedEmailLogs('');
+                        }}
+                        className="inline-flex items-center gap-1 rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-slate-900 shadow-2xs hover:bg-slate-50 transition-all border border-slate-200"
+                      >
+                        {alert.actionText} ↗
+                      </button>
+                      <button
+                        onClick={handleClearFailedEmailLogs}
+                        className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-rose-700 transition-all"
+                      >
+                        Dismiss Alert
+                      </button>
+                    </div>
                   ) : alert.actionRoute?.startsWith('http') ? (
                     <a
                       href={alert.actionRoute}
@@ -1531,14 +1551,25 @@ export default function SystemMonitorPage() {
                   <Search className="absolute left-3 top-2 h-3.5 w-3.5 text-slate-400" />
                 </div>
 
-                <button
-                  onClick={() => fetchFailedEmailLogs(failedEmailsSearch)}
-                  disabled={failedEmailsLoading}
-                  className="flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 disabled:opacity-50 transition-all self-end sm:self-auto"
-                >
-                  <RefreshCw className={`h-3.5 w-3.5 text-rose-400 ${failedEmailsLoading ? 'animate-spin' : ''}`} />
-                  Refresh Diagnostic Logs
-                </button>
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <button
+                    onClick={() => fetchFailedEmailLogs(failedEmailsSearch)}
+                    disabled={failedEmailsLoading}
+                    className="flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 disabled:opacity-50 transition-all"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 text-rose-400 ${failedEmailsLoading ? 'animate-spin' : ''}`} />
+                    Refresh Diagnostic Logs
+                  </button>
+                  {failedEmails.length > 0 && (
+                    <button
+                      onClick={handleClearFailedEmailLogs}
+                      className="flex items-center gap-1.5 rounded-lg bg-rose-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-rose-700 transition-all"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 text-white" />
+                      Dismiss &amp; Clear All Failed Logs
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Records Table or Empty State */}

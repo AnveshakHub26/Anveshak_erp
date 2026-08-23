@@ -887,4 +887,15 @@ export class SystemMonitorService {
 
     return alerts;
   }
+
+  /**
+   * POST /api/v1/system-monitor/clear-failed-emails — Dismiss/Clear all failed email diagnostic logs
+   */
+  async clearFailedEmailLogs() {
+    const result = await this.prisma.emailLog.updateMany({
+      where: { status: 'FAILED' },
+      data: { status: 'DISMISSED' },
+    });
+    return { count: result.count };
+  }
 }
