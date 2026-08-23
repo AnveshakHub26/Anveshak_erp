@@ -24,6 +24,15 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const { isAuthenticated, isInitializing } = useAuthStore();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
   // Auto-close mobile drawer on route change
   useEffect(() => {
     setMobileDrawerOpen(false);
@@ -171,14 +180,16 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           {/* Right Header Section */}
           <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
             {/* Global Search Bar (Desktop) */}
-            <div className="relative hidden md:block w-56 lg:w-72">
+            <form onSubmit={handleSearchSubmit} className="relative hidden md:block w-56 lg:w-72">
               <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#64748B]" />
               <input
                 type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search projects, personnel..."
                 className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] pl-8 pr-3 py-1.5 text-xs text-[#0F172A] focus:border-[#d49b38] focus:outline-none focus:ring-1 focus:ring-[#d49b38]"
               />
-            </div>
+            </form>
 
             {/* Notifications */}
             <Link

@@ -6,7 +6,10 @@ import { apiRequest } from '@/lib/api-client';
 import { Search, Building2, User, FileText, ArrowRight, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Alert } from '@/components/ui/alert';
+import { useSearchParams } from 'next/navigation';
+import { AppShell } from '@/components/layout/app-shell';
 import { PublicShell } from '@/components/layout/public-shell';
+import { useAuthStore } from '@/hooks/useAuth';
 
 interface SearchResultItem {
   id: string;
@@ -18,11 +21,21 @@ interface SearchResultItem {
 }
 
 export default function Fnd08GlobalSearchPage() {
-  const [query, setQuery] = useState('');
+  const searchParams = useSearchParams();
+  const initialQ = searchParams?.get('q') || '';
+  const { isAuthenticated } = useAuthStore();
+
+  const [query, setQuery] = useState(initialQ);
   const [category, setCategory] = useState('all');
   const [results, setResults] = useState<SearchResultItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialQ && initialQ !== query) {
+      setQuery(initialQ);
+    }
+  }, [initialQ]);
 
   const executeSearch = useCallback(async (searchQuery: string, searchCat: string) => {
     if (!searchQuery || searchQuery.trim().length < 2) {
@@ -60,8 +73,10 @@ export default function Fnd08GlobalSearchPage() {
     { label: 'Documents', value: 'documents' },
   ];
 
+  const Shell = isAuthenticated ? AppShell : PublicShell;
+
   return (
-    <PublicShell>
+    <Shell>
       <div className="min-h-[calc(100vh-128px)] bg-[#F8FAFC] px-4 py-8">
         <div className="mx-auto max-w-4xl space-y-6">
           {/* Header */}
@@ -88,7 +103,9 @@ export default function Fnd08GlobalSearchPage() {
                 autoFocus
               />
               {loading && (
-                <Loader2 className="absolute right-3.5 top-3 h-4 w-4 animate-spin text-[#d49b38]" />
+                <div className="absolute right-3 top-3">
+                  <Loader2 className="h-4 w-4 animate-spin text-[#d49b38]" />
+                </div>
               )}
             </div>
 
@@ -98,10 +115,10 @@ export default function Fnd08GlobalSearchPage() {
                 <button
                   key={cat.value}
                   onClick={() => setCategory(cat.value)}
-                  className={`rounded-full px-3.5 py-1 text-xs font-semibold uppercase tracking-wider transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                     category === cat.value
                       ? 'bg-[#151c2e] text-white shadow-sm'
-                      : 'border border-[#E2E8F0] bg-[#F1F5F9] text-[#64748B] hover:bg-white hover:text-[#0F172A]'
+                      : 'bg-[#F8FAFC] text-[#64748B] hover:bg-[#E2E8F0] hover:text-[#0F172A]'
                   }`}
                 >
                   {cat.label}
@@ -110,39 +127,40 @@ export default function Fnd08GlobalSearchPage() {
             </div>
           </div>
 
-          {serverError && <Alert variant="error">{serverError}</Alert>}
+          {/* Server Error Alert */}
+          {serverError && (
+            <Alert variant="error" className="bg-[#FEF2F2] border-[#FCA5A5] text-[#991B1B]">
+              {serverError}
+            </Alert>
+          )}
 
-          {/* Results */}
+          {/* Search Results List */}
+          {!loading && query.trim().length >= 2 && results.length === 0 && !serverError && (
+            <div className="rounded-xl border border-[#E2E8F0] bg-white p-8 text-center">
+              <Search className="mx-auto h-8 w-8 text-[#94a3b8] mb-2" />
+              <p className="text-sm font-semibold text-[#0F172A]">No Matching Results Found</p>
+              <p className="text-xs text-[#64748B] mt-1">
+                No enterprise entity matched &quot;{query}&quot;. Try adjusting your search query or filters.
+              </p>
+            </div>
+          )}
+
           <div className="space-y-3">
-            {query.trim().length > 0 && query.trim().length < 2 && (
-              <div className="rounded-xl border border-[#E2E8F0] bg-white p-8 text-center text-xs text-[#64748B]">
-                Please enter at least 2 characters to search...
-              </div>
-            )}
-            {query.trim().length >= 2 && !loading && results.length === 0 && (
-              <div className="rounded-xl border border-[#E2E8F0] bg-white p-8 text-center text-xs text-[#64748B]">
-                No authorized records found matching &quot;{query}&quot;.
-              </div>
-            )}
             {results.map((item) => (
-              <Link
-                key={`${item.category}-${item.id}`}
-                href={item.url}
-                className="group block rounded-xl border border-[#E2E8F0] bg-white p-4 shadow-sm hover:border-[#d49b38] transition-all"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-3">
-                    <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] text-[#d49b38]">
+              <Link key={item.id} href={item.url || '#'} className="block group">
+                <div className="flex items-center justify-between rounded-xl border border-[#E2E8F0] bg-white p-4 shadow-xs hover:border-[#d49b38] hover:shadow-md transition-all">
+                  <div className="flex items-center space-x-3.5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F8FAFC] text-[#d49b38] border border-[#E2E8F0]">
                       {item.category === 'Organization' && <Building2 className="h-4 w-4" />}
                       {item.category === 'User' && <User className="h-4 w-4" />}
                       {item.category === 'Document' && <FileText className="h-4 w-4" />}
                     </div>
                     <div>
                       <div className="flex items-center space-x-2">
-                        <h3 className="text-sm font-bold text-[#0F172A] group-hover:text-[#d49b38] transition-colors">
+                        <span className="text-sm font-bold text-[#0F172A] group-hover:text-[#d49b38] transition-colors">
                           {item.title}
-                        </h3>
-                        <span className="rounded-full border border-[#E2E8F0] bg-[#F1F5F9] px-2 py-0.5 text-[10px] font-semibold uppercase text-[#475569]">
+                        </span>
+                        <span className="rounded-md bg-[#F8FAFC] border border-[#E2E8F0] px-2 py-0.5 text-[10px] font-semibold text-[#64748B] uppercase">
                           {item.type}
                         </span>
                       </div>
@@ -156,6 +174,6 @@ export default function Fnd08GlobalSearchPage() {
           </div>
         </div>
       </div>
-    </PublicShell>
+    </Shell>
   );
 }
