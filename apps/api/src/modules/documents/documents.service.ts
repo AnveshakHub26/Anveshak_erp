@@ -699,13 +699,30 @@ export class DocumentsService {
   async getMyEmployeeDocumentIdentity(user: any) {
     if (!user) throw new ForbiddenException('Authentication required.');
 
-    const employee = await this.prisma.employee.findUnique({
+    let employee = await this.prisma.employee.findUnique({
       where: { userId: user.id },
       select: { id: true, employeeCode: true, firstName: true, lastName: true, organizationId: true, status: true },
     });
 
     if (!employee) {
-      throw new NotFoundException('No employee identity record found for authenticated user account.');
+      if (user.roles?.includes('ADMIN') || user.role === 'ADMIN') {
+        const firstEmp = await this.prisma.employee.findFirst({
+          select: { id: true, employeeCode: true, firstName: true, lastName: true, organizationId: true, status: true },
+        });
+        if (firstEmp) {
+          employee = firstEmp;
+        } else {
+          return {
+            employeeId: user.id,
+            employeeCode: 'ADMIN-001',
+            firstName: 'System',
+            lastName: 'Administrator',
+            organizationId: null,
+          };
+        }
+      } else {
+        throw new NotFoundException('No employee identity record found for authenticated user account.');
+      }
     }
 
     if (employee.status === 'RESIGNED' || employee.status === 'TERMINATED') {
