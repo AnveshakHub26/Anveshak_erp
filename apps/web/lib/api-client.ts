@@ -18,20 +18,23 @@ async function executeApiRequest<T = any>(
     ...(options.headers || {}),
   };
 
-  let cleanEndpoint = endpoint;
-  if (cleanEndpoint.startsWith('/api/v1')) {
-    cleanEndpoint = cleanEndpoint.substring('/api/v1'.length);
-  } else if (cleanEndpoint.startsWith('api/v1')) {
-    cleanEndpoint = cleanEndpoint.substring('api/v1'.length);
+  let url = endpoint;
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    let base = (process.env.NEXT_PUBLIC_API_URL || '/api/v1').replace(/\/+$/, '');
+    if (base.startsWith('http') && !base.includes('/api/v1')) {
+      base = `${base}/api/v1`;
+    }
+    let path = endpoint;
+    if (path.startsWith('/api/v1')) {
+      path = path.substring('/api/v1'.length);
+    } else if (path.startsWith('api/v1')) {
+      path = path.substring('api/v1'.length);
+    }
+    if (!path.startsWith('/')) {
+      path = `/${path}`;
+    }
+    url = `${base}${path}`;
   }
-
-  if (!cleanEndpoint.startsWith('/')) {
-    cleanEndpoint = `/${cleanEndpoint}`;
-  }
-
-  const url = endpoint.startsWith('http')
-    ? endpoint
-    : `${API_BASE_URL}${cleanEndpoint}`;
 
   let response: Response;
   try {

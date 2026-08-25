@@ -67,9 +67,11 @@ export default function Fnd02LoginPage() {
       }
     } catch (err: any) {
       if (err.status === 403) {
-        setServerError('Your account is currently inactive or restricted. Please contact system administration.');
+        setServerError(err.message || 'Your account is currently inactive or restricted. Please contact system administration.');
+      } else if (err.code === 'NETWORK_ERROR') {
+        setServerError('Network error: Unable to connect to the backend server. Please verify API URL configuration.');
       } else {
-        setServerError('Invalid email or password. Please verify your credentials and try again.');
+        setServerError(err.message || 'Invalid email or password. Please verify your credentials and try again.');
       }
     } finally {
       setIsLoading(false);
