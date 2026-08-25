@@ -22,8 +22,8 @@ async function executeApiRequest<T = any>(
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
     const defaultProdUrl = 'https://anveshak-erp.onrender.com/api/v1';
     let rawEnv = process.env.NEXT_PUBLIC_API_URL;
-    if (!rawEnv || rawEnv.startsWith('/')) {
-      if (typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
+    if (typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
+      if (!rawEnv || rawEnv.startsWith('/') || rawEnv.includes('localhost')) {
         rawEnv = defaultProdUrl;
       }
     }
