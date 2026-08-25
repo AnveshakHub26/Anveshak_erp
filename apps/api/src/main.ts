@@ -30,14 +30,22 @@ async function bootstrap() {
   // Global API Prefix
   app.setGlobalPrefix('api/v1');
 
-  // Explicit CORS configuration (No wildcard *)
-  const allowedOrigins = [
-    process.env.APP_URL || 'http://localhost:3000',
-  ];
+  // Explicit CORS configuration (Supports ALLOWED_ORIGINS & Vercel Preview/Prod domains)
+  const rawAllowed = [
+    process.env.APP_URL,
+    ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : []),
+    'http://localhost:3000',
+    'http://localhost:4000',
+  ].filter(Boolean).map((o) => o!.trim().replace(/\/$/, ''));
 
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (
+        !origin ||
+        rawAllowed.includes(origin) ||
+        origin.endsWith('.vercel.app') ||
+        origin.includes('localhost')
+      ) {
         callback(null, true);
       } else {
         callback(new Error(`CORS policy error: Origin ${origin} is not allowed`));

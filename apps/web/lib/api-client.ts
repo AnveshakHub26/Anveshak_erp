@@ -36,6 +36,7 @@ async function executeApiRequest<T = any>(
   let response: Response;
   try {
     response = await fetch(url, {
+      credentials: 'include',
       ...options,
       headers,
     });
