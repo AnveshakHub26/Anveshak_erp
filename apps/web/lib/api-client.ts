@@ -20,7 +20,14 @@ async function executeApiRequest<T = any>(
 
   let url = endpoint;
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    let base = (process.env.NEXT_PUBLIC_API_URL || '/api/v1').replace(/\/+$/, '');
+    const defaultProdUrl = 'https://anveshak-erp.onrender.com/api/v1';
+    let rawEnv = process.env.NEXT_PUBLIC_API_URL;
+    if (!rawEnv || rawEnv.startsWith('/')) {
+      if (typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
+        rawEnv = defaultProdUrl;
+      }
+    }
+    let base = (rawEnv || '/api/v1').replace(/\/+$/, '');
     if (base.startsWith('http') && !base.includes('/api/v1')) {
       base = `${base}/api/v1`;
     }
