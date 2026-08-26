@@ -17,6 +17,8 @@ import {
   X,
   FileText,
   BadgeAlert,
+  Paperclip,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface LeaveType {
@@ -36,6 +38,11 @@ interface LeaveBalance {
   usedDays: number;
   pendingDays: number;
   availableDays: number;
+  isApplicationBased?: boolean;
+  isMonthly?: boolean;
+  monthlyLimit?: number;
+  usedThisMonth?: number;
+  displayBalance?: string;
   leaveType: LeaveType;
 }
 
@@ -47,6 +54,8 @@ interface LeaveRequest {
   endDate: string;
   totalDays: number;
   reason: string;
+  documentKey?: string | null;
+  documentName?: string | null;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
   reviewedById?: string | null;
   reviewedAt?: string | null;
@@ -69,6 +78,8 @@ export function MyLeaveTab() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
+  const [documentKey, setDocumentKey] = useState('');
+  const [documentName, setDocumentName] = useState('');
   const [applySubmitting, setApplySubmitting] = useState(false);
   const [applyError, setApplyError] = useState<string | null>(null);
 
@@ -114,11 +125,23 @@ export function MyLeaveTab() {
     return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
   }, [startDate, endDate]);
 
+  const selectedType = React.useMemo(() => {
+    return leaveTypes.find((t) => t.id === selectedTypeId);
+  }, [leaveTypes, selectedTypeId]);
+
   const selectedBalance = React.useMemo(() => {
     return balances.find((b) => b.leaveTypeId === selectedTypeId);
   }, [balances, selectedTypeId]);
 
-  const isOverBalance = selectedBalance && calculatedDays > selectedBalance.availableDays;
+  const isOverBalance = React.useMemo(() => {
+    if (!selectedType || !selectedBalance) return false;
+    const code = selectedType.code.toUpperCase();
+    if (code === 'STUDY' || code === 'UNPAID') return false;
+    if (code === 'MENSTRUAL') {
+      return calculatedDays > 1 || (selectedBalance.usedThisMonth || 0) >= 1;
+    }
+    return calculatedDays > selectedBalance.availableDays;
+  }, [selectedType, selectedBalance, calculatedDays]);
 
   const handleApplySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,6 +164,20 @@ export function MyLeaveTab() {
       return;
     }
 
+    const code = selectedType?.code.toUpperCase();
+    if (code === 'STUDY' && !documentKey.trim()) {
+      setApplyError('Supporting proof document (exam timetable, hall ticket, training registration) is required for Study / Training Leave.');
+      return;
+    }
+    if (code === 'MATERNITY' && !documentKey.trim()) {
+      setApplyError('Supporting medical / hospital documentation is mandatory for Maternity Leave.');
+      return;
+    }
+    if (code === 'MENSTRUAL' && calculatedDays > 1) {
+      setApplyError('Menstrual Leave cannot exceed 1 day per calendar month.');
+      return;
+    }
+
     setApplySubmitting(true);
     try {
       await apiRequest('/leave/requests', {
@@ -150,6 +187,8 @@ export function MyLeaveTab() {
           startDate,
           endDate,
           reason: reason.trim(),
+          documentKey: documentKey.trim() || undefined,
+          documentName: documentName.trim() || undefined,
         }),
       });
 
@@ -158,6 +197,8 @@ export function MyLeaveTab() {
       setStartDate('');
       setEndDate('');
       setReason('');
+      setDocumentKey('');
+      setDocumentName('');
       await fetchLeaveData();
     } catch (err: any) {
       setApplyError(err.message || 'Failed to submit leave request.');
@@ -266,26 +307,51 @@ export function MyLeaveTab() {
                     </span>
                   </div>
 
-                  <div className="flex items-baseline justify-between pt-1">
-                    <div>
-                      <span className="text-2xl font-extrabold text-[#d49b38]">
-                        {b.availableDays}
+                  {b.isApplicationBased ? (
+                    <div className="pt-1">
+                      <span className="inline-block px-2.5 py-1 bg-amber-50 text-amber-900 border border-amber-200 rounded-md text-[11px] font-bold">
+                        Application-Based
                       </span>
-                      <span className="text-xs text-[#64748B] ml-1">days available</span>
+                      <p className="text-[10px] text-[#64748B] mt-1.5 leading-tight">
+                        Subject to HR approval &amp; valid supporting proof.
+                      </p>
                     </div>
-                  </div>
+                  ) : b.isMonthly ? (
+                    <div>
+                      <div className="flex items-baseline pt-1">
+                        <span className="text-2xl font-extrabold text-[#d49b38]">
+                          {b.availableDays}
+                        </span>
+                        <span className="text-xs text-[#64748B] ml-1">day available this month</span>
+                      </div>
+                      <p className="text-[10px] text-[#64748B] border-t border-[#E2E8F0] pt-1.5 mt-2">
+                        {b.usedThisMonth || 0}/1 used in current month (non-cumulative)
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-baseline justify-between pt-1">
+                        <div>
+                          <span className="text-2xl font-extrabold text-[#d49b38]">
+                            {b.availableDays}
+                          </span>
+                          <span className="text-xs text-[#64748B] ml-1">days available</span>
+                        </div>
+                      </div>
 
-                  <div className="grid grid-cols-3 gap-1 text-[11px] text-[#64748B] border-t border-[#E2E8F0] pt-2 mt-2">
-                    <div>
-                      Allocated: <strong className="text-[#0F172A]">{b.allocatedDays}</strong>
-                    </div>
-                    <div>
-                      Used: <strong className="text-[#0F172A]">{b.usedDays}</strong>
-                    </div>
-                    <div>
-                      Pending: <strong className="text-[#0F172A]">{b.pendingDays}</strong>
-                    </div>
-                  </div>
+                      <div className="grid grid-cols-3 gap-1 text-[11px] text-[#64748B] border-t border-[#E2E8F0] pt-2 mt-2">
+                        <div>
+                          Allocated: <strong className="text-[#0F172A]">{b.allocatedDays}</strong>
+                        </div>
+                        <div>
+                          Used: <strong className="text-[#0F172A]">{b.usedDays}</strong>
+                        </div>
+                        <div>
+                          Pending: <strong className="text-[#0F172A]">{b.pendingDays}</strong>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -328,8 +394,8 @@ export function MyLeaveTab() {
                       <th className="py-3 px-4">Leave Type</th>
                       <th className="py-3 px-4">Dates</th>
                       <th className="py-3 px-4">Days</th>
+                      <th className="py-3 px-4">Proof Attached</th>
                       <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4">Submitted</th>
                       <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -354,6 +420,16 @@ export function MyLeaveTab() {
                           {req.totalDays} day{req.totalDays > 1 ? 's' : ''}
                         </td>
                         <td className="py-3.5 px-4">
+                          {req.documentKey ? (
+                            <span className="inline-flex items-center gap-1 font-semibold text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                              <Paperclip className="h-3 w-3" />
+                              <span>{req.documentName || 'Proof Document'}</span>
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-[#94A3B8]">None</span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4">
                           <span
                             className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${
                               req.status === 'PENDING'
@@ -367,9 +443,6 @@ export function MyLeaveTab() {
                           >
                             {req.status}
                           </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-[#64748B]">
-                          {new Date(req.createdAt).toLocaleDateString()}
                         </td>
                         <td className="py-3.5 px-4 text-right space-x-2">
                           <Button
@@ -459,21 +532,21 @@ export function MyLeaveTab() {
       {/* Apply Leave Modal */}
       {isApplyModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-[#E2E8F0] overflow-hidden animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between p-5 border-b border-[#E2E8F0] bg-[#F8FAFC]">
+          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-[#E2E8F0] overflow-hidden animate-in fade-in zoom-in-95 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-5 border-b border-[#E2E8F0] bg-[#151c2e] text-white">
               <div className="flex items-center space-x-2">
                 <Calendar className="h-5 w-5 text-[#d49b38]" />
-                <h3 className="text-base font-bold text-[#0F172A]">Apply for Leave</h3>
+                <h3 className="text-base font-bold">Apply for Leave</h3>
               </div>
               <button
                 onClick={() => setIsApplyModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 rounded-lg p-1"
+                className="text-slate-400 hover:text-white rounded-lg p-1"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <form onSubmit={handleApplySubmit} className="p-5 space-y-4 text-xs">
+            <form onSubmit={handleApplySubmit} className="p-5 space-y-4 text-xs overflow-y-auto">
               {applyError && (
                 <div className="p-3 bg-red-50 text-red-700 rounded-lg border border-red-200 flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
@@ -486,11 +559,15 @@ export function MyLeaveTab() {
                 <label className="font-semibold text-[#0F172A]">Leave Type *</label>
                 <select
                   value={selectedTypeId}
-                  onChange={(e) => setSelectedTypeId(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedTypeId(e.target.value);
+                    setDocumentKey('');
+                    setDocumentName('');
+                  }}
                   required
                   className="w-full rounded-lg border border-[#E2E8F0] bg-white p-2.5 text-xs text-[#0F172A] focus:border-[#d49b38] focus:outline-none"
                 >
-                  <option value="">-- Select Leave Type --</option>
+                  <option value="">-- Select Leave Category --</option>
                   {leaveTypes.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.name} ({t.isPaid ? 'Paid' : 'Unpaid'})
@@ -499,13 +576,30 @@ export function MyLeaveTab() {
                 </select>
               </div>
 
-              {/* Balance Summary Hint */}
-              {selectedBalance && (
-                <div className="p-3 rounded-lg bg-slate-50 border border-[#E2E8F0] flex items-center justify-between">
-                  <span className="text-[#64748B]">Available Balance:</span>
-                  <span className="font-bold text-sm text-[#d49b38]">
-                    {selectedBalance.availableDays} day(s)
-                  </span>
+              {/* Policy Banner & Balance Summary Hint */}
+              {selectedType && (
+                <div className="p-3 rounded-lg bg-slate-50 border border-[#E2E8F0] space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#64748B] font-semibold">Policy Entitlement Status:</span>
+                    <span className="font-bold text-xs text-[#d49b38]">
+                      {selectedBalance?.displayBalance || `${selectedBalance?.availableDays ?? 0} Days Available`}
+                    </span>
+                  </div>
+                  {selectedType.code.toUpperCase() === 'STUDY' && (
+                    <p className="text-[11px] text-amber-800 bg-amber-50 p-2 rounded border border-amber-200 mt-1">
+                      ⚠️ Supporting proof document (exam timetable / hall ticket / training registration) is mandatory for Study / Training Leave.
+                    </p>
+                  )}
+                  {selectedType.code.toUpperCase() === 'MATERNITY' && (
+                    <p className="text-[11px] text-indigo-800 bg-indigo-50 p-2 rounded border border-indigo-200 mt-1">
+                      ℹ️ Supporting medical / hospital documentation is mandatory for Maternity Leave.
+                    </p>
+                  )}
+                  {selectedType.code.toUpperCase() === 'MENSTRUAL' && (
+                    <p className="text-[11px] text-purple-800 bg-purple-50 p-2 rounded border border-purple-200 mt-1">
+                      🌸 Maximum 1 day per calendar month allowed. Non-cumulative (unused entitlement expires at month end).
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -549,8 +643,7 @@ export function MyLeaveTab() {
                 <div className="p-3 bg-red-50 text-red-800 rounded-lg border border-red-200 flex items-start gap-2">
                   <BadgeAlert className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
                   <span>
-                    Requested duration ({calculatedDays} days) exceeds available balance (
-                    {selectedBalance?.availableDays} days).
+                    Requested leave violates corporate policy balance or monthly limit caps.
                   </span>
                 </div>
               )}
@@ -568,6 +661,36 @@ export function MyLeaveTab() {
                 />
               </div>
 
+              {/* Supporting Document Proof Key / Name */}
+              <div className="space-y-1.5 pt-2 border-t border-[#E2E8F0]">
+                <label className="font-semibold text-[#0F172A] flex items-center gap-1.5">
+                  <Paperclip className="h-3.5 w-3.5 text-[#d49b38]" />
+                  <span>Supporting Proof Document / Reference</span>
+                  {(selectedType?.code.toUpperCase() === 'STUDY' || selectedType?.code.toUpperCase() === 'MATERNITY') && (
+                    <span className="text-red-500 font-bold">* (Mandatory)</span>
+                  )}
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    value={documentName}
+                    onChange={(e) => setDocumentName(e.target.value)}
+                    placeholder="Document Title (e.g. Exam_Hall_Ticket.pdf)"
+                    className="w-full rounded-lg border border-[#E2E8F0] bg-white p-2 text-xs text-[#0F172A] focus:border-[#d49b38] focus:outline-none"
+                  />
+                  <input
+                    type="text"
+                    value={documentKey}
+                    onChange={(e) => setDocumentKey(e.target.value)}
+                    placeholder="Storage Key / File Reference"
+                    className="w-full rounded-lg border border-[#E2E8F0] bg-white p-2 text-xs font-mono text-[#0F172A] focus:border-[#d49b38] focus:outline-none"
+                  />
+                </div>
+                <p className="text-[10px] text-[#64748B]">
+                  Attach document storage reference for HR validation.
+                </p>
+              </div>
+
               {/* Modal Actions */}
               <div className="flex items-center justify-end space-x-2 pt-3 border-t border-[#E2E8F0]">
                 <Button
@@ -579,7 +702,7 @@ export function MyLeaveTab() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={applySubmitting || (isOverBalance ?? false)}
+                  disabled={applySubmitting || isOverBalance}
                   className="bg-gradient-to-r from-[#d49b38] to-[#c48b28] text-[#151c2e] font-bold"
                 >
                   {applySubmitting ? 'Submitting...' : 'Submit Leave Application'}
@@ -612,7 +735,7 @@ export function MyLeaveTab() {
             <div className="p-6 space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-3 bg-[#F8FAFC] p-3.5 rounded-xl border border-[#E2E8F0]">
                 <div>
-                  <span className="text-[#64748B]">Leave Type:</span>
+                  <span className="text-[#64748B]">Leave Category:</span>
                   <p className="font-bold text-[#0F172A]">{selectedRequest.leaveType.name}</p>
                 </div>
                 <div>
@@ -643,9 +766,19 @@ export function MyLeaveTab() {
                 </div>
               </div>
 
+              {selectedRequest.documentKey && (
+                <div className="p-3 bg-indigo-50/70 rounded-lg border border-indigo-200 space-y-1">
+                  <span className="text-indigo-900 font-bold block">Attached Supporting Document:</span>
+                  <div className="flex items-center gap-2 text-indigo-950 font-semibold">
+                    <Paperclip className="h-4 w-4 text-indigo-600" />
+                    <span>{selectedRequest.documentName || 'Proof Document'}</span>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <span className="font-semibold text-[#0F172A]">Reason Submitted:</span>
-                <p className="p-3 bg-slate-50 rounded-lg border border-[#E2E8F0] mt-1 text-[#334155] leading-relaxed">
+                <p className="p-3 bg-slate-50 rounded-lg border border-[#E2E8F0] mt-1 text-[#334155] leading-relaxed whitespace-pre-wrap">
                   {selectedRequest.reason}
                 </p>
               </div>

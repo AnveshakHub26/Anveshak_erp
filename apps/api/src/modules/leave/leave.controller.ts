@@ -32,6 +32,14 @@ export class LeaveController {
     return { success: true, data };
   }
 
+  @Get('policy-specs')
+  @Roles('ADMIN', 'HR', 'PM', 'EXPERT', 'INTERN', 'STAFF', 'EXECUTIVE', 'QA', 'LEGAL')
+  @ApiOperation({ summary: 'GET /api/v1/leave/policy-specs — Get structured Leave Policy Specifications' })
+  async getPolicySpecs() {
+    const data = await this.leaveService.getPolicySpecs();
+    return { success: true, data };
+  }
+
   @Get('balances/me')
   @Roles('ADMIN', 'HR', 'PM', 'EXPERT', 'INTERN', 'STAFF', 'EXECUTIVE', 'QA', 'LEGAL')
   @ApiOperation({ summary: 'GET /api/v1/leave/balances/me — View logged-in employee leave balances' })
@@ -51,7 +59,15 @@ export class LeaveController {
   @ApiOperation({ summary: 'POST /api/v1/leave/requests — Submit a new leave request' })
   async submitLeaveRequest(
     @CurrentUser('id') userId: string,
-    @Body() body: { leaveTypeId: string; startDate: string; endDate: string; reason: string },
+    @Body()
+    body: {
+      leaveTypeId: string;
+      startDate: string;
+      endDate: string;
+      reason: string;
+      documentKey?: string;
+      documentName?: string;
+    },
   ) {
     const data = await this.leaveService.submitLeaveRequest(userId, body);
     return { success: true, message: 'Leave request submitted successfully', data };

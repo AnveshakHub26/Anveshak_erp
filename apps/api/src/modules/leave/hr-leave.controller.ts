@@ -29,12 +29,18 @@ export class HRLeaveController {
   @ApiQuery({ name: 'status', required: false })
   @ApiQuery({ name: 'employeeId', required: false })
   @ApiQuery({ name: 'department', required: false })
+  @ApiQuery({ name: 'gender', required: false })
+  @ApiQuery({ name: 'employmentType', required: false })
+  @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   async getHRLeaveRequests(
     @Query('status') status?: string,
     @Query('employeeId') employeeId?: string,
     @Query('department') department?: string,
+    @Query('gender') gender?: string,
+    @Query('employmentType') employmentType?: string,
+    @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
@@ -42,6 +48,9 @@ export class HRLeaveController {
       status,
       employeeId,
       department,
+      gender,
+      employmentType,
+      search,
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 20,
     });

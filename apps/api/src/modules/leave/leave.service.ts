@@ -9,7 +9,7 @@ import {
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Prisma } from '@prisma/client';
-
+import { LeavePolicyEngine, DEFAULT_LEAVE_POLICY_RULES } from './leave-policy.engine';
 import { EmailService } from '../../common/email/email.service';
 
 @Injectable()
@@ -53,9 +53,47 @@ export class LeaveService {
   }
 
   /**
+   * Seed / Ensure all 8 canonical leave types exist (with Earned Leave renamed from Annual Leave)
+   */
+  private async seedDefaultLeaveTypes() {
+    const defaults = [
+      { code: 'EARNED', name: 'Earned Leave', isPaid: true, annualAllocation: 18 },
+      { code: 'CASUAL', name: 'Casual Leave', isPaid: true, annualAllocation: 12 },
+      { code: 'SICK', name: 'Sick Leave', isPaid: true, annualAllocation: 12 },
+      { code: 'PATERNITY', name: 'Paternity Leave', isPaid: true, annualAllocation: 15 },
+      { code: 'MATERNITY', name: 'Maternity Leave', isPaid: true, annualAllocation: 180 },
+      { code: 'STUDY', name: 'Study / Training Leave', isPaid: true, annualAllocation: 0 },
+      { code: 'MENSTRUAL', name: 'Menstrual Leave', isPaid: true, annualAllocation: 12 },
+      { code: 'UNPAID', name: 'Unpaid Leave (LOP)', isPaid: false, annualAllocation: 0 },
+    ];
+
+    // Migrate any legacy "Annual Leave" or "ANNUAL" code/name safely
+    await this.prisma.leaveType
+      .updateMany({
+        where: { OR: [{ code: 'ANNUAL' }, { name: 'Annual Leave' }] },
+        data: { name: 'Earned Leave', code: 'EARNED' },
+      })
+      .catch(() => {});
+
+    for (const d of defaults) {
+      const existing = await this.prisma.leaveType.findFirst({
+        where: { OR: [{ code: d.code }, { name: d.name }] },
+      });
+      if (!existing) {
+        await this.prisma.leaveType.create({ data: d }).catch(() => {});
+      } else if (existing.name !== d.name || existing.code !== d.code) {
+        await this.prisma.leaveType
+          .update({ where: { id: existing.id }, data: { name: d.name, code: d.code } })
+          .catch(() => {});
+      }
+    }
+  }
+
+  /**
    * GET /api/v1/leave/types — List all active leave types
    */
   async getLeaveTypes() {
+    await this.seedDefaultLeaveTypes();
     return this.prisma.leaveType.findMany({
       where: { isActive: true },
       orderBy: { name: 'asc' },
@@ -63,13 +101,21 @@ export class LeaveService {
   }
 
   /**
-   * GET /api/v1/leave/balances/me — Get logged-in employee leave balances
+   * GET /api/v1/leave/policy-specs — Get structured Leave Policy Specifications
+   */
+  async getPolicySpecs() {
+    return LeavePolicyEngine.getPolicySpecs();
+  }
+
+  /**
+   * GET /api/v1/leave/balances/me — Get logged-in employee leave balances with policy engine evaluation
    */
   async getEmployeeBalances(userId: string, year?: number) {
     const employee = await this.getEmployeeByUserId(userId);
     const targetYear = year || new Date().getFullYear();
 
-    // Provision default balances for active leave types if none exist yet for targetYear
+    await this.seedDefaultLeaveTypes();
+
     const activeTypes = await this.prisma.leaveType.findMany({ where: { isActive: true } });
     const existingBalances = await this.prisma.leaveBalance.findMany({
       where: { employeeId: employee.id, year: targetYear },
@@ -101,14 +147,70 @@ export class LeaveService {
       orderBy: { leaveType: { name: 'asc' } },
     });
 
-    return balances.map((b) => ({
-      ...b,
-      availableDays: Math.max(0, b.allocatedDays - b.usedDays - b.pendingDays),
-    }));
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // Compute Menstrual leave current month usage if applicable
+    let usedMenstrualThisMonth = 0;
+    if (currentYear === targetYear) {
+      const startOfMonth = new Date(currentYear, currentMonth, 1);
+      const endOfMonth = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59, 999);
+
+      const menstrualType = activeTypes.find((t) => t.code.toUpperCase() === 'MENSTRUAL');
+      if (menstrualType) {
+        const monthReqs = await this.prisma.leaveRequest.findMany({
+          where: {
+            employeeId: employee.id,
+            leaveTypeId: menstrualType.id,
+            status: { in: ['PENDING', 'APPROVED'] },
+            startDate: { gte: startOfMonth, lte: endOfMonth },
+          },
+        });
+        usedMenstrualThisMonth = monthReqs.reduce((acc, r) => acc + r.totalDays, 0);
+      }
+    }
+
+    // Filter and enrich balances based on Policy Engine eligibility
+    const enriched = balances
+      .filter((b) => LeavePolicyEngine.isEligible(employee, b.leaveType.code))
+      .map((b) => {
+        const code = b.leaveType.code.toUpperCase();
+
+        if (code === 'STUDY') {
+          return {
+            ...b,
+            availableDays: 0,
+            isApplicationBased: true,
+            displayBalance: 'Application-based — subject to HR approval and valid supporting documentation.',
+          };
+        }
+
+        if (code === 'MENSTRUAL') {
+          const remainingThisMonth = Math.max(0, 1 - usedMenstrualThisMonth);
+          return {
+            ...b,
+            availableDays: remainingThisMonth,
+            isMonthly: true,
+            monthlyLimit: 1,
+            usedThisMonth: usedMenstrualThisMonth,
+            remainingThisMonth,
+            displayBalance: `1 Available this month • ${usedMenstrualThisMonth}/1 used this month`,
+          };
+        }
+
+        return {
+          ...b,
+          availableDays: Math.max(0, b.allocatedDays - b.usedDays - b.pendingDays),
+          displayBalance: `${Math.max(0, b.allocatedDays - b.usedDays - b.pendingDays)} Available`,
+        };
+      });
+
+    return enriched;
   }
 
   /**
-   * POST /api/v1/leave/requests — Submit a new leave request
+   * POST /api/v1/leave/requests — Submit a new leave request with policy engine validation
    */
   async submitLeaveRequest(
     userId: string,
@@ -117,6 +219,8 @@ export class LeaveService {
       startDate: string;
       endDate: string;
       reason: string;
+      documentKey?: string;
+      documentName?: string;
     },
   ) {
     const employee = await this.getEmployeeByUserId(userId);
@@ -174,6 +278,37 @@ export class LeaveService {
 
     const leaveYear = startDate.getFullYear();
 
+    // Check Menstrual leave usage in the target request month if applicable
+    let usedMenstrualThisMonth = 0;
+    if (leaveType.code.toUpperCase() === 'MENSTRUAL') {
+      const startOfMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      const endOfMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0, 23, 59, 59, 999);
+
+      const monthReqs = await this.prisma.leaveRequest.findMany({
+        where: {
+          employeeId: employee.id,
+          leaveTypeId: leaveType.id,
+          status: { in: ['PENDING', 'APPROVED'] },
+          startDate: { gte: startOfMonth, lte: endOfMonth },
+        },
+      });
+      usedMenstrualThisMonth = monthReqs.reduce((acc, r) => acc + r.totalDays, 0);
+    }
+
+    // Server-Side Policy Validation (Gender, Age <= 50, Document proof, Monthly caps)
+    LeavePolicyEngine.validateSubmission(
+      employee,
+      leaveType,
+      {
+        startDate,
+        endDate,
+        totalDays,
+        reason: dto.reason,
+        documentKey: dto.documentKey,
+      },
+      usedMenstrualThisMonth,
+    );
+
     // Fetch or provision leave balance
     let balance = await this.prisma.leaveBalance.findUnique({
       where: {
@@ -198,11 +333,14 @@ export class LeaveService {
       });
     }
 
-    const availableDays = balance.allocatedDays - balance.usedDays - balance.pendingDays;
-    if (availableDays < totalDays) {
-      throw new BadRequestException(
-        `Insufficient leave balance for ${leaveType.name}. Available: ${availableDays} day(s), Requested: ${totalDays} day(s).`,
-      );
+    const code = leaveType.code.toUpperCase();
+    if (code !== 'STUDY' && code !== 'UNPAID' && code !== 'MENSTRUAL') {
+      const availableDays = balance.allocatedDays - balance.usedDays - balance.pendingDays;
+      if (availableDays < totalDays) {
+        throw new BadRequestException(
+          `Insufficient leave balance for ${leaveType.name}. Available: ${availableDays} day(s), Requested: ${totalDays} day(s).`,
+        );
+      }
     }
 
     // Atomic Transaction: Generate code, create request, lock pendingDays, log audit
@@ -218,6 +356,8 @@ export class LeaveService {
           endDate,
           totalDays,
           reason: dto.reason.trim(),
+          documentKey: dto.documentKey || null,
+          documentName: dto.documentName || null,
           status: 'PENDING',
         },
         include: {
@@ -228,10 +368,12 @@ export class LeaveService {
         },
       });
 
-      await tx.leaveBalance.update({
-        where: { id: balance.id },
-        data: { pendingDays: { increment: totalDays } },
-      });
+      if (code !== 'STUDY' && code !== 'UNPAID') {
+        await tx.leaveBalance.update({
+          where: { id: balance.id },
+          data: { pendingDays: { increment: totalDays } },
+        });
+      }
 
       await tx.auditLog.create({
         data: {
@@ -244,6 +386,7 @@ export class LeaveService {
             totalDays: req.totalDays,
             startDate: req.startDate,
             endDate: req.endDate,
+            documentKey: req.documentKey,
           } as any,
         },
       });
@@ -259,7 +402,7 @@ export class LeaveService {
           eventType: 'LEAVE_SUBMITTED',
           entityType: 'LeaveRequest',
           entityId: leaveRequest.id,
-          message: `Your leave request ${leaveRequest.referenceCode} has been submitted for HR review.`,
+          message: `Your leave request ${leaveRequest.referenceCode} (${leaveType.name}) has been submitted for HR review.`,
         });
       } catch {
         // Non-blocking notification
@@ -371,8 +514,11 @@ export class LeaveService {
             employeeCode: true,
             fullName: true,
             workEmail: true,
+            gender: true,
+            dateOfBirth: true,
             department: true,
             designation: true,
+            employmentType: true,
             userId: true,
           },
         },
@@ -492,6 +638,9 @@ export class LeaveService {
     status?: string;
     employeeId?: string;
     department?: string;
+    gender?: string;
+    employmentType?: string;
+    search?: string;
     page?: number;
     limit?: number;
   }) {
@@ -500,10 +649,25 @@ export class LeaveService {
     const skip = (page - 1) * limit;
 
     const where: any = {};
-    if (query.status) where.status = query.status;
+    if (query.status && query.status !== 'ALL') where.status = query.status;
     if (query.employeeId) where.employeeId = query.employeeId;
-    if (query.department) {
-      where.employee = { department: query.department };
+
+    const empConditions: any = {};
+    if (query.department && query.department !== 'ALL') empConditions.department = query.department;
+    if (query.gender && query.gender !== 'ALL') empConditions.gender = query.gender;
+    if (query.employmentType && query.employmentType !== 'ALL') empConditions.employmentType = query.employmentType;
+
+    if (query.search && query.search.trim()) {
+      const q = query.search.trim();
+      empConditions.OR = [
+        { fullName: { contains: q, mode: 'insensitive' } },
+        { employeeCode: { contains: q, mode: 'insensitive' } },
+        { workEmail: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    if (Object.keys(empConditions).length > 0) {
+      where.employee = empConditions;
     }
 
     const [items, total] = await Promise.all([
@@ -519,8 +683,12 @@ export class LeaveService {
               id: true,
               employeeCode: true,
               fullName: true,
+              workEmail: true,
+              gender: true,
+              dateOfBirth: true,
               department: true,
               designation: true,
+              employmentType: true,
             },
           },
           reviewedBy: { select: { id: true, email: true } },
@@ -557,6 +725,12 @@ export class LeaveService {
       );
     }
 
+    if (request.employee?.userId === hrUser.id) {
+      throw new ForbiddenException(
+        'HR/Admin officers cannot approve their own leave applications. Self-approval is restricted under corporate governance rules.',
+      );
+    }
+
     const leaveYear = request.startDate.getFullYear();
 
     const balance = await this.prisma.leaveBalance.findUnique({
@@ -569,11 +743,7 @@ export class LeaveService {
       },
     });
 
-    if (!balance) {
-      throw new NotFoundException(
-        `Leave balance record for employee '${request.employee.fullName}' year ${leaveYear} not found.`,
-      );
-    }
+    const code = (request.leaveType?.code || '').toUpperCase();
 
     // Atomic Approval Transaction
     const approvedRequest = await this.prisma.$transaction(async (tx) => {
@@ -590,13 +760,15 @@ export class LeaveService {
         },
       });
 
-      await tx.leaveBalance.update({
-        where: { id: balance.id },
-        data: {
-          pendingDays: Math.max(0, balance.pendingDays - request.totalDays),
-          usedDays: balance.usedDays + request.totalDays,
-        },
-      });
+      if (balance && code !== 'STUDY' && code !== 'UNPAID') {
+        await tx.leaveBalance.update({
+          where: { id: balance.id },
+          data: {
+            pendingDays: Math.max(0, balance.pendingDays - request.totalDays),
+            usedDays: balance.usedDays + request.totalDays,
+          },
+        });
+      }
 
       await tx.auditLog.create({
         data: {
@@ -625,7 +797,7 @@ export class LeaveService {
             eventType: 'LEAVE_APPROVED',
             entityType: 'LeaveRequest',
             entityId: approvedRequest.id,
-            message: `Your leave request ${approvedRequest.referenceCode} (${approvedRequest.totalDays} day(s)) has been APPROVED by HR.`,
+            message: `Your leave request ${approvedRequest.referenceCode} (${approvedRequest.leaveType.name}, ${approvedRequest.totalDays} day(s)) has been APPROVED by HR.`,
           });
         }
 
@@ -670,7 +842,7 @@ export class LeaveService {
 
     const request = await this.prisma.leaveRequest.findUnique({
       where: { id: requestId },
-      include: { employee: true },
+      include: { employee: true, leaveType: true },
     });
 
     if (!request) {
@@ -684,6 +856,7 @@ export class LeaveService {
     }
 
     const leaveYear = request.startDate.getFullYear();
+    const code = (request.leaveType?.code || '').toUpperCase();
 
     const balance = await this.prisma.leaveBalance.findUnique({
       where: {
@@ -711,7 +884,7 @@ export class LeaveService {
         },
       });
 
-      if (balance) {
+      if (balance && code !== 'STUDY' && code !== 'UNPAID') {
         await tx.leaveBalance.update({
           where: { id: balance.id },
           data: {

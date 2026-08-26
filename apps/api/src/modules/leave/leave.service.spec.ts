@@ -217,6 +217,7 @@ describe('LeaveService Unit Tests', () => {
       mockPrisma.leaveRequest.update.mockResolvedValue({
         ...mockReq,
         status: 'APPROVED',
+        leaveType: mockLeaveType,
         employee: { userId: 'usr-emp-1', fullName: 'Jane' },
       });
 
@@ -248,6 +249,20 @@ describe('LeaveService Unit Tests', () => {
 
       await expect(service.approveLeaveRequest(mockHrUser, 'lr-1')).rejects.toThrow(
         ConflictException,
+      );
+    });
+
+    it('should throw ForbiddenException if HR officer attempts to approve their own leave request', async () => {
+      mockPrisma.leaveRequest.findUnique.mockResolvedValue({
+        id: 'lr-self',
+        referenceCode: 'LR-2026-000099',
+        status: 'PENDING',
+        employeeId: 'emp-hr-1',
+        employee: { userId: mockHrUser.id, fullName: 'HR Admin' },
+      });
+
+      await expect(service.approveLeaveRequest(mockHrUser, 'lr-self')).rejects.toThrow(
+        ForbiddenException,
       );
     });
   });
@@ -350,6 +365,129 @@ describe('LeaveService Unit Tests', () => {
       await expect(
         service.cancelLeaveRequest(mockEmployeeUser.id, 'lr-2'),
       ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('LeavePolicyEngine Business Rules', () => {
+    it('should calculate age correctly from dateOfBirth', () => {
+      const { LeavePolicyEngine } = require('./leave-policy.engine');
+      const age30 = LeavePolicyEngine.calculateAge('1996-05-15');
+      expect(age30).toBeGreaterThanOrEqual(29);
+      expect(age30).toBeLessThanOrEqual(31);
+
+      const ageNull = LeavePolicyEngine.calculateAge(null);
+      expect(ageNull).toBeNull();
+    });
+
+    it('should evaluate gender and age eligibility correctly', () => {
+      const { LeavePolicyEngine } = require('./leave-policy.engine');
+
+      const maleEmp = { gender: 'Male', dateOfBirth: '1990-01-01' };
+      const femaleEmpYoung = { gender: 'Female', dateOfBirth: '1995-01-01' };
+      const femaleEmpOver50 = { gender: 'Female', dateOfBirth: '1960-01-01' };
+      const nonBinaryEmp = { gender: 'Others / Prefer not to say', dateOfBirth: '1992-01-01' };
+
+      // Paternity
+      expect(LeavePolicyEngine.isEligible(maleEmp, 'PATERNITY')).toBe(true);
+      expect(LeavePolicyEngine.isEligible(femaleEmpYoung, 'PATERNITY')).toBe(false);
+      expect(LeavePolicyEngine.isEligible(nonBinaryEmp, 'PATERNITY')).toBe(true);
+
+      // Maternity
+      expect(LeavePolicyEngine.isEligible(femaleEmpYoung, 'MATERNITY')).toBe(true);
+      expect(LeavePolicyEngine.isEligible(maleEmp, 'MATERNITY')).toBe(false);
+      expect(LeavePolicyEngine.isEligible(nonBinaryEmp, 'MATERNITY')).toBe(true);
+
+      // Menstrual
+      expect(LeavePolicyEngine.isEligible(femaleEmpYoung, 'MENSTRUAL')).toBe(true);
+      expect(LeavePolicyEngine.isEligible(femaleEmpOver50, 'MENSTRUAL')).toBe(false);
+      expect(LeavePolicyEngine.isEligible(maleEmp, 'MENSTRUAL')).toBe(false);
+      expect(LeavePolicyEngine.isEligible(nonBinaryEmp, 'MENSTRUAL')).toBe(true);
+    });
+
+    it('should enforce mandatory supporting proof for Study Leave', () => {
+      const { LeavePolicyEngine } = require('./leave-policy.engine');
+      const emp = { gender: 'Female', dateOfBirth: '1995-01-01', fullName: 'Jane Doe' };
+      const leaveType = { code: 'STUDY', name: 'Study / Training Leave' };
+
+      expect(() =>
+        LeavePolicyEngine.validateSubmission(
+          emp,
+          leaveType,
+          {
+            startDate: new Date('2026-09-01'),
+            endDate: new Date('2026-09-03'),
+            totalDays: 3,
+            reason: 'Semester Exams',
+          },
+          0,
+        ),
+      ).toThrow(BadRequestException);
+
+      expect(() =>
+        LeavePolicyEngine.validateSubmission(
+          emp,
+          leaveType,
+          {
+            startDate: new Date('2026-09-01'),
+            endDate: new Date('2026-09-03'),
+            totalDays: 3,
+            reason: 'Semester Exams',
+            documentKey: 'leave_proof/exam.pdf',
+          },
+          0,
+        ),
+      ).not.toThrow();
+    });
+
+    it('should enforce strict 1 day per month limit for Menstrual Leave', () => {
+      const { LeavePolicyEngine } = require('./leave-policy.engine');
+      const emp = { gender: 'Female', dateOfBirth: '1995-01-01', fullName: 'Jane Doe' };
+      const leaveType = { code: 'MENSTRUAL', name: 'Menstrual Leave' };
+
+      // Cannot request > 1 day in single application
+      expect(() =>
+        LeavePolicyEngine.validateSubmission(
+          emp,
+          leaveType,
+          {
+            startDate: new Date('2026-09-01'),
+            endDate: new Date('2026-09-02'),
+            totalDays: 2,
+            reason: 'Menstrual discomfort',
+          },
+          0,
+        ),
+      ).toThrow(BadRequestException);
+
+      // Cannot apply if 1 day was already used in current month
+      expect(() =>
+        LeavePolicyEngine.validateSubmission(
+          emp,
+          leaveType,
+          {
+            startDate: new Date('2026-09-15'),
+            endDate: new Date('2026-09-15'),
+            totalDays: 1,
+            reason: 'Menstrual discomfort',
+          },
+          1, // Used 1 day already
+        ),
+      ).toThrow(BadRequestException);
+
+      // Allowed if 0 days used and requesting 1 day
+      expect(() =>
+        LeavePolicyEngine.validateSubmission(
+          emp,
+          leaveType,
+          {
+            startDate: new Date('2026-09-15'),
+            endDate: new Date('2026-09-15'),
+            totalDays: 1,
+            reason: 'Menstrual discomfort',
+          },
+          0,
+        ),
+      ).not.toThrow();
     });
   });
 });

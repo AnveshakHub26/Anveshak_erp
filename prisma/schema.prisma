@@ -652,6 +652,8 @@ model LeaveRequest {
   endDate         DateTime           @map("end_date")
   totalDays       Float              @map("total_days")        // > 0; Float supports future half-day leave
   reason          String             @db.Text
+  documentKey     String?            @map("document_key")
+  documentName    String?            @map("document_name")
   status          LeaveRequestStatus @default(PENDING)
   reviewedById    String?            @map("reviewed_by_id")
   reviewedAt      DateTime?          @map("reviewed_at")
