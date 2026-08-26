@@ -30,7 +30,6 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import { AnveshakLogo } from '@/components/ui/anveshak-logo';
-import { DotField } from '@/components/ui/dot-field';
 
 export default function Fnd01LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -219,23 +218,9 @@ export default function Fnd01LandingPage() {
       </header>
 
       <main>
-        {/* 2. PRODUCT HERO SECTION WITH INTERACTIVE DOT FIELD BACKGROUND */}
-        <section className="relative overflow-hidden border-b border-[#E2E8F0] bg-white py-16 md:py-24">
-          <div className="absolute inset-0 z-0 opacity-80">
-            <DotField
-              dotRadius={1.5}
-              dotSpacing={16}
-              bulgeStrength={55}
-              glowRadius={180}
-              sparkle={true}
-              waveAmplitude={1.5}
-              gradientFrom="rgba(212, 155, 56, 0.35)"
-              gradientTo="rgba(15, 23, 42, 0.2)"
-              glowColor="rgba(212, 155, 56, 0.25)"
-            />
-          </div>
-
-          <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* 2. PRODUCT HERO SECTION */}
+        <section className="border-b border-[#E2E8F0] bg-white py-16 md:py-24">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl space-y-6">
               {/* Main Headline */}
               <h1 className="text-3xl font-extrabold tracking-tight text-[#0F172A] sm:text-4xl md:text-5xl leading-tight">

@@ -80,19 +80,19 @@ export default function Fnd02LoginPage() {
 
   return (
     <PublicShell>
-      <div className="flex min-h-[calc(100vh-128px)] items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md">
+      <div className="relative flex min-h-[calc(100vh-128px)] items-center justify-center px-4 py-12 bg-gradient-to-b from-slate-50 via-slate-100/60 to-slate-50">
+        <div className="w-full max-w-md space-y-4">
           {/* Login Card */}
-          <div className="rounded-2xl border border-[#E2E8F0] bg-white p-8 sm:p-10 shadow-sm">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-8 sm:p-10 shadow-lg shadow-slate-200/50">
             {/* Header */}
             <div className="mb-8 text-center flex flex-col items-center">
-              <div className="mb-4">
+              <div className="mb-3.5 p-3 rounded-2xl bg-slate-50 border border-slate-100 shadow-xs">
                 <AnveshakLogo size="xl" showText={false} variant="light-bg" />
               </div>
               <h1 className="text-2xl font-bold tracking-tight text-[#0F172A] sm:text-3xl">
                 Sign In to AnveshakHub
               </h1>
-              <p className="mt-1 text-xs font-semibold text-[#d49b38] uppercase tracking-wider">
+              <p className="mt-1.5 text-[11px] font-semibold text-[#d49b38] uppercase tracking-wider">
                 Bridging Innovation, Enterprise &amp; Academia
               </p>
             </div>
