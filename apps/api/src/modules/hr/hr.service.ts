@@ -610,6 +610,33 @@ export class HRService {
       } catch {}
     }
 
+    // Send email notification to employee if profile or password changed
+    if (this.emailService) {
+      try {
+        const updatedFields: string[] = [];
+        if ((data as any).password) updatedFields.push('Account Login Password');
+        if (data.workEmail) updatedFields.push('Work Email Address');
+        if (data.designation) updatedFields.push(`Designation: ${data.designation}`);
+        if (data.department) updatedFields.push(`Department: ${data.department}`);
+        if (data.status) updatedFields.push(`Status: ${data.status}`);
+        if (data.professionalRole) updatedFields.push(`Professional Role: ${data.professionalRole}`);
+        if (updatedFields.length === 0) updatedFields.push('Personal Profile Details');
+
+        const recipient = newWorkEmail || existing.workEmail;
+        const passVal = (data as any).password ? (data as any).password.trim() : undefined;
+
+        await this.emailService.sendEmployeeProfileUpdatedEmail(
+          recipient,
+          existing.fullName,
+          existing.employeeCode,
+          updatedFields,
+          passVal,
+        );
+      } catch (emailErr: any) {
+        // Suppress email dispatch errors to prevent breaking HR profile update transaction
+      }
+    }
+
     return updated;
   }
 
