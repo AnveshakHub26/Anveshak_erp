@@ -86,6 +86,13 @@ export class DocumentsService {
       );
     }
 
+    const extMatch = dto.filename.match(/\.([a-zA-Z0-9]+)$/);
+    const fileExt = extMatch ? extMatch[1].toLowerCase() : '';
+    const FORBIDDEN_EXTENSIONS = new Set(['exe', 'bat', 'cmd', 'sh', 'vbs', 'js', 'scr', 'pif', 'com', 'dll', 'so']);
+    if (FORBIDDEN_EXTENSIONS.has(fileExt)) {
+      throw new BadRequestException(`Security violation: Executable files (.${fileExt}) are strictly prohibited.`);
+    }
+
     const cleanMime = dto.contentType.trim().toLowerCase();
     if (!ALLOWED_MIME_TYPES.has(cleanMime)) {
       throw new BadRequestException(

@@ -9,7 +9,7 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
 
-  // Security Headers via Helmet
+  // Security Headers via Helmet (HSTS, DENY Frameguard, noSniff)
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -21,6 +21,15 @@ async function bootstrap() {
         },
       },
       crossOriginEmbedderPolicy: false,
+      hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true,
+      },
+      frameguard: {
+        action: 'deny',
+      },
+      noSniff: true,
     }),
   );
 
