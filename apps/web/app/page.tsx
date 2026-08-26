@@ -33,7 +33,6 @@ import { AnveshakLogo } from '@/components/ui/anveshak-logo';
 
 export default function Fnd01LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [selectedBvSearch, setSelectedBvSearch] = useState('');
   const [upcomingWorkshops, setUpcomingWorkshops] = useState<any[]>([]);
 
   React.useEffect(() => {
@@ -97,14 +96,6 @@ export default function Fnd01LandingPage() {
         'Corporate skilling programs, technical workshops, shop-floor trainings, and academic-industry certifications.',
     },
   ];
-
-  const filteredBvs = businessVerticals.filter(
-    (bv) =>
-      bv.name.toLowerCase().includes(selectedBvSearch.toLowerCase()) ||
-      bv.code.toLowerCase().includes(selectedBvSearch.toLowerCase()) ||
-      bv.description.toLowerCase().includes(selectedBvSearch.toLowerCase()) ||
-      bv.tag.toLowerCase().includes(selectedBvSearch.toLowerCase()),
-  );
 
   // 3 Fundamental Pillars from Corporate Deck (People, Process, Product)
   const pillars = [
@@ -239,103 +230,37 @@ export default function Fnd01LandingPage() {
         {/* 2. TWO-COLUMN PRODUCT HERO SECTION */}
         <section className="border-b border-[#E2E8F0] bg-white py-12 md:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-              {/* Left Column: Product Positioning & CTAs */}
-              <div className="lg:col-span-7 space-y-6">
-                {/* RaaS Badge */}
-                <div className="inline-flex items-center space-x-2 rounded-full border border-[#d49b38]/30 bg-[#F5E8D0]/40 px-3.5 py-1 text-xs font-semibold text-[#8B5E14]">
-                  <Sparkles className="h-3.5 w-3.5 text-[#d49b38]" />
-                  <span>Research as a Service (RaaS) & Enterprise Platform</span>
-                </div>
+            <div className="max-w-3xl space-y-6">
+              {/* Main Headline */}
+              <h1 className="text-3xl font-extrabold tracking-tight text-[#0F172A] sm:text-4xl md:text-5xl leading-tight">
+                Bridging Innovation, <br className="hidden sm:inline" />
+                <span className="text-[#d49b38]">Enterprise &amp; Academia</span>
+              </h1>
 
-                {/* Main Headline */}
-                <h1 className="text-3xl font-extrabold tracking-tight text-[#0F172A] sm:text-4xl md:text-5xl leading-tight">
-                  Bridging Innovation, <br className="hidden sm:inline" />
-                  <span className="text-[#d49b38]">Enterprise & Academia</span>
-                </h1>
+              {/* Subtitle */}
+              <p className="text-sm sm:text-base text-[#64748B] leading-relaxed max-w-2xl">
+                Transforming how organizations leverage intellectual property and academic research to solve critical industry challenges and drive commercial success.
+              </p>
 
-                {/* Subtitle */}
-                <p className="text-sm sm:text-base text-[#64748B] leading-relaxed max-w-2xl">
-                  Transforming how organizations leverage intellectual property and academic research to solve critical industry challenges and drive commercial success.
-                </p>
-
-                {/* E2E Compatibility Badge */}
-                <div className="inline-block rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-1 text-xs font-semibold text-[#475569]">
-                  Integrated Enterprise Management Platform
-                </div>
-
-                {/* CTA Action Buttons */}
-                <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                  <Link
-                    href="/login"
-                    className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#d49b38] to-[#c48b28] px-6 py-3 text-xs font-bold text-[#151c2e] shadow-sm hover:opacity-95 transition-all"
-                  >
-                    Login to Platform <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                  <Link
-                    href="/register"
-                    className="inline-flex items-center justify-center rounded-xl border border-[#E2E8F0] bg-white px-6 py-3 text-xs font-semibold text-[#0F172A] hover:bg-[#F8FAFC] hover:border-[#d49b38] transition-all"
-                  >
-                    Register Organization
-                  </Link>
-                </div>
+              {/* E2E Compatibility Badge */}
+              <div className="inline-block rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-1 text-xs font-semibold text-[#475569]">
+                Integrated Enterprise Management Platform
               </div>
 
-              {/* Right Column: Executive Hand-Crafted Enterprise Showcase */}
-              <div className="lg:col-span-5">
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl space-y-5">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div className="flex items-center space-x-2">
-                      <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">Enterprise OS Telemetry</span>
-                    </div>
-                    <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-extrabold text-amber-700 ring-1 ring-amber-200">
-                      LIVE SYSTEM
-                    </span>
-                  </div>
-
-                  {/* 6 Business Verticals Direct Access Badges */}
-                  <div className="space-y-2">
-                    <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">6 Official Service Verticals</div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-xs hover:border-indigo-300 transition-all">
-                        <div className="font-bold text-slate-900">Research &amp; Deep Tech</div>
-                        <div className="text-[10px] text-indigo-600 font-semibold mt-0.5">BV-01 • Research Projects</div>
-                      </div>
-                      <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-xs hover:border-indigo-300 transition-all">
-                        <div className="font-bold text-slate-900">IP &amp; Knowledge</div>
-                        <div className="text-[10px] text-indigo-600 font-semibold mt-0.5">BV-02 • Patents &amp; Lit</div>
-                      </div>
-                      <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-xs hover:border-indigo-300 transition-all">
-                        <div className="font-bold text-slate-900">Startup Incubation</div>
-                        <div className="text-[10px] text-indigo-600 font-semibold mt-0.5">BV-03 • Commercialize</div>
-                      </div>
-                      <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-xs hover:border-indigo-300 transition-all">
-                        <div className="font-bold text-slate-900">Consulting &amp; Advisory</div>
-                        <div className="text-[10px] text-indigo-600 font-semibold mt-0.5">BV-04 • Roadmaps</div>
-                      </div>
-                      <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-xs hover:border-indigo-300 transition-all">
-                        <div className="font-bold text-slate-900">Design &amp; Prototype</div>
-                        <div className="text-[10px] text-indigo-600 font-semibold mt-0.5">BV-05 • Full-Stack</div>
-                      </div>
-                      <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-xs hover:border-indigo-300 transition-all">
-                        <div className="font-bold text-slate-900">Upskilling &amp; Training</div>
-                        <div className="text-[10px] text-indigo-600 font-semibold mt-0.5">BV-06 • Workshops</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Core Platform Capabilities */}
-                  <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 space-y-2 text-xs">
-                    <div className="flex items-center justify-between text-xs font-bold text-slate-900">
-                      <span>TRL 1 - 9 Innovation Framework</span>
-                      <ShieldCheck className="h-4 w-4 text-indigo-600" />
-                    </div>
-                    <p className="text-[11px] text-slate-600 leading-relaxed">
-                      End-to-end research governance with automated document scanning, multi-tenant industry organization portals, and immutable audit logs.
-                    </p>
-                  </div>
-                </div>
+              {/* CTA Action Buttons */}
+              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#d49b38] to-[#c48b28] px-6 py-3 text-xs font-bold text-[#151c2e] shadow-sm hover:opacity-95 transition-all"
+                >
+                  Login to Platform <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+                <Link
+                  href="/register"
+                  className="inline-flex items-center justify-center rounded-xl border border-[#E2E8F0] bg-white px-6 py-3 text-xs font-semibold text-[#0F172A] hover:bg-[#F8FAFC] hover:border-[#d49b38] transition-all"
+                >
+                  Register Organization
+                </Link>
               </div>
             </div>
           </div>
@@ -474,7 +399,7 @@ export default function Fnd01LandingPage() {
         {/* 4. CORE SERVICE OFFERINGS (RESEARCH AS A SERVICE) */}
         <section className="py-12 md:py-16 bg-white border-b border-[#E2E8F0]">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="mb-8 flex flex-col justify-between md:flex-row md:items-end border-b border-[#E2E8F0] pb-5">
+            <div className="mb-8 border-b border-[#E2E8F0] pb-5">
               <div>
                 <div className="inline-flex items-center space-x-2 text-xs font-semibold text-[#d49b38] uppercase tracking-wider mb-1">
                   <Lightbulb className="h-4 w-4" />
@@ -487,57 +412,39 @@ export default function Fnd01LandingPage() {
                   Six specialized corporate service classification dimensions.
                 </p>
               </div>
-
-              {/* Search Filter */}
-              <div className="relative mt-4 md:mt-0 w-full md:w-72">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#94a3b8]" />
-                <input
-                  type="text"
-                  value={selectedBvSearch}
-                  onChange={(e) => setSelectedBvSearch(e.target.value)}
-                  placeholder="Search service verticals..."
-                  className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] pl-9 pr-3 py-1.5 text-xs text-[#0F172A] placeholder-[#94a3b8] focus:border-[#d49b38] focus:outline-none focus:ring-1 focus:ring-[#d49b38]"
-                />
-              </div>
             </div>
 
             {/* Verticals Grid */}
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredBvs.length === 0 ? (
-                <div className="col-span-full rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-8 text-center text-xs text-[#64748B]">
-                  No service verticals match &quot;{selectedBvSearch}&quot;.
-                </div>
-              ) : (
-                filteredBvs.map((bv) => {
-                  const IconComponent = bv.icon;
-                  return (
-                    <div
-                      key={bv.code}
-                      className="group flex flex-col justify-between rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm hover:border-[#d49b38] transition-all"
-                    >
-                      <div>
-                        <div className="flex items-center justify-between mb-4">
-                          <span className="rounded-full bg-[#151c2e] px-2.5 py-0.5 text-[10px] font-bold text-white uppercase">
-                            {bv.code}
-                          </span>
-                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F8FAFC] text-[#d49b38] border border-[#E2E8F0]">
-                            <IconComponent className="h-4 w-4" />
-                          </div>
+              {businessVerticals.map((bv) => {
+                const IconComponent = bv.icon;
+                return (
+                  <div
+                    key={bv.code}
+                    className="group flex flex-col justify-between rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-sm hover:border-[#d49b38] transition-all"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="rounded-full bg-[#151c2e] px-2.5 py-0.5 text-[10px] font-bold text-white uppercase">
+                          {bv.code}
+                        </span>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F8FAFC] text-[#d49b38] border border-[#E2E8F0]">
+                          <IconComponent className="h-4 w-4" />
                         </div>
-                        <h3 className="text-base font-bold text-[#0F172A] group-hover:text-[#d49b38] transition-colors">
-                          {bv.name}
-                        </h3>
-                        <p className="mt-1 text-[11px] font-semibold text-[#8B5E14]">{bv.tag}</p>
-                        <p className="mt-2 text-xs text-[#64748B] leading-relaxed">{bv.description}</p>
                       </div>
-                      <div className="mt-5 pt-3 border-t border-[#E2E8F0] flex items-center justify-between text-[11px] text-[#64748B]">
-                        <span>Canonical Vertical</span>
-                        <CheckCircle2 className="h-4 w-4 text-[#d49b38]" />
-                      </div>
+                      <h3 className="text-base font-bold text-[#0F172A] group-hover:text-[#d49b38] transition-colors">
+                        {bv.name}
+                      </h3>
+                      <p className="mt-1 text-[11px] font-semibold text-[#8B5E14]">{bv.tag}</p>
+                      <p className="mt-2 text-xs text-[#64748B] leading-relaxed">{bv.description}</p>
                     </div>
-                  );
-                })
-              )}
+                    <div className="mt-5 pt-3 border-t border-[#E2E8F0] flex items-center justify-between text-[11px] text-[#64748B]">
+                      <span>Canonical Vertical</span>
+                      <CheckCircle2 className="h-4 w-4 text-[#d49b38]" />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
