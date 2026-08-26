@@ -28,6 +28,11 @@ async function executeApiRequest<T = any>(
       }
     }
     let base = (rawEnv || '/api/v1').replace(/\/+$/, '');
+    if (typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
+      if (base.startsWith('http://')) {
+        base = base.replace('http://', 'https://');
+      }
+    }
     if (base.startsWith('http') && !base.includes('/api/v1')) {
       base = `${base}/api/v1`;
     }
@@ -43,21 +48,27 @@ async function executeApiRequest<T = any>(
     url = `${base}${path}`;
   }
 
+  if (typeof window !== 'undefined') {
+    console.log('[Anveshak API Client] Requesting:', url);
+  }
+
   let response: Response;
   try {
     response = await fetch(url, {
-      credentials: 'include',
       ...options,
       headers,
     });
   } catch (netErr: any) {
+    if (typeof window !== 'undefined') {
+      console.error('[Anveshak API Client Error]:', netErr);
+    }
     if (netErr.name === 'AbortError') {
       const err = new Error('Request aborted.') as any;
       err.status = 0;
       err.code = 'ABORTED';
       throw err;
     }
-    const err = new Error('Network connection failed. Please check network or API server availability.') as any;
+    const err = new Error(`Network connection failed (${netErr.message || 'Failed to fetch'}). Please check network or API server availability.`) as any;
     err.status = 0;
     err.code = 'NETWORK_ERROR';
     throw err;
