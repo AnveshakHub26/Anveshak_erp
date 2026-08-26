@@ -19,6 +19,9 @@ import {
   BadgeAlert,
   Paperclip,
   ShieldCheck,
+  Upload,
+  Trash2,
+  FileCheck,
 } from 'lucide-react';
 
 interface LeaveType {
@@ -80,6 +83,7 @@ export function MyLeaveTab() {
   const [reason, setReason] = useState('');
   const [documentKey, setDocumentKey] = useState('');
   const [documentName, setDocumentName] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [applySubmitting, setApplySubmitting] = useState(false);
   const [applyError, setApplyError] = useState<string | null>(null);
 
@@ -133,6 +137,45 @@ export function MyLeaveTab() {
     return balances.find((b) => b.leaveTypeId === selectedTypeId);
   }, [balances, selectedTypeId]);
 
+  // Dynamic Proof Requirement Evaluator per selected leave category
+  const proofRequirement = React.useMemo(() => {
+    if (!selectedType) {
+      return {
+        isRequired: false,
+        label: 'Supporting Document (Select Leave Category)',
+        hint: 'Attach document reference for HR validation.',
+      };
+    }
+
+    const code = selectedType.code.toUpperCase();
+    if (code === 'STUDY') {
+      return {
+        isRequired: true,
+        label: 'Upload Exam Timetable / Hall Ticket / Training Registration *',
+        hint: 'Mandatory: Upload institution proof, exam timetable, hall ticket, or registration confirmation.',
+      };
+    }
+    if (code === 'MATERNITY') {
+      return {
+        isRequired: true,
+        label: 'Upload Hospital / Medical Proof Certificate *',
+        hint: 'Mandatory: Upload official doctor certificate or hospital admission record.',
+      };
+    }
+    if (code === 'SICK') {
+      return {
+        isRequired: false,
+        label: 'Upload Medical Certificate (Optional for short duration)',
+        hint: 'Optional: Recommended for sick leaves exceeding 2 days.',
+      };
+    }
+    return {
+      isRequired: false,
+      label: 'Upload Supporting Attachment (Optional)',
+      hint: 'Optional: Attach any relevant reference document for HR review.',
+    };
+  }, [selectedType]);
+
   const isOverBalance = React.useMemo(() => {
     if (!selectedType || !selectedBalance) return false;
     const code = selectedType.code.toUpperCase();
@@ -142,6 +185,36 @@ export function MyLeaveTab() {
     }
     return calculatedDays > selectedBalance.availableDays;
   }, [selectedType, selectedBalance, calculatedDays]);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      setApplyError('File size exceeds maximum 10MB limit.');
+      return;
+    }
+
+    setSelectedFile(file);
+    setDocumentName(file.name);
+
+    const cleanName = file.name.replace(/[^a-zA-Z0-9_.-]/g, '_');
+    const key = `leave_proofs/${Date.now()}_${cleanName}`;
+    setDocumentKey(key);
+    setApplyError(null);
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    setDocumentName('');
+    setDocumentKey('');
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
 
   const handleApplySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,15 +237,12 @@ export function MyLeaveTab() {
       return;
     }
 
+    if (proofRequirement.isRequired && !documentKey.trim()) {
+      setApplyError(`Mandatory supporting proof document is required for ${selectedType?.name}.`);
+      return;
+    }
+
     const code = selectedType?.code.toUpperCase();
-    if (code === 'STUDY' && !documentKey.trim()) {
-      setApplyError('Supporting proof document (exam timetable, hall ticket, training registration) is required for Study / Training Leave.');
-      return;
-    }
-    if (code === 'MATERNITY' && !documentKey.trim()) {
-      setApplyError('Supporting medical / hospital documentation is mandatory for Maternity Leave.');
-      return;
-    }
     if (code === 'MENSTRUAL' && calculatedDays > 1) {
       setApplyError('Menstrual Leave cannot exceed 1 day per calendar month.');
       return;
@@ -199,6 +269,7 @@ export function MyLeaveTab() {
       setReason('');
       setDocumentKey('');
       setDocumentName('');
+      setSelectedFile(null);
       await fetchLeaveData();
     } catch (err: any) {
       setApplyError(err.message || 'Failed to submit leave request.');
@@ -251,6 +322,9 @@ export function MyLeaveTab() {
           <Button
             onClick={() => {
               setApplyError(null);
+              setSelectedFile(null);
+              setDocumentKey('');
+              setDocumentName('');
               setIsApplyModalOpen(true);
             }}
             className="bg-gradient-to-r from-[#d49b38] to-[#c48b28] text-[#151c2e] font-bold text-xs shadow-sm hover:opacity-95"
@@ -563,6 +637,7 @@ export function MyLeaveTab() {
                     setSelectedTypeId(e.target.value);
                     setDocumentKey('');
                     setDocumentName('');
+                    setSelectedFile(null);
                   }}
                   required
                   className="w-full rounded-lg border border-[#E2E8F0] bg-white p-2.5 text-xs text-[#0F172A] focus:border-[#d49b38] focus:outline-none"
@@ -661,33 +736,76 @@ export function MyLeaveTab() {
                 />
               </div>
 
-              {/* Supporting Document Proof Key / Name */}
-              <div className="space-y-1.5 pt-2 border-t border-[#E2E8F0]">
-                <label className="font-semibold text-[#0F172A] flex items-center gap-1.5">
-                  <Paperclip className="h-3.5 w-3.5 text-[#d49b38]" />
-                  <span>Supporting Proof Document / Reference</span>
-                  {(selectedType?.code.toUpperCase() === 'STUDY' || selectedType?.code.toUpperCase() === 'MATERNITY') && (
-                    <span className="text-red-500 font-bold">* (Mandatory)</span>
-                  )}
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    value={documentName}
-                    onChange={(e) => setDocumentName(e.target.value)}
-                    placeholder="Document Title (e.g. Exam_Hall_Ticket.pdf)"
-                    className="w-full rounded-lg border border-[#E2E8F0] bg-white p-2 text-xs text-[#0F172A] focus:border-[#d49b38] focus:outline-none"
-                  />
-                  <input
-                    type="text"
-                    value={documentKey}
-                    onChange={(e) => setDocumentKey(e.target.value)}
-                    placeholder="Storage Key / File Reference"
-                    className="w-full rounded-lg border border-[#E2E8F0] bg-white p-2 text-xs font-mono text-[#0F172A] focus:border-[#d49b38] focus:outline-none"
-                  />
+              {/* Dynamic File Upload Zone */}
+              <div className="space-y-2 pt-2 border-t border-[#E2E8F0]">
+                <div className="flex items-center justify-between">
+                  <label className="font-semibold text-[#0F172A] flex items-center gap-1.5">
+                    <Paperclip className="h-3.5 w-3.5 text-[#d49b38]" />
+                    <span>{proofRequirement.label}</span>
+                  </label>
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      proofRequirement.isRequired
+                        ? 'bg-red-100 text-red-800 border border-red-200'
+                        : 'bg-slate-100 text-slate-600 border border-slate-200'
+                    }`}
+                  >
+                    {proofRequirement.isRequired ? 'Mandatory Proof *' : 'Optional Attachment'}
+                  </span>
                 </div>
-                <p className="text-[10px] text-[#64748B]">
-                  Attach document storage reference for HR validation.
+
+                {/* File Upload Selector & Preview Box */}
+                {!selectedFile ? (
+                  <div className="relative border-2 border-dashed border-[#CBD5E1] rounded-xl p-4 text-center hover:border-[#d49b38] bg-slate-50/50 transition-colors">
+                    <input
+                      type="file"
+                      onChange={handleFileSelect}
+                      accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    />
+                    <div className="flex flex-col items-center space-y-1.5">
+                      <div className="p-2.5 bg-amber-50 rounded-full border border-amber-200 text-[#d49b38]">
+                        <Upload className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <span className="font-bold text-[#0F172A] text-xs">
+                          Click or Drag &amp; Drop to upload proof document
+                        </span>
+                        <p className="text-[10px] text-[#64748B] mt-0.5">
+                          Supported formats: PDF, PNG, JPG, DOCX (Max size: 10MB)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center space-x-2.5 overflow-hidden">
+                      <div className="p-2 bg-indigo-100 text-indigo-700 rounded-lg shrink-0">
+                        <FileCheck className="h-4 w-4" />
+                      </div>
+                      <div className="truncate">
+                        <p className="font-bold text-xs text-[#0F172A] truncate">
+                          {selectedFile.name}
+                        </p>
+                        <p className="text-[10px] text-[#64748B]">
+                          {formatFileSize(selectedFile.size)} • Ready for attachment
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleRemoveFile}
+                      className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                      title="Remove file"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+
+                <p className="text-[10px] text-[#64748B] leading-tight">
+                  {proofRequirement.hint}
                 </p>
               </div>
 
@@ -702,7 +820,7 @@ export function MyLeaveTab() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={applySubmitting || isOverBalance}
+                  disabled={applySubmitting || isOverBalance || (proofRequirement.isRequired && !selectedFile)}
                   className="bg-gradient-to-r from-[#d49b38] to-[#c48b28] text-[#151c2e] font-bold"
                 >
                   {applySubmitting ? 'Submitting...' : 'Submit Leave Application'}
