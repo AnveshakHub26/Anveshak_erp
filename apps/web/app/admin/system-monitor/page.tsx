@@ -281,14 +281,16 @@ export default function SystemMonitorPage() {
 
     try {
       if (activeTab === 'overview') {
-        const [metricsRes, activityRes, alertsRes] = await Promise.all([
+        const [metricsRes, activityRes, alertsRes, healthRes] = await Promise.all([
           apiRequest<any>('/system-monitor/metrics'),
           apiRequest<any>('/system-monitor/recent-activity?limit=8'),
           apiRequest<any>('/system-monitor/alerts'),
+          apiRequest<any>('/system-monitor/health'),
         ]);
         setMetrics(metricsRes.data?.overview || null);
         setRecentActivity(activityRes.data || []);
         setSystemAlerts(alertsRes.data || []);
+        setHealth(healthRes.data || null);
       } else if (activeTab === 'active-users') {
         const res = await apiRequest<any>('/system-monitor/active-users');
         setActiveUsers(res.data || []);
@@ -645,7 +647,7 @@ export default function SystemMonitorPage() {
                 globalResults.organizations?.map((org) => (
                   <Link
                     key={org.id}
-                    href="/organizations"
+                    href="/admin/approvals"
                     className="block rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-xs hover:border-indigo-300 hover:bg-indigo-50/50 transition-all my-1"
                   >
                     <div className="font-semibold text-slate-900">{org.legalName}</div>
@@ -824,7 +826,7 @@ export default function SystemMonitorPage() {
             <MetricCard label="Total Employees" value={metrics?.totalEmployees ?? 0} icon={Users} iconBg="bg-indigo-50" iconColor="text-indigo-600" onClick={() => router.push('/hr')} />
             <MetricCard label="Active Employees" value={metrics?.activeEmployees ?? 0} icon={CheckCircle2} iconBg="bg-emerald-50" iconColor="text-emerald-600" onClick={() => router.push('/hr')} />
             <MetricCard label="Exited Employees" value={metrics?.exitedEmployees ?? 0} icon={XCircle} iconBg="bg-slate-100" iconColor="text-slate-500" onClick={() => router.push('/hr')} />
-            <MetricCard label="Total Organizations" value={metrics?.totalOrganizations ?? 0} icon={Building2} iconBg="bg-blue-50" iconColor="text-blue-600" onClick={() => router.push('/organizations')} />
+            <MetricCard label="Total Organizations" value={metrics?.totalOrganizations ?? 0} icon={Building2} iconBg="bg-blue-50" iconColor="text-blue-600" onClick={() => router.push('/admin/approvals')} />
             <MetricCard label="Total Projects" value={metrics?.totalProjects ?? 0} icon={FolderGit2} iconBg="bg-purple-50" iconColor="text-purple-600" onClick={() => router.push('/projects')} />
             <MetricCard label="Active Projects" value={metrics?.activeProjects ?? 0} icon={Zap} iconBg="bg-amber-50" iconColor="text-amber-600" onClick={() => router.push('/projects')} />
             <MetricCard label="Completed Projects" value={metrics?.completedProjects ?? 0} icon={CheckCircle2} iconBg="bg-teal-50" iconColor="text-teal-600" onClick={() => router.push('/projects')} />
@@ -945,7 +947,7 @@ export default function SystemMonitorPage() {
               <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 shadow-2xs hover:bg-white transition-all">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Organizations</span>
                 <div className="my-1.5 text-2xl font-extrabold text-slate-900">{metrics?.totalOrganizations ?? 0}</div>
-                <Link href="/organizations" className="text-[11px] font-bold text-indigo-600 hover:underline flex items-center gap-1">
+                <Link href="/admin/approvals" className="text-[11px] font-bold text-indigo-600 hover:underline flex items-center gap-1">
                   Open Module ↗
                 </Link>
               </div>
@@ -1027,7 +1029,7 @@ export default function SystemMonitorPage() {
             <h3 className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-500">Authoritative ERP Quick Navigation</h3>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
               <QuickNavCard label="Employees" href="/hr" icon={Users} description="Directory & profiles" />
-              <QuickNavCard label="Organizations" href="/organizations" icon={Building2} description="Client onboarding" />
+              <QuickNavCard label="Organizations" href="/admin/approvals" icon={Building2} description="Client onboarding" />
               <QuickNavCard label="Projects" href="/projects" icon={FolderGit2} description="Workspaces & tasks" />
               <QuickNavCard label="Documents" href="/documents" icon={FileText} description="Document repository" />
               <QuickNavCard label="Attendance" href="/hr/attendance" icon={Clock} description="Attendance logs" />
@@ -1165,7 +1167,7 @@ export default function SystemMonitorPage() {
                           </Link>
                         ) : doc.entityType === 'ORGANIZATION' ? (
                           <Link
-                            href="/organizations"
+                            href="/admin/approvals"
                             className="inline-flex items-center gap-1 rounded bg-indigo-50 px-2.5 py-1 text-[11px] font-bold text-indigo-700 hover:bg-indigo-600 hover:text-white transition-all shrink-0"
                           >
                             Open Record ↗
@@ -1294,7 +1296,7 @@ export default function SystemMonitorPage() {
                     <td className="p-3.5 text-slate-500">{new Date(org.createdAt).toLocaleDateString()}</td>
                     <td className="p-3.5">
                       <Link
-                        href="/organizations"
+                        href="/admin/approvals"
                         className="inline-flex items-center gap-1 rounded-md bg-indigo-600 px-3 py-1 text-[11px] font-semibold text-white shadow-xs hover:bg-indigo-500 transition-all"
                       >
                         Open Organization
@@ -1864,12 +1866,12 @@ function InfrastructureLinksCard({
               key={idx}
               className="flex flex-col justify-between rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 shadow-2xs hover:bg-white hover:border-indigo-300 hover:shadow-xs transition-all space-y-3"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 truncate">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2">
                   <Icon className={`h-4 w-4 shrink-0 ${item.color}`} />
-                  <span className="font-bold text-xs text-slate-900 truncate">{item.label}</span>
+                  <span className="font-bold text-xs text-slate-900 leading-tight">{item.label}</span>
                 </div>
-                <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${badgeStyle}`}>
+                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${badgeStyle}`}>
                   {item.status.replace('_', ' ')}
                 </span>
               </div>
