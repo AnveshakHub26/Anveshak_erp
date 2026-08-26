@@ -9,7 +9,7 @@
  * 5. Cleans up the temporary test object afterward.
  */
 import 'dotenv/config';
-import { createClient } from '../../apps/api/node_modules/@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
 async function main() {
   const supabaseUrl = process.env.SUPABASE_URL;

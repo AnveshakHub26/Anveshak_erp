@@ -9,7 +9,7 @@
  * 5. Temporary test notification records are cleaned up from PostgreSQL after verification.
  */
 import 'dotenv/config';
-import { createClient } from '../../apps/api/node_modules/@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import { PrismaClient } from '@prisma/client';
 
 async function main() {
