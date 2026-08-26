@@ -239,6 +239,16 @@ export function FileUploadZone({
 
   return (
     <div className={`space-y-3 text-xs ${className}`}>
+      {/* Context-Aware Entity Scope Banner */}
+      <div className="rounded-lg bg-indigo-50/70 border border-indigo-200 px-3 py-2 flex items-center justify-between text-xs text-indigo-900 font-medium">
+        <div className="flex items-center gap-2 truncate">
+          <UploadCloud className="h-4 w-4 text-indigo-600 shrink-0" />
+          <span className="truncate">Uploading to: <strong className="font-bold text-indigo-950">{entityType} Repository</strong></span>
+        </div>
+        <span className="rounded bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700 uppercase tracking-wide shrink-0">
+          {docType || 'GeneralAttachment'}
+        </span>
+      </div>
       <input
         type="file"
         ref={fileInputRef}

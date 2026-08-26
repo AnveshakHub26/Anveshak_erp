@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { S3StorageAdapter } from './storage.adapter';
+import { Prisma } from '@prisma/client';
 
 export interface GenerateUploadUrlInput {
   filename: string;
@@ -847,5 +848,363 @@ export class DocumentsService {
 
     // Default allow for authenticated employee workspace operations
     return true;
+  }
+
+  // =========================================================================
+  // ENTERPRISE ENTITY-CENTRIC DOCUMENT OVERVIEW METHODS
+  // =========================================================================
+
+  /**
+   * GET /api/v1/documents/overview/organizations — Paginated List of Organizations with Document & Project Counts
+   */
+  async getOrganizationsOverview(
+    user: any,
+    search?: string,
+    status?: string,
+    page: number = 1,
+    limit: number = 20,
+  ) {
+    if (!user) throw new ForbiddenException('Authentication required.');
+
+    const skip = (page - 1) * limit;
+    const where: Prisma.OrganizationWhereInput = {};
+
+    if (search && search.trim()) {
+      const q = search.trim();
+      where.OR = [
+        { legalName: { contains: q, mode: 'insensitive' } },
+        { orgNumber: { contains: q, mode: 'insensitive' } },
+        { type: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    if (status && status !== 'ALL') {
+      where.status = status as any;
+    }
+
+    const [total, items] = await Promise.all([
+      this.prisma.organization.count({ where }),
+      this.prisma.organization.findMany({
+        where,
+        select: {
+          id: true,
+          orgNumber: true,
+          legalName: true,
+          tradeName: true,
+          type: true,
+          status: true,
+          updatedAt: true,
+          _count: {
+            select: { projects: true },
+          },
+        },
+        orderBy: { updatedAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    // Compute document counts for each organization
+    const orgIds = items.map((o) => o.id);
+    const docCounts = await this.prisma.document.groupBy({
+      by: ['entityId'],
+      where: {
+        entityType: { in: ['Organization', 'ORGANIZATION'] },
+        entityId: { in: orgIds },
+      },
+      _count: { id: true },
+    });
+
+    const docCountMap = new Map<string, number>();
+    docCounts.forEach((dc) => docCountMap.set(dc.entityId, dc._count.id));
+
+    const enrichedItems = items.map((org) => ({
+      ...org,
+      projectCount: org._count.projects,
+      documentCount: docCountMap.get(org.id) || 0,
+    }));
+
+    return {
+      items: enrichedItems,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * GET /api/v1/documents/overview/organizations/:id — Organization Overview Details, Direct Docs & Projects
+   */
+  async getOrganizationDocumentDetails(user: any, orgId: string) {
+    await this.verifyEntityAuthorization(user, 'Organization', orgId);
+
+    const organization = await this.prisma.organization.findUnique({
+      where: { id: orgId },
+      include: {
+        projects: {
+          select: {
+            id: true,
+            projectCode: true,
+            title: true,
+            status: true,
+            category: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+          orderBy: { updatedAt: 'desc' },
+        },
+      },
+    });
+
+    if (!organization) {
+      throw new NotFoundException(`Organization record with ID '${orgId}' not found.`);
+    }
+
+    // Initialize default organization folders
+    await this.initializeDefaultFolders(user, 'Organization', orgId, user.id);
+
+    // Fetch project document counts
+    const projectIds = organization.projects.map((p) => p.id);
+    const projectDocCounts = await this.prisma.document.groupBy({
+      by: ['entityId'],
+      where: {
+        entityType: { in: ['Project', 'PROJECT'] },
+        entityId: { in: projectIds },
+      },
+      _count: { id: true },
+    });
+    const projDocMap = new Map<string, number>();
+    projectDocCounts.forEach((pdc) => projDocMap.set(pdc.entityId, pdc._count.id));
+
+    const projectsWithDocs = organization.projects.map((p) => ({
+      ...p,
+      documentCount: projDocMap.get(p.id) || 0,
+    }));
+
+    // Fetch direct organization documents
+    const directDocs = await this.prisma.document.findMany({
+      where: {
+        entityType: { in: ['Organization', 'ORGANIZATION'] },
+        entityId: orgId,
+      },
+      include: {
+        uploader: { select: { id: true, email: true } },
+        folder: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      organization: {
+        id: organization.id,
+        orgNumber: organization.orgNumber,
+        legalName: organization.legalName,
+        tradeName: organization.tradeName,
+        type: organization.type,
+        status: organization.status,
+        website: organization.website,
+        address: organization.address,
+        createdAt: organization.createdAt,
+        updatedAt: organization.updatedAt,
+      },
+      directDocuments: directDocs,
+      projects: projectsWithDocs,
+    };
+  }
+
+  /**
+   * GET /api/v1/documents/overview/employees — Paginated List of Employees with Document Counts
+   */
+  async getEmployeesOverview(
+    user: any,
+    search?: string,
+    department?: string,
+    designation?: string,
+    employmentType?: string,
+    status?: string,
+    page: number = 1,
+    limit: number = 20,
+  ) {
+    if (!user) throw new ForbiddenException('Authentication required.');
+
+    const isHrOrAdmin = user.roles?.some((r: string) => ['ADMIN', 'HR'].includes(r));
+    const skip = (page - 1) * limit;
+    const where: Prisma.EmployeeWhereInput = {};
+
+    // If regular employee, restrict view to themselves
+    if (!isHrOrAdmin) {
+      const myEmp = await this.prisma.employee.findUnique({ where: { userId: user.id } });
+      if (myEmp) {
+        where.id = myEmp.id;
+      }
+    }
+
+    if (search && search.trim()) {
+      const q = search.trim();
+      where.OR = [
+        { fullName: { contains: q, mode: 'insensitive' } },
+        { employeeCode: { contains: q, mode: 'insensitive' } },
+        { workEmail: { contains: q, mode: 'insensitive' } },
+        { department: { contains: q, mode: 'insensitive' } },
+        { designation: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    if (department && department !== 'ALL') where.department = department;
+    if (designation && designation !== 'ALL') where.designation = designation;
+    if (employmentType && employmentType !== 'ALL') where.employmentType = employmentType as any;
+    if (status && status !== 'ALL') where.status = status as any;
+
+    const [total, items] = await Promise.all([
+      this.prisma.employee.count({ where }),
+      this.prisma.employee.findMany({
+        where,
+        select: {
+          id: true,
+          employeeCode: true,
+          fullName: true,
+          workEmail: true,
+          department: true,
+          designation: true,
+          employmentType: true,
+          status: true,
+          category: true,
+          updatedAt: true,
+        },
+        orderBy: { updatedAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    // Compute document counts for each employee
+    const empIds = items.map((e) => e.id);
+    const docCounts = await this.prisma.document.groupBy({
+      by: ['entityId'],
+      where: {
+        entityType: { in: ['Employee', 'EMPLOYEE'] },
+        entityId: { in: empIds },
+      },
+      _count: { id: true },
+    });
+
+    const docCountMap = new Map<string, number>();
+    docCounts.forEach((dc) => docCountMap.set(dc.entityId, dc._count.id));
+
+    const enrichedItems = items.map((emp) => ({
+      ...emp,
+      documentCount: docCountMap.get(emp.id) || 0,
+    }));
+
+    return {
+      items: enrichedItems,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * GET /api/v1/documents/overview/employees/:id — Employee Overview Details & Categorized Documents
+   */
+  async getEmployeeDocumentDetails(user: any, empId: string) {
+    await this.verifyEntityAuthorization(user, 'Employee', empId);
+
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: empId },
+      include: {
+        organization: { select: { id: true, legalName: true, orgNumber: true } },
+      },
+    });
+
+    if (!employee) {
+      throw new NotFoundException(`Employee record with ID '${empId}' not found.`);
+    }
+
+    // Initialize default employee folders (Identity, Education, Employment, Certifications, HR)
+    await this.initializeDefaultFolders(user, 'Employee', empId, user.id);
+
+    const documents = await this.prisma.document.findMany({
+      where: {
+        entityType: { in: ['Employee', 'EMPLOYEE'] },
+        entityId: empId,
+      },
+      include: {
+        uploader: { select: { id: true, email: true } },
+        folder: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      employee: {
+        id: employee.id,
+        employeeCode: employee.employeeCode,
+        fullName: employee.fullName,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        workEmail: employee.workEmail,
+        department: employee.department,
+        designation: employee.designation,
+        employmentType: employee.employmentType,
+        status: employee.status,
+        category: employee.category,
+        joiningDate: employee.joiningDate,
+        organization: employee.organization,
+      },
+      documents,
+    };
+  }
+
+  /**
+   * GET /api/v1/documents/overview/projects/:id — Project Overview Details & Categorized Documents
+   */
+  async getProjectDocumentDetails(user: any, projectId: string) {
+    await this.verifyEntityAuthorization(user, 'Project', projectId);
+
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        organization: { select: { id: true, legalName: true, orgNumber: true } },
+      },
+    });
+
+    if (!project) {
+      throw new NotFoundException(`Project record with ID '${projectId}' not found.`);
+    }
+
+    // Initialize default project folders (Requirements, Technical, Meetings, Deliverables, Reports)
+    await this.initializeDefaultFolders(user, 'Project', projectId, user.id);
+
+    const documents = await this.prisma.document.findMany({
+      where: {
+        entityType: { in: ['Project', 'PROJECT'] },
+        entityId: projectId,
+      },
+      include: {
+        uploader: { select: { id: true, email: true } },
+        folder: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      project: {
+        id: project.id,
+        projectCode: project.projectCode,
+        title: project.title,
+        description: project.description,
+        status: project.status,
+        category: project.category,
+        budget: project.budget,
+        timeline: project.timeline,
+        createdAt: project.createdAt,
+        updatedAt: project.updatedAt,
+        organization: project.organization,
+      },
+      documents,
+    };
   }
 }

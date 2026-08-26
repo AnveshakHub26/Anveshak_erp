@@ -55,6 +55,69 @@ export class DocumentsController {
     return { success: true, data };
   }
 
+  @Get('overview/organizations')
+  @ApiOperation({ summary: 'GET /api/v1/documents/overview/organizations — Paginated list of Organizations with doc & project counts' })
+  async getOrganizationsOverview(
+    @CurrentUser() user: any,
+    @Query('search') search?: string,
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 20;
+    const data = await this.docsService.getOrganizationsOverview(user, search, status, pageNum, limitNum);
+    return { success: true, data };
+  }
+
+  @Get('overview/organizations/:id')
+  @ApiOperation({ summary: 'GET /api/v1/documents/overview/organizations/:id — Organization Overview Details, Direct Docs & Projects' })
+  async getOrganizationDocumentDetails(@CurrentUser() user: any, @Param('id') id: string) {
+    const data = await this.docsService.getOrganizationDocumentDetails(user, id);
+    return { success: true, data };
+  }
+
+  @Get('overview/employees')
+  @ApiOperation({ summary: 'GET /api/v1/documents/overview/employees — Paginated list of Employees with doc counts' })
+  async getEmployeesOverview(
+    @CurrentUser() user: any,
+    @Query('search') search?: string,
+    @Query('department') department?: string,
+    @Query('designation') designation?: string,
+    @Query('employmentType') employmentType?: string,
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 20;
+    const data = await this.docsService.getEmployeesOverview(
+      user,
+      search,
+      department,
+      designation,
+      employmentType,
+      status,
+      pageNum,
+      limitNum,
+    );
+    return { success: true, data };
+  }
+
+  @Get('overview/employees/:id')
+  @ApiOperation({ summary: 'GET /api/v1/documents/overview/employees/:id — Employee Overview Details & Categorized Documents' })
+  async getEmployeeDocumentDetails(@CurrentUser() user: any, @Param('id') id: string) {
+    const data = await this.docsService.getEmployeeDocumentDetails(user, id);
+    return { success: true, data };
+  }
+
+  @Get('overview/projects/:id')
+  @ApiOperation({ summary: 'GET /api/v1/documents/overview/projects/:id — Project Overview Details & Categorized Documents' })
+  async getProjectDocumentDetails(@CurrentUser() user: any, @Param('id') id: string) {
+    const data = await this.docsService.getProjectDocumentDetails(user, id);
+    return { success: true, data };
+  }
+
   @Post('upload-url')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'POST /api/v1/documents/upload-url — Generate presigned upload URL' })
