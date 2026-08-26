@@ -86,17 +86,21 @@ export class DocumentsService {
       );
     }
 
-    const extMatch = dto.filename.match(/\.([a-zA-Z0-9]+)$/);
-    const fileExt = extMatch ? extMatch[1].toLowerCase() : '';
-    const FORBIDDEN_EXTENSIONS = new Set(['exe', 'bat', 'cmd', 'sh', 'vbs', 'js', 'scr', 'pif', 'com', 'dll', 'so']);
-    if (FORBIDDEN_EXTENSIONS.has(fileExt)) {
-      throw new BadRequestException(`Security violation: Executable files (.${fileExt}) are strictly prohibited.`);
-    }
-
     const cleanMime = dto.contentType.trim().toLowerCase();
     if (!ALLOWED_MIME_TYPES.has(cleanMime)) {
       throw new BadRequestException(
         `Unsupported file type '${dto.contentType}'. Allowed types include PDF, Images (PNG, JPG, WEBP), Word, Excel, CSV, Text, and ZIP archives.`,
+      );
+    }
+
+    const DANGEROUS_EXTENSIONS = new Set([
+      '.exe', '.dll', '.bat', '.cmd', '.sh', '.php', '.js', '.vbs', '.ps1', '.py', '.jar', '.msi', '.scr', '.com', '.htm', '.html'
+    ]);
+    const extMatch = dto.filename.match(/\.[a-zA-Z0-9]+$/);
+    const ext = extMatch ? extMatch[0].toLowerCase() : '';
+    if (DANGEROUS_EXTENSIONS.has(ext)) {
+      throw new BadRequestException(
+        `File upload blocked: File extension '${ext}' is classified as an executable or script format.`,
       );
     }
 

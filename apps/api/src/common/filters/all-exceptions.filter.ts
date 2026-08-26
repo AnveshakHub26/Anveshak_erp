@@ -44,9 +44,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
       }
     } else if (exception instanceof Error) {
       this.logger.error(`Unhandled Exception: ${exception.message}`, exception.stack);
-      if (process.env.SENTRY_DSN) {
-        this.logger.log(`[Sentry Alert] Telemetry capturing unhandled exception: ${exception.message}`);
-      }
     }
 
     response.status(status).json({

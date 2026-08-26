@@ -9,18 +9,17 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
 
-  // Security Headers via Helmet (HSTS, DENY Frameguard, noSniff)
+  // Security Headers via Helmet (HSTS, Clickjacking Prevention, NoSniff)
   app.use(
     helmet({
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
-          imgSrc: ["'self'", 'data:', 'blob:', 'http://localhost:9000'],
+          imgSrc: ["'self'", 'data:', 'blob:', 'https://*.supabase.co', 'http://localhost:9000'],
           scriptSrc: ["'self'", "'unsafe-inline'"],
         },
       },
-      crossOriginEmbedderPolicy: false,
       hsts: {
         maxAge: 31536000,
         includeSubDomains: true,
@@ -29,7 +28,10 @@ async function bootstrap() {
       frameguard: {
         action: 'deny',
       },
-      noSniff: true,
+      referrerPolicy: {
+        policy: 'strict-origin-when-cross-origin',
+      },
+      crossOriginEmbedderPolicy: false,
     }),
   );
 

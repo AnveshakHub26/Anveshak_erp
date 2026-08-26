@@ -23,6 +23,7 @@ import {
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('Documents Management')
 @ApiBearerAuth()
@@ -118,6 +119,7 @@ export class DocumentsController {
     return { success: true, data };
   }
 
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('upload-url')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'POST /api/v1/documents/upload-url — Generate presigned upload URL' })
