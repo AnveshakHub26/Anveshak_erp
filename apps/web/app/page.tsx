@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import { AnveshakLogo } from '@/components/ui/anveshak-logo';
+import { DotField } from '@/components/ui/dot-field';
 
 export default function Fnd01LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -49,43 +50,43 @@ export default function Fnd01LandingPage() {
   const businessVerticals = [
     {
       code: 'BV-01',
-      name: 'Research-led Projects',
-      tag: 'Deep Tech & Engineering',
+      name: 'Research & Deep Tech',
+      tag: 'Translational R&D',
       icon: Cpu,
       description:
-        'Domain-focused scientific research, advanced technical studies, and engineering-driven innovation initiatives.',
+        'Applied research projects, deep-tech prototyping, TRL acceleration, and institutional research collaboration.',
     },
     {
       code: 'BV-02',
-      name: 'IP and Knowledge Management',
+      name: 'IP & Knowledge Capital',
       tag: 'Patents & Literature',
-      icon: FileCode2,
+      icon: ShieldCheck,
       description:
-        'Intellectual property creation, patent-protected strategies, comprehensive literature review, and licensing frameworks.',
+        'Patenting advisory, prior-art analytics, trademark protection, technology transfer, and IP portfolio management.',
     },
     {
       code: 'BV-03',
-      name: 'Startup Ecosystem',
-      tag: 'Incubation & Acceleration',
+      name: 'Startup Incubation',
+      tag: 'Commercialization',
       icon: Rocket,
       description:
-        'Incubation support, startup acceleration, venture backing, and technology commercialization pathways.',
+        'Spin-off acceleration, venture building, seed capital linkage, business model validation, and GTM strategy.',
     },
     {
       code: 'BV-04',
-      name: 'Consulting',
-      tag: 'Strategy & Advisory',
-      icon: Building2,
+      name: 'Consulting & Advisory',
+      tag: 'Strategic Roadmaps',
+      icon: Compass,
       description:
-        'Strategic Advisory, technology roadmap formulation, industry transformation, and execution-ready consulting.',
+        'Corporate R&D auditing, technology roadmapping, innovation culture transformation, and ESG research advisory.',
     },
     {
       code: 'BV-05',
-      name: 'Design and Development',
-      tag: 'Prototypes & Systems',
+      name: 'Design & Prototyping',
+      tag: 'Full-Stack Engineering',
       icon: Layers,
       description:
-        'Full-stack product design, prototype development, hardware/software design, and system integration.',
+        'Hardware CAD design, rapid 3D prototyping, software architecture, embedded system design, and pilot testing.',
     },
     {
       code: 'BV-06',
@@ -108,17 +109,17 @@ export default function Fnd01LandingPage() {
     },
     {
       title: 'Process',
-      icon: Compass,
-      badge: 'TRL Framework',
+      icon: Activity,
+      badge: 'Rigorous Methodology',
       description:
-        'Guided by Technology Readiness Levels (TRL 1-9), systematic literature search, global best practices, and rigorous validation frameworks that guarantee technical reliability.',
+        'Structured R&D workflows mapped against TRL 1 to 9 milestones. Automated document validation, transparent milestones, and immutable audit logs.',
     },
     {
       title: 'Product',
       icon: Target,
-      badge: 'IP Commercialization',
+      badge: 'Market Output',
       description:
-        'Delivering patent-protected, risk-mitigated technologies with market-ready commercialization support that drives long-term competitive advantage.',
+        'Converting laboratory breakthroughs into commercial IP, high-impact patents, scalable startup spin-offs, and enterprise-grade software products.',
     },
   ];
 
@@ -157,66 +158,58 @@ export default function Fnd01LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col font-sans selection:bg-[#d49b38] selection:text-[#151c2e]">
-      {/* 1. HEADER (Midnight Navy Header) */}
-      <header className="sticky top-0 z-50 border-b border-[#182238] bg-[#151c2e] text-white shadow-md">
+    <div className="min-h-screen bg-slate-50 text-[#0F172A] font-sans antialiased">
+      {/* 1. PUBLIC HEADER NAVIGATION */}
+      <header className="sticky top-0 z-50 border-b border-[#E2E8F0] bg-white/95 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          {/* Brand Logo & Name */}
-          <Link
-            href="/"
-            className="flex items-center space-x-3 focus:outline-none focus:ring-2 focus:ring-[#d49b38] rounded-lg p-1 transition-opacity hover:opacity-95"
-          >
-            <AnveshakLogo size="md" showText={true} />
-          </Link>
+          <AnveshakLogo size="md" variant="light-bg" />
 
-          {/* Desktop Navigation CTAs */}
-          <div className="hidden items-center space-x-3 md:flex">
-            <Link
-              href="/workshops"
-              className="rounded-lg border border-[#d49b38]/40 bg-[#182238] px-3.5 py-2 text-xs font-semibold text-[#d49b38] hover:border-[#d49b38] hover:bg-[#182238]/90 transition-all flex items-center space-x-1.5"
-            >
-              <Calendar className="h-3.5 w-3.5" />
-              <span>Workshops</span>
+          {/* Desktop Nav Links */}
+          <nav className="hidden items-center space-x-6 text-xs font-semibold md:flex">
+            <Link href="/workshops" className="text-[#64748B] hover:text-[#d49b38] transition-colors">
+              Workshops
+            </Link>
+            <Link href="/login" className="text-[#64748B] hover:text-[#d49b38] transition-colors">
+              Login
             </Link>
             <Link
               href="/register"
-              className="rounded-lg border border-[#d49b38]/40 bg-[#182238] px-4 py-2 text-xs font-semibold text-white hover:border-[#d49b38] transition-all"
+              className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-[#d49b38] to-[#c48b28] px-4 py-2 text-xs font-bold text-[#151c2e] hover:opacity-95 transition-all shadow-xs"
             >
               Register Organization
             </Link>
-            <Link
-              href="/login"
-              className="rounded-lg bg-gradient-to-r from-[#d49b38] to-[#c48b28] px-5 py-2 text-xs font-bold text-[#151c2e] hover:opacity-95 shadow-sm transition-all"
-            >
-              Login
-            </Link>
-          </div>
+          </nav>
 
-          {/* Mobile Menu Button */}
-          <div className="flex md:hidden">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="rounded-lg p-2 text-[#94a3b8] hover:bg-[#182238] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#d49b38]"
-              aria-label="Toggle Navigation Menu"
-            >
-              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
-          </div>
+          {/* Mobile Hamburger Button */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="flex items-center justify-center rounded-lg p-2 text-[#64748B] hover:bg-[#F8FAFC] md:hidden"
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
 
-        {/* Mobile Navigation Drawer */}
+        {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className="border-b border-[#182238] bg-[#182238] px-4 py-4 md:hidden space-y-3">
+          <div className="border-b border-[#E2E8F0] bg-white px-4 py-4 md:hidden space-y-3 text-xs">
             <Link
-              href="/login"
-              className="block w-full rounded-lg bg-gradient-to-r from-[#d49b38] to-[#c48b28] py-2.5 text-center text-xs font-bold text-[#151c2e]"
+              href="/workshops"
+              className="block font-semibold text-[#64748B] hover:text-[#d49b38]"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Login
+              Workshops &amp; Masterclasses
+            </Link>
+            <Link
+              href="/login"
+              className="block font-semibold text-[#64748B] hover:text-[#d49b38]"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Sign In
             </Link>
             <Link
               href="/register"
-              className="block w-full rounded-lg border border-[#d49b38]/40 bg-[#151c2e] py-2.5 text-center text-xs font-semibold text-white"
+              className="block w-full text-center rounded-lg bg-gradient-to-r from-[#d49b38] to-[#c48b28] py-2.5 font-bold text-[#151c2e]"
               onClick={() => setMobileMenuOpen(false)}
             >
               Register Organization
@@ -225,11 +218,24 @@ export default function Fnd01LandingPage() {
         )}
       </header>
 
-      {/* MAIN CONTENT AREA */}
-      <main className="flex-1">
-        {/* 2. TWO-COLUMN PRODUCT HERO SECTION */}
-        <section className="border-b border-[#E2E8F0] bg-white py-12 md:py-16">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <main>
+        {/* 2. PRODUCT HERO SECTION WITH INTERACTIVE DOT FIELD BACKGROUND */}
+        <section className="relative overflow-hidden border-b border-[#E2E8F0] bg-white py-16 md:py-24">
+          <div className="absolute inset-0 z-0 opacity-80">
+            <DotField
+              dotRadius={1.5}
+              dotSpacing={16}
+              bulgeStrength={55}
+              glowRadius={180}
+              sparkle={true}
+              waveAmplitude={1.5}
+              gradientFrom="rgba(212, 155, 56, 0.35)"
+              gradientTo="rgba(15, 23, 42, 0.2)"
+              glowColor="rgba(212, 155, 56, 0.25)"
+            />
+          </div>
+
+          <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl space-y-6">
               {/* Main Headline */}
               <h1 className="text-3xl font-extrabold tracking-tight text-[#0F172A] sm:text-4xl md:text-5xl leading-tight">
@@ -243,7 +249,7 @@ export default function Fnd01LandingPage() {
               </p>
 
               {/* E2E Compatibility Badge */}
-              <div className="inline-block rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-1 text-xs font-semibold text-[#475569]">
+              <div className="inline-block rounded-lg border border-[#E2E8F0] bg-[#F8FAFC]/90 backdrop-blur-xs px-3 py-1 text-xs font-semibold text-[#475569]">
                 Integrated Enterprise Management Platform
               </div>
 
@@ -251,13 +257,13 @@ export default function Fnd01LandingPage() {
               <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <Link
                   href="/login"
-                  className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#d49b38] to-[#c48b28] px-6 py-3 text-xs font-bold text-[#151c2e] shadow-sm hover:opacity-95 transition-all"
+                  className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#d49b38] to-[#c48b28] px-6 py-3 text-xs font-bold text-[#151c2e] shadow-md hover:opacity-95 transition-all"
                 >
                   Login to Platform <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
                 <Link
                   href="/register"
-                  className="inline-flex items-center justify-center rounded-xl border border-[#E2E8F0] bg-white px-6 py-3 text-xs font-semibold text-[#0F172A] hover:bg-[#F8FAFC] hover:border-[#d49b38] transition-all"
+                  className="inline-flex items-center justify-center rounded-xl border border-[#E2E8F0] bg-white/90 backdrop-blur-xs px-6 py-3 text-xs font-semibold text-[#0F172A] hover:bg-[#F8FAFC] hover:border-[#d49b38] transition-all shadow-xs"
                 >
                   Register Organization
                 </Link>
