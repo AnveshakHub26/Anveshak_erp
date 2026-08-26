@@ -962,7 +962,7 @@ export class DocumentsService {
     }
 
     // Initialize default organization folders
-    await this.initializeDefaultFolders(user, 'Organization', orgId, user.id);
+    await this.initializeDefaultFolders(null, 'Organization', orgId, user.id);
 
     // Fetch project document counts
     const projectIds = organization.projects.map((p) => p.id);
@@ -1124,7 +1124,7 @@ export class DocumentsService {
     }
 
     // Initialize default employee folders (Identity, Education, Employment, Certifications, HR)
-    await this.initializeDefaultFolders(user, 'Employee', empId, user.id);
+    await this.initializeDefaultFolders(null, 'Employee', empId, user.id);
 
     const documents = await this.prisma.document.findMany({
       where: {
@@ -1176,7 +1176,7 @@ export class DocumentsService {
     }
 
     // Initialize default project folders (Requirements, Technical, Meetings, Deliverables, Reports)
-    await this.initializeDefaultFolders(user, 'Project', projectId, user.id);
+    await this.initializeDefaultFolders(null, 'Project', projectId, user.id);
 
     const documents = await this.prisma.document.findMany({
       where: {
