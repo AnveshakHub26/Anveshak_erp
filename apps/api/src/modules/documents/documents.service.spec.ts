@@ -90,7 +90,7 @@ describe('DocumentsService & Folder Engine Unit Tests', () => {
 
       expect(result).toBeDefined();
       expect(result.uploadUrl).toBe('https://storage.supabase.co/upload/presigned-key');
-      expect(result.storageKey).toContain('project/proj-123/');
+      expect(result.storageKey).toContain('quarantine/project/proj-123/');
       expect(mockStorageAdapter.generateSignedUploadUrl).toHaveBeenCalled();
     });
 

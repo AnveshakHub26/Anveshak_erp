@@ -124,7 +124,7 @@ export class DocumentsService {
     }
 
     const sanitizedFilename = dto.filename.replace(/[^a-zA-Z0-9_.-]/g, '_');
-    const storageKey = `${dto.entityType.toLowerCase()}/${dto.entityId}/${Date.now()}_${sanitizedFilename}`;
+    const storageKey = `quarantine/${dto.entityType.toLowerCase()}/${dto.entityId}/${Date.now()}_${sanitizedFilename}`;
 
     const uploadUrl = await this.storageAdapter.generateSignedUploadUrl(
       storageKey,
@@ -184,7 +184,7 @@ export class DocumentsService {
         folderId: data.folderId || null,
         type: docType,
         storageKey: data.storageKey,
-        scanStatus: 'CLEAN',
+        scanStatus: 'PENDING',
         visibility,
         uploadedBy: userId,
         versions: {
@@ -250,8 +250,10 @@ export class DocumentsService {
   async getSignedDownloadUrl(id: string, user: any) {
     const doc = await this.findOne(id, user);
 
-    if (doc.scanStatus === 'INFECTED') {
-      throw new ForbiddenException('Document failed virus scan security check. Download restricted.');
+    if (doc.scanStatus !== 'CLEAN') {
+      throw new ForbiddenException(
+        `Document download restricted: Security scan status is currently '${doc.scanStatus}'. Downloads are strictly prohibited until verified CLEAN by the scanning subsystem.`,
+      );
     }
 
     const downloadUrl = await this.storageAdapter.generateSignedDownloadUrl(doc.storageKey, 300);
