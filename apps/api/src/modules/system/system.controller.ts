@@ -24,6 +24,14 @@ export class SystemController {
 
   @Public()
   @SkipThrottle()
+  @Get('system/health')
+  @ApiOperation({ summary: 'FND-00 System Health & Connectivity Check' })
+  async checkSystemHealth() {
+    return this.systemService.checkHealth();
+  }
+
+  @Public()
+  @SkipThrottle()
   @Get('admin/health')
   @ApiOperation({ summary: 'ADM-06 System Health & Connectivity Check' })
   async checkHealth() {
