@@ -81,10 +81,24 @@ export class LeaveService {
       });
       if (!existing) {
         await this.prisma.leaveType.create({ data: d }).catch(() => {});
-      } else if (existing.name !== d.name || existing.code !== d.code) {
+      } else {
+        // Update name, code, and default allocation for present leave types
         await this.prisma.leaveType
-          .update({ where: { id: existing.id }, data: { name: d.name, code: d.code } })
+          .update({
+            where: { id: existing.id },
+            data: { name: d.name, code: d.code, annualAllocation: d.annualAllocation },
+          })
           .catch(() => {});
+
+        // Sync allocatedDays on current year balances for existing employees if allocation changed
+        if (d.code === 'EARNED' && existing.annualAllocation !== 18) {
+          await this.prisma.leaveBalance
+            .updateMany({
+              where: { leaveTypeId: existing.id, year: new Date().getFullYear(), allocatedDays: { lt: 18 } },
+              data: { allocatedDays: 18 },
+            })
+            .catch(() => {});
+        }
       }
     }
   }
