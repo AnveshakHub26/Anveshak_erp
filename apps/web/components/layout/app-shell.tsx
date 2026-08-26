@@ -150,31 +150,34 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
             </div>
 
             {/* Dynamic Breadcrumbs */}
-            <div className="hidden lg:flex items-center space-x-1 text-xs text-[#64748B] truncate ml-2">
-              <ChevronRight className="h-3.5 w-3.5 text-[#CBD5E1] shrink-0" />
+            <nav aria-label="Breadcrumb" className="hidden lg:flex items-center space-x-1 text-xs text-[#64748B] min-w-0 ml-2">
+              <ChevronRight className="h-3.5 w-3.5 text-[#94A3B8] shrink-0 self-center" />
               {pathSegments.length === 0 ? (
-                <span className="font-semibold text-[#0F172A]">Dashboard</span>
+                <span className="font-bold text-[#0F172A] leading-none">Dashboard</span>
               ) : (
                 pathSegments.map((segment, idx) => {
                   const href = '/' + pathSegments.slice(0, idx + 1).join('/');
                   const isLast = idx === pathSegments.length - 1;
                   return (
-                    <React.Fragment key={href}>
-                      {idx > 0 && <ChevronRight className="h-3.5 w-3.5 text-[#CBD5E1] shrink-0" />}
+                    <div key={href} className="inline-flex items-center space-x-1 leading-none shrink-0">
+                      {idx > 0 && <ChevronRight className="h-3.5 w-3.5 text-[#94A3B8] shrink-0 self-center" />}
                       {isLast ? (
-                        <span className="font-bold text-[#0F172A] truncate">
+                        <span className="font-bold text-[#0F172A] leading-none flex items-center">
                           {getSegmentLabel(segment)}
                         </span>
                       ) : (
-                        <Link href={href} className="hover:text-[#d49b38] transition-colors truncate">
+                        <Link
+                          href={href}
+                          className="font-medium text-[#64748B] hover:text-[#d49b38] transition-colors leading-none flex items-center"
+                        >
                           {getSegmentLabel(segment)}
                         </Link>
                       )}
-                    </React.Fragment>
+                    </div>
                   );
                 })
               )}
-            </div>
+            </nav>
           </div>
 
           {/* Right Header Section */}

@@ -110,9 +110,6 @@ export function AnveshakLogo({
         <div className="flex flex-col whitespace-nowrap select-none overflow-hidden min-w-0">
           <div className={`font-extrabold tracking-tight ${dimensions.text} ${textClass} flex items-center gap-1.5 whitespace-nowrap`}>
             <span>AnveshakHub</span>
-            <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[8px] font-extrabold text-amber-500 ring-1 ring-amber-500/30 uppercase tracking-wider whitespace-nowrap">
-              Enterprise
-            </span>
           </div>
           <span className={`font-semibold text-slate-400 tracking-wider uppercase whitespace-nowrap ${dimensions.sub}`}>
             Bridging Innovation &amp; Industry
