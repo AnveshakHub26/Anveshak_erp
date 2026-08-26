@@ -158,60 +158,73 @@ export default function Fnd01LandingPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-[#0F172A] font-sans antialiased">
-      {/* 1. PUBLIC HEADER NAVIGATION */}
-      <header className="sticky top-0 z-50 border-b border-[#E2E8F0] bg-white/95 backdrop-blur-md">
+      {/* 1. PUBLIC HEADER NAVIGATION (Midnight Navy Header) */}
+      <header className="sticky top-0 z-50 border-b border-[#182238] bg-[#151c2e] text-white shadow-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <AnveshakLogo size="md" variant="light-bg" />
+          <Link href="/" className="flex items-center space-x-3 focus:outline-none focus:ring-2 focus:ring-[#d49b38] rounded-lg p-1 transition-opacity hover:opacity-95">
+            <AnveshakLogo size="md" showText={true} variant="dark-bg" />
+          </Link>
 
-          {/* Desktop Nav Links */}
-          <nav className="hidden items-center space-x-6 text-xs font-semibold md:flex">
-            <Link href="/workshops" className="text-[#64748B] hover:text-[#d49b38] transition-colors">
-              Workshops
-            </Link>
-            <Link href="/login" className="text-[#64748B] hover:text-[#d49b38] transition-colors">
-              Login
+          {/* Desktop Nav CTAs */}
+          <div className="hidden items-center space-x-3 md:flex">
+            <Link
+              href="/workshops"
+              className="rounded-lg border border-[#d49b38]/40 bg-[#182238] px-3.5 py-2 text-xs font-semibold text-[#d49b38] hover:border-[#d49b38] hover:bg-[#182238]/90 transition-all flex items-center space-x-1.5"
+            >
+              <Calendar className="h-3.5 w-3.5" />
+              <span>Workshops</span>
             </Link>
             <Link
               href="/register"
-              className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-[#d49b38] to-[#c48b28] px-4 py-2 text-xs font-bold text-[#151c2e] hover:opacity-95 transition-all shadow-xs"
+              className="rounded-lg border border-[#d49b38]/40 bg-[#182238] px-4 py-2 text-xs font-semibold text-white hover:border-[#d49b38] transition-all"
             >
               Register Organization
             </Link>
-          </nav>
+            <Link
+              href="/login"
+              className="rounded-lg bg-gradient-to-r from-[#d49b38] to-[#c48b28] px-5 py-2 text-xs font-bold text-[#151c2e] hover:opacity-95 shadow-sm transition-all"
+            >
+              Login
+            </Link>
+          </div>
 
           {/* Mobile Hamburger Button */}
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="flex items-center justify-center rounded-lg p-2 text-[#64748B] hover:bg-[#F8FAFC] md:hidden"
-          >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+          <div className="flex md:hidden">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="rounded-lg p-2 text-[#94a3b8] hover:bg-[#182238] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#d49b38]"
+              aria-label="Toggle Navigation Menu"
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className="border-b border-[#E2E8F0] bg-white px-4 py-4 md:hidden space-y-3 text-xs">
+          <div className="border-b border-[#182238] bg-[#182238] px-4 py-4 md:hidden space-y-3 text-xs">
             <Link
               href="/workshops"
-              className="block font-semibold text-[#64748B] hover:text-[#d49b38]"
+              className="flex items-center space-x-2 text-sm font-semibold text-[#d49b38]"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Workshops &amp; Masterclasses
-            </Link>
-            <Link
-              href="/login"
-              className="block font-semibold text-[#64748B] hover:text-[#d49b38]"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Sign In
+              <Calendar className="h-4 w-4" />
+              <span>Workshops &amp; Masterclasses</span>
             </Link>
             <Link
               href="/register"
-              className="block w-full text-center rounded-lg bg-gradient-to-r from-[#d49b38] to-[#c48b28] py-2.5 font-bold text-[#151c2e]"
+              className="block w-full rounded-lg border border-[#d49b38]/40 bg-[#151c2e] py-2.5 text-center text-xs font-semibold text-white"
               onClick={() => setMobileMenuOpen(false)}
             >
               Register Organization
+            </Link>
+            <Link
+              href="/login"
+              className="block w-full rounded-lg bg-gradient-to-r from-[#d49b38] to-[#c48b28] py-2.5 text-center text-xs font-bold text-[#151c2e]"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Login
             </Link>
           </div>
         )}
