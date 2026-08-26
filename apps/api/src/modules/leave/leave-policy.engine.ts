@@ -162,33 +162,40 @@ export class LeavePolicyEngine {
   ): boolean {
     const rawGender = (employee.gender || '').trim();
     const genderLower = rawGender.toLowerCase();
-    const isMale = genderLower === 'male';
-    const isFemale = genderLower === 'female';
-
     const code = leaveTypeCode.toUpperCase();
 
-    if (code === 'PATERNITY') {
-      if (isFemale) return false;
-      return true; // Eligible for Male and "Others / Prefer not to say"
-    }
-
-    if (code === 'MATERNITY') {
-      if (isMale) return false;
-      return true; // Eligible for Female and "Others / Prefer not to say"
-    }
-
-    if (code === 'MENSTRUAL') {
-      if (isMale) return false;
-
-      // Age check: Eligible while age <= menstrualLeaveMaxAge (50)
-      const age = LeavePolicyEngine.calculateAge(employee.dateOfBirth);
-      if (age !== null && age > rules.menstrualLeaveMaxAge) {
-        return false;
+    // Explicit Female:
+    if (genderLower === 'female') {
+      if (code === 'PATERNITY') return false;
+      if (code === 'MENSTRUAL') {
+        const age = LeavePolicyEngine.calculateAge(employee.dateOfBirth);
+        if (age !== null && age > rules.menstrualLeaveMaxAge) {
+          return false;
+        }
+        return true;
       }
-      return true; // Eligible for Female/Others under age cap
+      return true; // Maternity, Earned, Casual, Sick, Study, Unpaid
     }
 
-    return true; // Earned, Casual, Sick, Study, Unpaid
+    // Explicit Male OR Unspecified/Missing gender in profile:
+    if (genderLower === 'male' || !rawGender) {
+      if (code === 'MATERNITY' || code === 'MENSTRUAL') return false;
+      return true; // Paternity, Earned, Casual, Sick, Study, Unpaid
+    }
+
+    // Explicit "Others / Prefer not to say" or "Other":
+    if (genderLower.includes('other') || genderLower.includes('prefer not')) {
+      if (code === 'MENSTRUAL') {
+        const age = LeavePolicyEngine.calculateAge(employee.dateOfBirth);
+        if (age !== null && age > rules.menstrualLeaveMaxAge) {
+          return false;
+        }
+        return true;
+      }
+      return true; // All categories eligible
+    }
+
+    return true;
   }
 
   /**

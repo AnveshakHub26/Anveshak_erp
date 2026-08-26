@@ -328,13 +328,34 @@ export default function EmployeeDashboardPage() {
                             {b.leaveType.isPaid ? 'Paid' : 'Unpaid'}
                           </span>
                         </div>
-                        <div className="flex items-baseline space-x-1">
-                          <span className="text-xl font-extrabold text-[#d49b38]">{b.availableDays}</span>
-                          <span className="text-[11px] text-[#64748B]">Available</span>
-                        </div>
-                        <p className="text-[10px] text-[#64748B] border-t border-[#E2E8F0] pt-1 mt-1">
-                          {b.allocatedDays} Allocated • {b.usedDays} Used • {b.pendingDays} Pending
-                        </p>
+                        {b.isApplicationBased ? (
+                          <div className="pt-0.5">
+                            <span className="inline-block px-2 py-0.5 bg-amber-50 text-amber-900 border border-amber-200 rounded text-[10px] font-bold">
+                              Application-Based
+                            </span>
+                            <p className="text-[10px] text-[#64748B] mt-1">Proof document required</p>
+                          </div>
+                        ) : b.isMonthly ? (
+                          <div>
+                            <div className="flex items-baseline space-x-1">
+                              <span className="text-xl font-extrabold text-[#d49b38]">{b.availableDays}</span>
+                              <span className="text-[11px] text-[#64748B]">Available this month</span>
+                            </div>
+                            <p className="text-[10px] text-[#64748B] border-t border-[#E2E8F0] pt-1 mt-1">
+                              {b.usedThisMonth || 0}/1 used in current month
+                            </p>
+                          </div>
+                        ) : (
+                          <div>
+                            <div className="flex items-baseline space-x-1">
+                              <span className="text-xl font-extrabold text-[#d49b38]">{b.availableDays}</span>
+                              <span className="text-[11px] text-[#64748B]">Available</span>
+                            </div>
+                            <p className="text-[10px] text-[#64748B] border-t border-[#E2E8F0] pt-1 mt-1">
+                              {b.allocatedDays} Allocated • {b.usedDays} Used • {b.pendingDays} Pending
+                            </p>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
