@@ -576,7 +576,7 @@ export class SystemMonitorService {
     const supaKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const supabaseStatus = supaUrl && supaKey ? 'OPERATIONAL' : 'NOT_CONFIGURED';
 
-    const storageBucket = process.env.SUPABASE_STORAGE_BUCKET;
+    const storageBucket = process.env.SUPABASE_STORAGE_BUCKET || 'anveshak-private-documents';
     const storageStatus = supaUrl && storageBucket ? 'OPERATIONAL' : 'NOT_CONFIGURED';
 
     const smtpHost = process.env.SMTP_HOST;
