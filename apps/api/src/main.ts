@@ -44,6 +44,7 @@ async function bootstrap() {
   // Explicit CORS configuration (L-05 Hardened: No blanket wildcard origin matching in production)
   const isProd = process.env.NODE_ENV === 'production';
   const rawAllowed = [
+    'https://anveshak-erp.vercel.app',
     process.env.APP_URL,
     ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : []),
     ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
@@ -60,7 +61,7 @@ async function bootstrap() {
 
       const normalizedOrigin = origin.replace(/\/+$/, '');
 
-      if (rawAllowed.includes(normalizedOrigin)) {
+      if (rawAllowed.includes(normalizedOrigin) || normalizedOrigin.includes('anveshak-erp.vercel.app')) {
         return callback(null, true);
       }
 
@@ -73,7 +74,7 @@ async function bootstrap() {
     },
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type, Accept, Authorization, Cookie, X-Requested-With',
+    allowedHeaders: 'Content-Type, Accept, Authorization, Cookie, X-Requested-With, X-Correlation-Id, x-correlation-id, Cache-Control, Pragma',
   });
 
   // Global Validation Pipe
