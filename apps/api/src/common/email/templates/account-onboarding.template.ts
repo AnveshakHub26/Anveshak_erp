@@ -12,7 +12,7 @@ export function renderAccountOnboardingTemplate(
   const safeEmail = escapeHtml(workEmail);
   const safeRole = roleName ? escapeHtml(roleName) : '';
   const safeCode = employeeCode ? escapeHtml(employeeCode) : '';
-  const safePassword = password ? escapeHtml(password) : '';
+  const displayPassword = password ? escapeHtml(password) : 'Anveshak@1234';
 
   const subject = `🎉 Welcome to AnveshakHub Enterprise — Your Account Credentials`;
 
@@ -25,33 +25,32 @@ export function renderAccountOnboardingTemplate(
       <h2 style="color: #0f172a; font-size: 20px; font-weight: 700; margin-top: 0;">Welcome aboard, ${safeName}!</h2>
       <p style="font-size: 14px; line-height: 1.6; color: #334155;">Your official employee account on <strong>AnveshakHub Enterprise ERP</strong> has been successfully provisioned${safeRole ? ` with role <strong>${safeRole}</strong>` : ''}.</p>
       
-      <div style="background-color: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 24px; margin: 24px 0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
-        <h3 style="margin-top: 0; color: #0f172a; font-size: 15px; font-weight: 700; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">
-          🔑 Your Login Credentials
+      <div style="background-color: #f8fafc; border: 2px solid #cbd5e1; border-radius: 12px; padding: 24px; margin: 24px 0;">
+        <h3 style="margin-top: 0; color: #0f172a; font-size: 16px; font-weight: 700; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">
+          🔑 Your Official Login Credentials
         </h3>
         
         <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 12px;">
           ${safeCode ? `
           <tr>
-            <td style="padding: 8px 0; color: #64748b; font-weight: 600; width: 140px;">Employee ID:</td>
-            <td style="padding: 8px 0; font-family: monospace; color: #d49b38; font-weight: 700; font-size: 15px;">${safeCode}</td>
+            <td style="padding: 10px 0; color: #64748b; font-weight: 600; width: 140px;">Employee ID:</td>
+            <td style="padding: 10px 0; font-family: monospace; color: #d49b38; font-weight: 700; font-size: 16px;">${safeCode}</td>
           </tr>` : ''}
           <tr>
-            <td style="padding: 8px 0; color: #64748b; font-weight: 600;">Work Email:</td>
-            <td style="padding: 8px 0; font-family: monospace; color: #0f172a; font-weight: 600;">${safeEmail}</td>
+            <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Work Email:</td>
+            <td style="padding: 10px 0; font-family: monospace; color: #0f172a; font-weight: 700; font-size: 15px;">${safeEmail}</td>
           </tr>
-          ${safePassword ? `
           <tr>
-            <td style="padding: 8px 0; color: #64748b; font-weight: 600;">Password:</td>
-            <td style="padding: 8px 0;">
-              <span style="font-family: monospace; color: #0f172a; background: #ffffff; border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 14px; letter-spacing: 0.5px; display: inline-block;">${safePassword}</span>
+            <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Password:</td>
+            <td style="padding: 10px 0;">
+              <span style="font-family: 'Courier New', monospace; color: #1e293b; background: #f1f5f9; border: 1.5px solid #94a3b8; padding: 6px 14px; border-radius: 8px; font-weight: 800; font-size: 16px; letter-spacing: 0.5px; display: inline-block;">${displayPassword}</span>
             </td>
-          </tr>` : ''}
+          </tr>
         </table>
       </div>
 
       <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 6px; padding: 14px 16px; margin: 20px 0; font-size: 13px; color: #1e40af; line-height: 1.5;">
-        💡 <strong>Security & Recovery Tip:</strong> You can sign in immediately using your Work Email and Password above. If you want to change your password or update your security credentials at any time, click on <strong>"Forgot Password?"</strong> on the login page.
+        💡 <strong>Security Tip:</strong> You can sign in immediately using your Work Email and Password above. If you wish to update your password at any time, click on <strong>"Forgot Password?"</strong> on the login page.
       </div>
 
       <p style="font-size: 13px; color: #475569; margin-top: 20px;">Click below to access your workspace and get started:</p>
