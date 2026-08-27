@@ -115,8 +115,12 @@ async function main() {
   }
   console.log('✅ Seeded Base Permissions & Linked to ADMIN');
 
-  // 4. Seed Bootstrap Admin Account with Single Supabase Auth Authority
-  const superAdminEmail = (process.env.BOOTSTRAP_ADMIN_EMAIL || 'anveshakhub26@gmail.com').toLowerCase();
+  const isProd = process.env.NODE_ENV === 'production';
+  let superAdminEmail = process.env.BOOTSTRAP_ADMIN_EMAIL;
+  if (isProd && (!superAdminEmail || superAdminEmail.includes('anveshakhub26@gmail.com'))) {
+    throw new Error('Production seed error: BOOTSTRAP_ADMIN_EMAIL environment variable must be set in production.');
+  }
+  superAdminEmail = (superAdminEmail || 'admin@anveshak.local').toLowerCase();
 
   const superAdminUser = await prisma.user.upsert({
     where: { email: superAdminEmail },

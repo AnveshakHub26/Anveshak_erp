@@ -102,6 +102,7 @@ export class AttendanceController {
   @ApiQuery({ name: 'endDate', required: false })
   @ApiQuery({ name: 'status', required: false })
   async getAdminAttendanceHistory(
+    @CurrentUser() user: any,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('employeeId') employeeId?: string,
@@ -110,23 +111,26 @@ export class AttendanceController {
     @Query('endDate') endDate?: string,
     @Query('status') status?: string,
   ) {
-    const data = await this.attendanceService.getAdminAttendanceHistory({
-      page: page ? parseInt(page, 10) : 1,
-      limit: limit ? parseInt(limit, 10) : 20,
-      employeeId,
-      department,
-      startDate,
-      endDate,
-      status,
-    });
+    const data = await this.attendanceService.getAdminAttendanceHistory(
+      {
+        page: page ? parseInt(page, 10) : 1,
+        limit: limit ? parseInt(limit, 10) : 20,
+        employeeId,
+        department,
+        startDate,
+        endDate,
+        status,
+      },
+      user,
+    );
     return { success: true, data };
   }
 
   @Get('admin/summary')
   @Roles('HR', 'ADMIN')
   @ApiOperation({ summary: 'GET /api/v1/attendance/admin/summary — Realtime organization attendance metrics (HR/Admin)' })
-  async getAdminAttendanceSummary() {
-    const data = await this.attendanceService.getAdminAttendanceSummary();
+  async getAdminAttendanceSummary(@CurrentUser() user: any) {
+    const data = await this.attendanceService.getAdminAttendanceSummary(user);
     return { success: true, data };
   }
 }

@@ -6,6 +6,7 @@ import * as jwt from 'jsonwebtoken';
 import { PrismaService } from '../../database/prisma.service';
 import { SupabaseService } from '../../common/supabase/supabase.service';
 import { getJwtSecret } from './jwt-secret.helper';
+import { AuthService } from './auth.service';
 
 class EnterpriseJwtStrategy extends Strategy {
   name = 'jwt';
@@ -30,6 +31,10 @@ class EnterpriseJwtStrategy extends Strategy {
 
     if (!token || token === 'null' || token === 'undefined') {
       return this.fail('Missing authentication token', 401);
+    }
+
+    if (AuthService.isTokenRevoked(token)) {
+      return this.fail('Authentication token has been revoked/logged out', 401);
     }
 
     try {

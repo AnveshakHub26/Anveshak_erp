@@ -7,7 +7,12 @@ const prisma = new PrismaClient();
 async function cleanDatabase() {
   console.log('🧹 Starting AnveshakHub Production ERP Database Purge & Storage Reset...');
 
-  const adminEmail = (process.env.BOOTSTRAP_ADMIN_EMAIL || 'anveshakhub26@gmail.com').toLowerCase();
+  const isProd = process.env.NODE_ENV === 'production';
+  let adminEmail = process.env.BOOTSTRAP_ADMIN_EMAIL;
+  if (isProd && (!adminEmail || adminEmail.includes('anveshakhub26@gmail.com'))) {
+    throw new Error('Production database clean error: BOOTSTRAP_ADMIN_EMAIL environment variable must be set in production.');
+  }
+  adminEmail = (adminEmail || 'admin@anveshak.local').toLowerCase();
   const adminPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD || 'Anveshak';
 
   // 1. Delete Execution & Project Sub-Records

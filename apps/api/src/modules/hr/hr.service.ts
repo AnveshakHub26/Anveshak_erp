@@ -5,6 +5,7 @@ import {
   BadRequestException,
   ConflictException,
   Optional,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { SupabaseService } from '../../common/supabase/supabase.service';
@@ -19,6 +20,8 @@ import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class HRService {
+  private readonly logger = new Logger(HRService.name);
+
   constructor(
     private prisma: PrismaService,
     @Optional() private supabaseService?: SupabaseService,
@@ -209,7 +212,7 @@ export class HRService {
   /**
    * GET /api/v1/hr/employees/:id — Fetch Single Employee Record
    */
-  async getEmployeeById(id: string) {
+  async getEmployeeById(id: string, requestingUserId?: string) {
     const employee = await this.prisma.employee.findUnique({
       where: { id },
       include: {
@@ -233,6 +236,22 @@ export class HRService {
 
     if (!employee) {
       throw new NotFoundException(`Employee record with ID '${id}' not found.`);
+    }
+
+    if (requestingUserId) {
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            actorUserId: requestingUserId,
+            action: 'READ_SENSITIVE_EMPLOYEE_PROFILE',
+            entityType: 'Employee',
+            entityId: employee.id,
+            afterJson: { employeeCode: employee.employeeCode, department: employee.department } as any,
+          },
+        });
+      } catch (err: any) {
+        this.logger.warn(`Failed to log audit event for READ_SENSITIVE_EMPLOYEE_PROFILE: ${err.message}`);
+      }
     }
 
     return employee;

@@ -45,8 +45,24 @@ export class SmtpEmailProvider implements EmailProvider {
         });
       }
 
+      const isProd = process.env.NODE_ENV === 'production';
+      let fromAddress = options.from || process.env.SMTP_FROM || process.env.EMAIL_FROM;
+
+      if (isProd) {
+        if (!fromAddress || fromAddress.includes('anveshakhub26@gmail.com')) {
+          this.logger.error('Production SMTP_FROM environment variable missing: A valid sender address must be configured in production.');
+          return {
+            success: false,
+            provider: this.name,
+            error: 'Production SMTP_FROM configuration error: Sender email address must be configured in production.',
+          };
+        }
+      } else {
+        fromAddress = fromAddress || `"AnveshakHub ERP (Dev)" <no-reply@localhost>`;
+      }
+
       const info = await activeTransporter.sendMail({
-        from: options.from || process.env.SMTP_FROM || `"AnveshakHub Enterprise ERP" <anveshakhub26@gmail.com>`,
+        from: fromAddress,
         to: options.to,
         subject: options.subject,
         html: options.html,

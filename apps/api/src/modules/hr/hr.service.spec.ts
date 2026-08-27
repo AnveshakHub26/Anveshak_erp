@@ -367,4 +367,30 @@ describe('HRService Business Requirements Unit Tests', () => {
       expect(results[0].status).toBe('PROVISIONED_ACTIVE');
     });
   });
+
+  describe('M-05 Audit Logging for Sensitive Read Operations', () => {
+    it('logs READ_SENSITIVE_EMPLOYEE_PROFILE audit event when getEmployeeById is called with requestingUserId', async () => {
+      mockPrisma.employee.findUnique.mockResolvedValue({
+        id: 'emp-uuid-1',
+        employeeCode: 'EMP-2026-000001',
+        department: 'Engineering',
+        user: { id: 'u-1', email: 'john@anveshak.com' },
+        history: [],
+        projectMemberships: [],
+      });
+
+      await service.getEmployeeById('emp-uuid-1', 'admin-actor-123');
+
+      expect(mockPrisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            actorUserId: 'admin-actor-123',
+            action: 'READ_SENSITIVE_EMPLOYEE_PROFILE',
+            entityType: 'Employee',
+            entityId: 'emp-uuid-1',
+          }),
+        }),
+      );
+    });
+  });
 });

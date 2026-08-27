@@ -12,7 +12,6 @@ import * as argon2 from 'argon2';
 import * as crypto from 'crypto';
 
 const SYSTEM_MONITOR_SETTING_KEY = 'SYSTEM_MONITOR_CONFIG';
-const DEFAULT_INITIAL_PIN = '123456789';
 
 @Injectable()
 export class SystemMonitorService {
@@ -23,28 +22,74 @@ export class SystemMonitorService {
   ) {}
 
   /**
-   * Helper to fetch or initialize System Monitor config from SystemSetting table
+   * Helper to fetch System Monitor config from SystemSetting table.
+   * Does NOT auto-create setting with a default/predictable PIN.
    */
   private async getMonitorConfig() {
-    let setting = await this.prisma.systemSetting.findUnique({
+    return await this.prisma.systemSetting.findUnique({
       where: { key: SYSTEM_MONITOR_SETTING_KEY },
     });
+  }
 
-    if (!setting) {
-      const passwordHash = await argon2.hash(DEFAULT_INITIAL_PIN, { type: argon2.argon2id });
-      setting = await this.prisma.systemSetting.create({
-        data: {
-          key: SYSTEM_MONITOR_SETTING_KEY,
-          valueJson: {
-            passwordHash,
-            resetToken: null,
-            resetExpires: null,
-          },
-        },
-      });
+  /**
+   * Check if System Monitor PIN is initialized
+   */
+  async getStatus() {
+    const setting = await this.getMonitorConfig();
+    const configData = (setting?.valueJson as any) || {};
+    const isInitialized = Boolean(configData.passwordHash && typeof configData.passwordHash === 'string');
+    return { isInitialized };
+  }
+
+  /**
+   * Initialize System Monitor PIN (First-run setup for authenticated ADMIN)
+   */
+  async initializePin(newPin: string, adminUserId: string) {
+    if (!newPin || newPin.trim().length < 6) {
+      throw new BadRequestException('Security PIN/Password must be at least 6 characters.');
     }
 
-    return setting;
+    const setting = await this.getMonitorConfig();
+    const configData = (setting?.valueJson as any) || {};
+
+    if (configData.passwordHash) {
+      throw new BadRequestException('System Monitor is already initialized. Use change-password to update PIN.');
+    }
+
+    const passwordHash = await argon2.hash(newPin.trim(), { type: argon2.argon2id });
+
+    await this.prisma.systemSetting.upsert({
+      where: { key: SYSTEM_MONITOR_SETTING_KEY },
+      update: {
+        valueJson: {
+          passwordHash,
+          resetToken: null,
+          resetExpires: null,
+        },
+        updatedBy: adminUserId,
+      },
+      create: {
+        key: SYSTEM_MONITOR_SETTING_KEY,
+        valueJson: {
+          passwordHash,
+          resetToken: null,
+          resetExpires: null,
+        },
+        updatedBy: adminUserId,
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorUserId: adminUserId,
+        action: 'INITIALIZE_SYSTEM_MONITOR_PASSWORD',
+        entityType: 'SYSTEM_SETTING',
+        entityId: SYSTEM_MONITOR_SETTING_KEY,
+        afterJson: { message: 'System Monitor Security Password initialized successfully.' },
+      },
+    });
+
+    return { success: true, message: 'System Monitor Security Password initialized successfully.' };
   }
 
   /**
@@ -57,13 +102,19 @@ export class SystemMonitorService {
 
     const cleanPin = pin.trim();
     const config = await this.getMonitorConfig();
-    const configData = (config.valueJson as any) || {};
+    const configData = (config?.valueJson as any) || {};
+
+    if (!configData.passwordHash) {
+      throw new UnauthorizedException(
+        'System Monitor PIN is not initialized. An authenticated administrator must perform first-run setup.',
+      );
+    }
 
     let isValid = false;
     try {
-      if (configData.passwordHash && typeof configData.passwordHash === 'string' && configData.passwordHash.startsWith('$argon2')) {
+      if (typeof configData.passwordHash === 'string' && configData.passwordHash.startsWith('$argon2')) {
         isValid = await argon2.verify(configData.passwordHash, cleanPin);
-      } else if (configData.passwordHash && typeof configData.passwordHash === 'string') {
+      } else if (typeof configData.passwordHash === 'string') {
         isValid = configData.passwordHash === cleanPin;
       }
     } catch {
@@ -91,6 +142,13 @@ export class SystemMonitorService {
   async changePassword(oldPin: string, newPin: string, adminUserId: string) {
     if (!newPin || newPin.trim().length < 6) {
       throw new BadRequestException('New Security PIN/Password must be at least 6 characters.');
+    }
+
+    const config = await this.getMonitorConfig();
+    const configData = (config?.valueJson as any) || {};
+
+    if (!configData.passwordHash) {
+      throw new BadRequestException('System Monitor PIN is not initialized. Please call initialize-pin first.');
     }
 
     await this.verifyPin(oldPin);
@@ -122,16 +180,46 @@ export class SystemMonitorService {
   }
 
   /**
-   * Request Forgot Password Email for System Monitor
+   * Request Forgot Password Email for System Monitor (M-03 Recovery URL Hardened)
    */
   async forgotPassword(adminEmail: string) {
-    const targetEmail = (adminEmail || process.env.BOOTSTRAP_ADMIN_EMAIL || 'anveshakhub26@gmail.com').toLowerCase().trim();
+    const isProd = process.env.NODE_ENV === 'production';
+    let appUrl = process.env.APP_URL;
+
+    if (isProd) {
+      if (!appUrl || appUrl.includes('localhost') || appUrl.includes('127.0.0.1')) {
+        throw new BadRequestException(
+          'Production recovery URL configuration missing: APP_URL must be configured in production.',
+        );
+      }
+    } else {
+      appUrl = appUrl || 'http://localhost:3000';
+    }
+
+    let targetEmail = adminEmail || process.env.BOOTSTRAP_ADMIN_EMAIL;
+
+    if (isProd) {
+      if (!targetEmail || targetEmail.includes('anveshakhub26@gmail.com')) {
+        throw new BadRequestException(
+          'Production bootstrap admin email configuration missing: BOOTSTRAP_ADMIN_EMAIL must be explicitly set in production.',
+        );
+      }
+    } else {
+      targetEmail = targetEmail || 'admin@anveshak.local';
+    }
+
+    targetEmail = targetEmail.toLowerCase().trim();
 
     const config = await this.getMonitorConfig();
+    const configData = (config?.valueJson as any) || {};
+
+    if (!configData.passwordHash) {
+      throw new BadRequestException('System Monitor security password is not initialized.');
+    }
+
     const resetToken = crypto.randomBytes(24).toString('hex');
     const resetExpires = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
 
-    const configData = config.valueJson as any;
     await this.prisma.systemSetting.update({
       where: { key: SYSTEM_MONITOR_SETTING_KEY },
       data: {
@@ -143,7 +231,7 @@ export class SystemMonitorService {
       },
     });
 
-    const resetUrl = `${process.env.APP_URL || 'http://localhost:3000'}/admin/system-monitor?resetToken=${resetToken}`;
+    const resetUrl = `${appUrl.replace(/\/+$/, '')}/admin/system-monitor?resetToken=${resetToken}`;
 
     if (this.emailService) {
       try {
@@ -174,9 +262,9 @@ export class SystemMonitorService {
     }
 
     const config = await this.getMonitorConfig();
-    const configData = config.valueJson as any;
+    const configData = (config?.valueJson as any) || {};
 
-    if (!configData.resetToken || configData.resetToken !== token) {
+    if (!configData || !configData.resetToken || configData.resetToken !== token) {
       throw new UnauthorizedException('Invalid or expired password reset token.');
     }
 
@@ -199,29 +287,33 @@ export class SystemMonitorService {
     return { success: true, message: 'System Monitor Security Password reset successfully.' };
   }
 
+  private lastActivityCache = new Map<string, { timestamp: number; route?: string }>();
+
   /**
-   * Record User Activity Heartbeat (1 row per user)
+   * Record User Activity Heartbeat (1 row per user, with in-memory write deduplication for L-04)
    */
   async recordActivity(userId: string, email: string, role: string, route?: string, ip?: string) {
     if (!userId || !email) return;
 
-    const existing = await this.prisma.userActivity.findUnique({
-      where: { userId },
-    });
+    const nowMs = Date.now();
+    const cached = this.lastActivityCache.get(userId);
 
-    const now = new Date();
-    if (existing && now.getTime() - new Date(existing.lastActivity).getTime() < 30000 && existing.currentRoute === route) {
+    // Safe Write Deduplication (L-04): Skip DB hit completely if user sent heartbeat within 60s on same route
+    if (cached && nowMs - cached.timestamp < 60000 && cached.route === route) {
       return;
     }
 
+    this.lastActivityCache.set(userId, { timestamp: nowMs, route });
+
+    const now = new Date(nowMs);
     await this.prisma.userActivity.upsert({
       where: { userId },
       update: {
         userEmail: email.toLowerCase(),
         userRole: role || 'STAFF',
         lastActivity: now,
-        currentRoute: route || existing?.currentRoute || '/dashboard',
-        ipAddress: ip || existing?.ipAddress,
+        currentRoute: route || '/dashboard',
+        ipAddress: ip,
       },
       create: {
         userId,
@@ -557,8 +649,10 @@ export class SystemMonitorService {
     return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
+
+
   /**
-   * GET /api/v1/system-monitor/health — System Infrastructure Health
+   * GET /api/v1/system-monitor/health — System Infrastructure Health (M-04 Info Disclosure Hardened)
    */
   async getSystemHealth() {
     let dbStatus = 'OPERATIONAL';
@@ -576,56 +670,76 @@ export class SystemMonitorService {
     const supaKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const supabaseStatus = supaUrl && supaKey ? 'OPERATIONAL' : 'NOT_CONFIGURED';
 
-    const storageBucket = process.env.SUPABASE_STORAGE_BUCKET || 'anveshak-private-documents';
-    const storageStatus = supaUrl && storageBucket ? 'OPERATIONAL' : 'NOT_CONFIGURED';
+    const storageBucket = process.env.SUPABASE_STORAGE_BUCKET || process.env.S3_BUCKET;
+    const storageStatus = (supaUrl && storageBucket) || process.env.S3_ENDPOINT ? 'OPERATIONAL' : 'NOT_CONFIGURED';
 
     const smtpHost = process.env.SMTP_HOST;
     const emailStatus = smtpHost ? 'OPERATIONAL' : 'NOT_CONFIGURED';
-
-    const projectRef = supaUrl ? supaUrl.replace('https://', '').split('.')[0] : null;
-    const defaultSupabaseProject = projectRef ? `https://supabase.com/dashboard/project/${projectRef}` : null;
-    const defaultSupabaseDb = projectRef ? `https://supabase.com/dashboard/project/${projectRef}/editor` : null;
-    const defaultSupabaseStorage = projectRef ? `https://supabase.com/dashboard/project/${projectRef}/storage/buckets` : null;
-
-    const supaProjectUrl = process.env.SUPABASE_DASHBOARD_URL || defaultSupabaseProject;
-    const supaDbUrl = process.env.SUPABASE_DATABASE_URL || defaultSupabaseDb;
-    const supaStorageUrl = process.env.SUPABASE_STORAGE_URL || defaultSupabaseStorage;
-    const sentryUrl = process.env.SENTRY_DASHBOARD_URL || (process.env.SENTRY_DSN ? 'https://sentry.io' : null);
-    const grafanaUrl = process.env.GRAFANA_DASHBOARD_URL || process.env.GRAFANA_URL || null;
-
-    const supaProjectStatus = supaUrl ? 'CONNECTED' : 'NOT_CONFIGURED';
-    const supaDbStatus = dbStatus === 'OPERATIONAL' ? 'CONNECTED' : dbStatus;
-    const supaStorageStatus = supaUrl && storageBucket ? 'CONNECTED' : 'NOT_CONFIGURED';
-    const sentryStatus = sentryUrl ? 'CONFIGURED' : 'NOT_CONFIGURED';
-    const grafanaStatus = grafanaUrl ? 'CONFIGURED' : 'NOT_CONFIGURED';
 
     return {
       status: dbStatus === 'UNAVAILABLE' ? 'DEGRADED' : 'OPERATIONAL',
       uptimeSeconds: Math.floor(process.uptime()),
       timestamp: new Date().toISOString(),
       services: {
-        api: { status: 'OPERATIONAL', port: process.env.PORT || 4000 },
+        api: { status: 'OPERATIONAL' },
         database: { status: dbStatus, latencyMs: dbLatencyMs },
-        prisma: { status: 'OPERATIONAL', version: '5.22.0' },
-        supabaseAuth: { status: supabaseStatus, endpoint: supaUrl || 'Not Configured' },
-        supabaseStorage: { status: storageStatus, bucket: storageBucket || 'Not Configured' },
-        email: { status: emailStatus, provider: process.env.EMAIL_PROVIDER || 'smtp', host: smtpHost || 'Not Configured' },
-      },
-      infrastructureLinks: {
-        supabaseProject: supaProjectUrl,
-        supabaseDatabase: supaDbUrl,
-        supabaseStorage: supaStorageUrl,
-        sentry: sentryUrl,
-        grafana: grafanaUrl,
-      },
-      infrastructureServices: {
-        supabaseProject: { label: 'Supabase Project', status: supaProjectStatus, url: supaProjectUrl },
-        supabaseDatabase: { label: 'Supabase Database', status: supaDbStatus, url: supaDbUrl },
-        supabaseStorage: { label: 'Supabase Storage', status: supaStorageStatus, url: supaStorageUrl },
-        sentry: { label: 'Sentry Error Tracking', status: sentryStatus, url: sentryUrl },
-        grafana: { label: 'Grafana Monitoring', status: grafanaStatus, url: grafanaUrl },
+        prisma: { status: 'OPERATIONAL' },
+        supabaseAuth: { status: supabaseStatus },
+        supabaseStorage: { status: storageStatus },
+        email: { status: emailStatus, provider: process.env.EMAIL_PROVIDER || 'smtp' },
       },
     };
+  }
+
+  /**
+   * GET /api/v1/system-monitor/audit — Audit Log Viewer (M-05 Audited)
+   */
+  async getAuditLogs(page = 1, limit = 25, search?: string, entityType?: string, action?: string, requestingUserId?: string) {
+    if (requestingUserId) {
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            actorUserId: requestingUserId,
+            action: 'READ_SYSTEM_AUDIT_LOGS',
+            entityType: 'SYSTEM_SETTING',
+            entityId: SYSTEM_MONITOR_SETTING_KEY,
+            afterJson: { page, limit, search, entityType, action } as any,
+          },
+        });
+      } catch (err: any) {
+        console.warn('Failed to record audit log access:', err.message);
+      }
+    }
+
+    const skip = (page - 1) * limit;
+    const where: Prisma.AuditLogWhereInput = {};
+
+    if (search && search.trim()) {
+      const q = search.trim();
+      where.OR = [
+        { action: { contains: q, mode: 'insensitive' } },
+        { entityType: { contains: q, mode: 'insensitive' } },
+        { entityId: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    if (entityType) where.entityType = entityType;
+    if (action) where.action = action;
+
+    const [total, data] = await Promise.all([
+      this.prisma.auditLog.count({ where }),
+      this.prisma.auditLog.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          actor: { select: { id: true, email: true } },
+        },
+      }),
+    ]);
+
+    return { items: data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   /**
@@ -682,40 +796,7 @@ export class SystemMonitorService {
     };
   }
 
-  /**
-   * GET /api/v1/system-monitor/audit — Audit Log Viewer
-   */
-  async getAuditLogs(page = 1, limit = 25, search?: string, entityType?: string, action?: string) {
-    const skip = (page - 1) * limit;
-    const where: Prisma.AuditLogWhereInput = {};
 
-    if (search && search.trim()) {
-      const q = search.trim();
-      where.OR = [
-        { action: { contains: q, mode: 'insensitive' } },
-        { entityType: { contains: q, mode: 'insensitive' } },
-        { entityId: { contains: q, mode: 'insensitive' } },
-      ];
-    }
-
-    if (entityType) where.entityType = entityType;
-    if (action) where.action = action;
-
-    const [total, data] = await Promise.all([
-      this.prisma.auditLog.count({ where }),
-      this.prisma.auditLog.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          actor: { select: { id: true, email: true } },
-        },
-      }),
-    ]);
-
-    return { items: data, total, page, limit, totalPages: Math.ceil(total / limit) };
-  }
 
   /**
    * GET /api/v1/system-monitor/global-search — Search across Employees, Orgs, Projects, Documents

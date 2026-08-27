@@ -350,28 +350,76 @@ export class AttendanceService {
   }
 
   /**
-   * HR / Admin Attendance History Query across Organization
+   * Helper: Resolve requesting user's organizationId
    */
-  async getAdminAttendanceHistory(query: {
-    page?: number;
-    limit?: number;
-    employeeId?: string;
-    department?: string;
-    startDate?: string;
-    endDate?: string;
-    status?: string;
-  }) {
+  private async getRequestingUserOrgId(user?: any): Promise<string | null> {
+    if (!user) return null;
+    if (user.organizationId) return user.organizationId;
+
+    const emp = await this.prisma.employee.findUnique({
+      where: { userId: user.id },
+      select: { organizationId: true },
+    });
+    if (emp?.organizationId) return emp.organizationId;
+
+    const orgUser = await this.prisma.organizationUser.findFirst({
+      where: { userId: user.id },
+      select: { organizationId: true },
+    });
+    return orgUser?.organizationId || null;
+  }
+
+  /**
+   * HR / Admin Attendance History Query across Organization (M-01 Tenant Isolated)
+   */
+  async getAdminAttendanceHistory(
+    query: {
+      page?: number;
+      limit?: number;
+      employeeId?: string;
+      department?: string;
+      startDate?: string;
+      endDate?: string;
+      status?: string;
+    },
+    user?: any,
+  ) {
     const page = Number(query.page) || 1;
     const limit = Math.min(Number(query.limit) || 20, 100);
     const skip = (page - 1) * limit;
 
+    const userOrgId = await this.getRequestingUserOrgId(user);
     const where: any = {};
 
-    if (query.employeeId) where.employeeId = query.employeeId;
+    // M-01 Security: If employeeId is supplied, verify target employee belongs to requesting user's organization
+    if (query.employeeId) {
+      const targetEmp = await this.prisma.employee.findUnique({
+        where: { id: query.employeeId },
+        select: { id: true, organizationId: true },
+      });
+
+      if (!targetEmp) {
+        throw new NotFoundException(`Employee with ID '${query.employeeId}' not found.`);
+      }
+
+      if (userOrgId && targetEmp.organizationId !== userOrgId) {
+        throw new ForbiddenException(
+          'Cross-organization attendance access is strictly forbidden.',
+        );
+      }
+
+      where.employeeId = query.employeeId;
+    } else if (userOrgId) {
+      where.employee = { organizationId: userOrgId };
+    }
+
     if (query.status) where.status = query.status;
 
     if (query.department) {
-      where.employee = { department: query.department };
+      where.employee = {
+        ...(where.employee || {}),
+        department: query.department,
+      };
     }
 
     if (query.startDate || query.endDate) {
@@ -394,6 +442,7 @@ export class AttendanceService {
               fullName: true,
               department: true,
               designation: true,
+              organizationId: true,
             },
           },
           breaks: { orderBy: { startTime: 'asc' } },
@@ -407,29 +456,38 @@ export class AttendanceService {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(total / limit) || 1,
     };
   }
 
   /**
-   * HR / Admin Today's Attendance Overview Metrics
+   * HR / Admin Today's Attendance Overview Metrics (M-01 Tenant Isolated)
    */
-  async getAdminAttendanceSummary() {
+  async getAdminAttendanceSummary(user?: any) {
     const today = this.getAttendanceDate(new Date());
+    const userOrgId = await this.getRequestingUserOrgId(user);
+
+    const empWhere: any = { status: { in: ['ACTIVE', 'PROBATION', 'ONBOARDING'] } };
+    const attWhere: any = { attendanceDate: today };
+    const leaveWhere: any = { status: 'ON_LEAVE' };
+
+    if (userOrgId) {
+      empWhere.organizationId = userOrgId;
+      attWhere.employee = { organizationId: userOrgId };
+      leaveWhere.organizationId = userOrgId;
+    }
 
     const [
       totalActiveEmployees,
       todayAttendances,
       onLeaveEmployeesCount,
     ] = await Promise.all([
-      this.prisma.employee.count({
-        where: { status: { in: ['ACTIVE', 'PROBATION', 'ONBOARDING'] } },
-      }),
+      this.prisma.employee.count({ where: empWhere }),
       this.prisma.attendance.findMany({
-        where: { attendanceDate: today },
+        where: attWhere,
         select: { status: true },
       }),
-      this.prisma.employee.count({ where: { status: 'ON_LEAVE' } }),
+      this.prisma.employee.count({ where: leaveWhere }),
     ]);
 
     const presentCount = todayAttendances.length;

@@ -56,7 +56,9 @@ export default function Fnd02LoginPage() {
           ...response.user,
           roles,
         };
-        setAuth(normalizedUser, response.accessToken || null);
+        // C-01: Do NOT pass the access token — authentication is carried by the HttpOnly cookie
+        // the backend already set. setAuth only stores the user profile in Zustand memory.
+        setAuth(normalizedUser);
 
         if (response.user?.mustChangePassword) {
           router.push('/reset-password?reason=mandatory');

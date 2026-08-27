@@ -13,6 +13,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/user.decorator';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('Admin Control Center & System Monitor')
 @Controller('system-monitor')
@@ -21,8 +22,29 @@ import { CurrentUser } from '../../common/decorators/user.decorator';
 export class SystemMonitorController {
   constructor(private readonly systemMonitorService: SystemMonitorService) {}
 
+  @Get('status')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'GET /api/v1/system-monitor/status — Check if monitor security PIN is initialized' })
+  async getStatus() {
+    const data = await this.systemMonitorService.getStatus();
+    return { success: true, data };
+  }
+
+  @Post('initialize-pin')
+  @Roles('ADMIN')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({ summary: 'POST /api/v1/system-monitor/initialize-pin — First-run PIN initialization for ADMIN' })
+  async initializePin(
+    @CurrentUser('id') adminUserId: string,
+    @Body() body: { newPin: string },
+  ) {
+    const data = await this.systemMonitorService.initializePin(body.newPin, adminUserId);
+    return { success: true, data };
+  }
+
   @Post('verify-pin')
   @Roles('ADMIN')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'POST /api/v1/system-monitor/verify-pin — Verify monitor security password' })
   async verifyPin(@Body() body: { pin: string }) {
     const data = await this.systemMonitorService.verifyPin(body.pin);
@@ -31,6 +53,7 @@ export class SystemMonitorController {
 
   @Post('change-password')
   @Roles('ADMIN')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'POST /api/v1/system-monitor/change-password — Change monitor password' })
   async changePassword(
     @CurrentUser('id') adminUserId: string,
@@ -42,6 +65,7 @@ export class SystemMonitorController {
 
   @Post('forgot-password')
   @Roles('ADMIN')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'POST /api/v1/system-monitor/forgot-password — Request monitor recovery email' })
   async forgotPassword(@Body() body: { email?: string }) {
     const data = await this.systemMonitorService.forgotPassword(body.email || '');
@@ -50,6 +74,7 @@ export class SystemMonitorController {
 
   @Post('reset-password')
   @Roles('ADMIN')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'POST /api/v1/system-monitor/reset-password — Reset monitor password using token' })
   async resetPassword(@Body() body: { token: string; newPin: string }) {
     const data = await this.systemMonitorService.resetPassword(body.token, body.newPin);
@@ -58,6 +83,7 @@ export class SystemMonitorController {
 
   @Post('heartbeat')
   @Roles('ADMIN', 'HR', 'PM', 'EXPERT', 'INTERN', 'STAFF', 'EXECUTIVE', 'QA', 'LEGAL', 'ORG_USER')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @ApiOperation({ summary: 'POST /api/v1/system-monitor/heartbeat — Throttled active user activity ping' })
   async heartbeat(
     @CurrentUser('id') userId: string,
@@ -189,6 +215,7 @@ export class SystemMonitorController {
   @ApiQuery({ name: 'entityType', required: false })
   @ApiQuery({ name: 'action', required: false })
   async getAuditLogs(
+    @CurrentUser('id') adminUserId: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
@@ -197,7 +224,7 @@ export class SystemMonitorController {
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 25;
-    const data = await this.systemMonitorService.getAuditLogs(pageNum, limitNum, search, entityType, action);
+    const data = await this.systemMonitorService.getAuditLogs(pageNum, limitNum, search, entityType, action, adminUserId);
     return { success: true, data };
   }
 

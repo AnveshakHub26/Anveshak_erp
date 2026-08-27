@@ -25,6 +25,7 @@ describe('DocumentsService & Folder Engine Unit Tests', () => {
         create: jest.fn(),
         update: jest.fn(),
         updateMany: jest.fn(),
+        groupBy: jest.fn(),
       },
       documentFolder: {
         findFirst: jest.fn(),
@@ -39,6 +40,11 @@ describe('DocumentsService & Folder Engine Unit Tests', () => {
       },
       organizationUser: {
         findFirst: jest.fn(),
+        findMany: jest.fn(),
+      },
+      organization: {
+        count: jest.fn(),
+        findMany: jest.fn(),
       },
       problemStatement: {
         findUnique: jest.fn(),
@@ -388,6 +394,95 @@ describe('DocumentsService & Folder Engine Unit Tests', () => {
           service.moveDocumentToFolder(activeMemberUser, 'doc-1', 'folder-proj-B'),
         ).rejects.toThrow(ForbiddenException);
       });
+    });
+  });
+
+  describe('Section G — Document Scan Lifecycle & Malware Protection', () => {
+    it('linkDocumentsToEntity creates new documents with scanStatus: PENDING', async () => {
+      mockPrisma.document.findFirst.mockResolvedValue(null);
+      mockPrisma.document.create.mockResolvedValue({ id: 'doc-linked-1', scanStatus: 'PENDING' });
+
+      await service.linkDocumentsToEntity(mockPrisma, 'Project', 'proj-123', ['key-1.pdf'], 'user-1');
+
+      expect(mockPrisma.document.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ scanStatus: 'PENDING' }),
+        }),
+      );
+    });
+
+    it('getSignedDownloadUrl REJECTS downloading documents with scanStatus PENDING, INFECTED, or SCAN_FAILED', async () => {
+      // Test PENDING
+      mockPrisma.document.findUnique.mockResolvedValue({
+        id: 'doc-pending-1',
+        storageKey: 'doc-pending.pdf',
+        scanStatus: 'PENDING',
+        entityType: 'Project',
+        entityId: 'proj-123',
+        uploader: { id: 'user-1' },
+      });
+      await expect(service.getSignedDownloadUrl('doc-pending-1', mockUser)).rejects.toThrow(ForbiddenException);
+
+      // Test INFECTED
+      mockPrisma.document.findUnique.mockResolvedValue({
+        id: 'doc-infected-1',
+        storageKey: 'doc-infected.pdf',
+        scanStatus: 'INFECTED',
+        entityType: 'Project',
+        entityId: 'proj-123',
+        uploader: { id: 'user-1' },
+      });
+      await expect(service.getSignedDownloadUrl('doc-infected-1', mockUser)).rejects.toThrow(ForbiddenException);
+
+      // Test SCAN_FAILED
+      mockPrisma.document.findUnique.mockResolvedValue({
+        id: 'doc-failed-1',
+        storageKey: 'doc-failed.pdf',
+        scanStatus: 'SCAN_FAILED',
+        entityType: 'Project',
+        entityId: 'proj-123',
+        uploader: { id: 'user-1' },
+      });
+      await expect(service.getSignedDownloadUrl('doc-failed-1', mockUser)).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('Section F — Authorization & BOLA Boundary Tests', () => {
+    it('getOrganizationsOverview restricts ORG_USER clients to their own organization(s)', async () => {
+      const orgUserClient = { id: 'user-org-client', roles: ['ORG_USER'] };
+
+      mockPrisma.organizationUser.findMany.mockResolvedValue([
+        { organizationId: 'org-client-1' },
+      ]);
+      mockPrisma.organization.count.mockResolvedValue(1);
+      mockPrisma.organization.findMany.mockResolvedValue([
+        { id: 'org-client-1', legalName: 'Client Corp', _count: { projects: 1 } },
+      ]);
+      mockPrisma.document.groupBy.mockResolvedValue([]);
+
+      const res = await service.getOrganizationsOverview(orgUserClient);
+
+      expect(mockPrisma.organization.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            id: { in: ['org-client-1'] },
+          }),
+        }),
+      );
+      expect(res.items).toHaveLength(1);
+      expect(res.items[0].id).toBe('org-client-1');
+    });
+  });
+
+  describe('L-03 Real SHA-256 Checksum Calculation', () => {
+    it('generates a valid 64-character hex SHA-256 checksum for document versions', () => {
+      const checksum1 = service.calculateSha256Checksum('project/p1/spec.pdf');
+      const checksum2 = service.calculateSha256Checksum('project/p1/spec.pdf');
+
+      expect(checksum1).toHaveLength(64);
+      expect(checksum1).toMatch(/^[a-f0-9]{64}$/);
+      expect(checksum1).toBe(checksum2);
+      expect(checksum1).not.toBe('sha256_verified_checksum');
     });
   });
 });

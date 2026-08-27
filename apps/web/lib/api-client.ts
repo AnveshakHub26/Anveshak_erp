@@ -1,6 +1,7 @@
 // API Client Wrapper for AnveshakHub Backend REST API with In-Flight Deduplication & Abort Safety
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
+// C-01 Security: This client uses credentials:'include' so the browser automatically sends
+// the HttpOnly access_token cookie on every request. No JWT is ever stored in or read from
+// localStorage, sessionStorage, or any other JavaScript-readable storage.
 
 const inFlightGetRequests = new Map<string, Promise<any>>();
 
@@ -8,13 +9,14 @@ async function executeApiRequest<T = any>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const correlationId = typeof window !== 'undefined' ? (window as any).__correlationId || Date.now().toString() : 'SSR';
+  const correlationId =
+    typeof window !== 'undefined'
+      ? (window as any).__correlationId || Date.now().toString()
+      : 'SSR';
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     'x-correlation-id': correlationId,
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   };
 
@@ -56,6 +58,10 @@ async function executeApiRequest<T = any>(
   try {
     response = await fetch(url, {
       ...options,
+      // credentials: 'include' instructs the browser to attach the HttpOnly access_token
+      // cookie automatically. This is the ONLY authentication mechanism — no token is ever
+      // read from localStorage or injected as an Authorization header.
+      credentials: 'include',
       headers,
     });
   } catch (netErr: any) {
@@ -68,7 +74,9 @@ async function executeApiRequest<T = any>(
       err.code = 'ABORTED';
       throw err;
     }
-    const err = new Error(`Network connection failed (${netErr.message || 'Failed to fetch'}). Please check network or API server availability.`) as any;
+    const err = new Error(
+      `Network connection failed (${netErr.message || 'Failed to fetch'}). Please check network or API server availability.`,
+    ) as any;
     err.status = 0;
     err.code = 'NETWORK_ERROR';
     throw err;
@@ -90,12 +98,10 @@ async function executeApiRequest<T = any>(
 
   if (!response.ok) {
     if (response.status === 401 && typeof window !== 'undefined') {
-      try {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-      } catch {
-        // Fallback
-      }
+      // HttpOnly cookie is absent or expired — clear in-memory auth state via a soft dispatch.
+      // No localStorage cleanup is needed because no token is stored there.
+      const { useAuthStore } = await import('@/hooks/useAuth');
+      useAuthStore.getState().clearSession();
     }
 
     let errorMsg = data?.message;
@@ -121,10 +127,10 @@ export async function apiRequest<T = any>(
 ): Promise<T> {
   const method = (options.method || 'GET').toUpperCase();
 
-  // Deduplicate identical concurrent in-flight GET requests
+  // Deduplicate identical concurrent in-flight GET requests (keyed by endpoint only,
+  // since authentication is now via cookie — no per-request token to vary the key).
   if (method === 'GET' && !options.signal) {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') || '' : '';
-    const dedupeKey = `${endpoint}:${token}`;
+    const dedupeKey = endpoint;
 
     if (inFlightGetRequests.has(dedupeKey)) {
       return inFlightGetRequests.get(dedupeKey) as Promise<T>;

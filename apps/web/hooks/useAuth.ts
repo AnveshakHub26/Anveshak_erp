@@ -12,10 +12,9 @@ export interface UserProfile {
 
 interface AuthState {
   user: UserProfile | null;
-  token: string | null;
   isAuthenticated: boolean;
   isInitializing: boolean;
-  setAuth: (user: UserProfile, token?: string) => void;
+  setAuth: (user: UserProfile) => void;
   logout: () => void;
   initializeSession: () => void;
   clearSession: () => void;
@@ -55,79 +54,105 @@ export function getDefaultRedirectForUser(user: UserProfile | null): string {
 }
 
 const getInitialState = () => {
-  return { user: null, token: null, isAuthenticated: false, isInitializing: true };
+  return { user: null, isAuthenticated: false, isInitializing: true };
 };
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set) => ({
   ...getInitialState(),
 
-  setAuth: (rawUser, token) => {
+  /**
+   * setAuth: Stores authenticated user profile in memory only (Zustand state).
+   * NO token is stored. NO localStorage is written.
+   * The HttpOnly cookie set by the backend carries authentication automatically.
+   */
+  setAuth: (rawUser) => {
     const roles = normalizeRoles(rawUser?.roles);
     const user = { ...rawUser, roles };
-    const currentToken =
-      token ??
-      get().token ??
-      (typeof window !== 'undefined' ? localStorage.getItem('token') : null) ??
-      '';
-
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('token', currentToken);
-        localStorage.setItem('user', JSON.stringify(user));
-      } catch (err) {
-        console.error('Failed to save session to localStorage:', err);
-      }
-    }
-    set({ user, token: currentToken, isAuthenticated: true, isInitializing: false });
+    set({ user, isAuthenticated: true, isInitializing: false });
   },
 
+  /**
+   * clearSession: Resets in-memory auth state.
+   * No localStorage access — no JWT is stored there any more.
+   */
   clearSession: () => {
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-      } catch (err) {
-        console.error('Failed to clear session from localStorage:', err);
-      }
-    }
-    set({ user: null, token: null, isAuthenticated: false, isInitializing: false });
+    set({ user: null, isAuthenticated: false, isInitializing: false });
   },
 
+  /**
+   * logout: Clears in-memory state and navigates to root.
+   * Cookie cleanup is handled server-side by POST /auth/logout (called by the logout UI action).
+   * No localStorage access — no JWT is stored there any more.
+   */
   logout: () => {
     if (typeof window !== 'undefined') {
-      try {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-      } catch (err) {
-        console.error('Failed to clear session from localStorage:', err);
-      }
-      set({ user: null, token: null, isAuthenticated: false, isInitializing: false });
+      set({ user: null, isAuthenticated: false, isInitializing: false });
       window.location.href = '/';
     }
   },
 
+  /**
+   * initializeSession: Called once on app mount by AppProvider.
+   *
+   * Security: Authentication state is determined ONLY by asking the backend.
+   * The browser automatically sends the HttpOnly access_token cookie to GET /auth/me.
+   * No token is ever read from localStorage, sessionStorage, or any JS-readable storage.
+   *
+   * Flow:
+   *   browser sends HttpOnly cookie → backend validates JWT → returns safe user profile
+   *   → set isAuthenticated: true with the returned user profile
+   *
+   * If cookie is absent, expired, or invalid → backend returns 401 → isAuthenticated: false.
+   */
   initializeSession: () => {
     if (typeof window === 'undefined') {
       set({ isInitializing: false });
       return;
     }
-    try {
-      const storedToken = localStorage.getItem('token');
-      const storedUserRaw = localStorage.getItem('user');
 
-      if (storedToken && storedUserRaw) {
-        const parsedUser = JSON.parse(storedUserRaw);
-        if (parsedUser && typeof parsedUser === 'object') {
-          parsedUser.roles = normalizeRoles(parsedUser.roles);
-          localStorage.setItem('user', JSON.stringify(parsedUser));
-          set({ user: parsedUser, token: storedToken, isAuthenticated: true, isInitializing: false });
-          return;
+    // Resolve API base using the same logic as api-client.ts
+    const apiBase = (() => {
+      const defaultProdUrl = 'https://anveshak-erp.onrender.com/api/v1';
+      let rawEnv = process.env.NEXT_PUBLIC_API_URL;
+      if (!window.location.hostname.includes('localhost')) {
+        if (!rawEnv || rawEnv.startsWith('/') || rawEnv.includes('localhost')) {
+          rawEnv = defaultProdUrl;
         }
       }
-      // If no valid session or token
-      get().clearSession();
-    } catch {
-      get().clearSession();
-    }
+      let base = (rawEnv || '/api/v1').replace(/\/+$/, '');
+      if (!window.location.hostname.includes('localhost') && base.startsWith('http://')) {
+        base = base.replace('http://', 'https://');
+      }
+      if (base.startsWith('http') && !base.includes('/api/v1')) {
+        base = `${base}/api/v1`;
+      }
+      return base;
+    })();
+
+    fetch(`${apiBase}/auth/me`, {
+      method: 'GET',
+      // credentials: 'include' causes the browser to send the HttpOnly access_token cookie
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    })
+      .then(async (response) => {
+        if (response.ok) {
+          const data = await response.json();
+          // /auth/me returns { success: true, data: { id, email, roles, permissions, ... } }
+          const rawUser = data?.data || data?.user || null;
+          if (rawUser && rawUser.id) {
+            const roles = normalizeRoles(rawUser.roles);
+            const user: UserProfile = { ...rawUser, roles };
+            set({ user, isAuthenticated: true, isInitializing: false });
+            return;
+          }
+        }
+        // 401 Unauthorized or malformed response — HttpOnly cookie is absent/invalid
+        set({ user: null, isAuthenticated: false, isInitializing: false });
+      })
+      .catch(() => {
+        // Network failure during startup: treat as unauthenticated
+        set({ user: null, isAuthenticated: false, isInitializing: false });
+      });
   },
 }));

@@ -544,9 +544,8 @@ export class LeaveService {
       throw new NotFoundException(`Leave request with ID '${requestId}' not found.`);
     }
 
-    const isHrOrAdmin = user.userRoles?.some((ur: any) =>
-      ['HR', 'ADMIN'].includes(ur.role?.code),
-    );
+    const roles: string[] = user.roles || user.userRoles?.map((ur: any) => ur.role?.code) || [];
+    const isHrOrAdmin = roles.some((r) => ['HR', 'ADMIN'].includes(r));
 
     if (!isHrOrAdmin && request.employee.userId !== user.id) {
       throw new ForbiddenException('You do not have access to view this leave request.');

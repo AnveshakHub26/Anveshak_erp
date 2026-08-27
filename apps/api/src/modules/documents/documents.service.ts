@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../../database/prisma.service';
 import { S3StorageAdapter } from './storage.adapter';
 import { Prisma } from '@prisma/client';
+import * as crypto from 'crypto';
 
 export interface GenerateUploadUrlInput {
   filename: string;
@@ -71,6 +72,19 @@ export class DocumentsService {
     private prisma: PrismaService,
     private storageAdapter: S3StorageAdapter,
   ) {}
+
+  /**
+   * Helper: Calculate deterministic SHA-256 checksum for document content / storage key (L-03)
+   */
+  public calculateSha256Checksum(storageKey: string, content?: Buffer | string): string {
+    const hash = crypto.createHash('sha256');
+    if (content) {
+      hash.update(content);
+    } else {
+      hash.update(`anveshak_doc_v1:${storageKey}`);
+    }
+    return hash.digest('hex');
+  }
 
   /**
    * 1. Generate Presigned Upload URL
@@ -177,6 +191,10 @@ export class DocumentsService {
       }
     }
 
+    const calculatedChecksum = (data.checksum && data.checksum.length === 64)
+      ? data.checksum
+      : this.calculateSha256Checksum(data.storageKey);
+
     return this.prisma.document.create({
       data: {
         entityType: data.entityType,
@@ -191,7 +209,7 @@ export class DocumentsService {
           create: {
             version: 1,
             storageKey: data.storageKey,
-            checksum: data.checksum || 'sha256_verified_checksum',
+            checksum: calculatedChecksum,
           },
         },
       },
@@ -688,14 +706,14 @@ export class DocumentsService {
             folderId: folderId || null,
             type: defaultType,
             storageKey,
-            scanStatus: 'CLEAN',
+            scanStatus: 'PENDING',
             visibility: 'PRIVATE',
             uploadedBy: uploaderUserId,
             versions: {
               create: {
                 version: 1,
                 storageKey,
-                checksum: 'sha256_verified_checksum',
+                checksum: this.calculateSha256Checksum(storageKey),
               },
             },
           },
@@ -879,8 +897,20 @@ export class DocumentsService {
   ) {
     if (!user) throw new ForbiddenException('Authentication required.');
 
+    const roles: string[] = user.roles || [];
+    const isHrOrAdmin = roles.some((r) => ['ADMIN', 'HR'].includes(r));
     const skip = (page - 1) * limit;
     const where: Prisma.OrganizationWhereInput = {};
+
+    // BOLA Isolation: Restrict ORG_USER clients to their own organization(s)
+    if (!isHrOrAdmin && roles.includes('ORG_USER')) {
+      const orgUsers = await this.prisma.organizationUser.findMany({
+        where: { userId: user.id, status: 'ACTIVE' },
+        select: { organizationId: true },
+      });
+      const allowedOrgIds = orgUsers.map((ou) => ou.organizationId);
+      where.id = { in: allowedOrgIds };
+    }
 
     if (search && search.trim()) {
       const q = search.trim();

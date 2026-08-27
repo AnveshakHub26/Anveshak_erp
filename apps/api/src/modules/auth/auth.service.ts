@@ -162,7 +162,52 @@ export class AuthService {
     };
   }
 
-  async logout(response: Response) {
+  // H-01: Server-side Token Revocation Store for Logged-Out Tokens
+  private static readonly revokedTokens = new Map<string, number>();
+
+  public static revokeToken(token: string) {
+    if (!token) return;
+    const decoded = jwt.decode(token) as any;
+    const exp = decoded?.exp ? decoded.exp * 1000 : Date.now() + 24 * 60 * 60 * 1000;
+    AuthService.revokedTokens.set(token, exp);
+
+    // Periodic cleanup of expired tokens
+    if (AuthService.revokedTokens.size > 1000) {
+      const now = Date.now();
+      for (const [t, expiry] of AuthService.revokedTokens.entries()) {
+        if (expiry < now) AuthService.revokedTokens.delete(t);
+      }
+    }
+  }
+
+  public static isTokenRevoked(token: string): boolean {
+    if (!token) return false;
+    const expiry = AuthService.revokedTokens.get(token);
+    if (!expiry) return false;
+    if (expiry < Date.now()) {
+      AuthService.revokedTokens.delete(token);
+      return false;
+    }
+    return true;
+  }
+
+  async logout(response: Response, request?: any) {
+    let tokenToRevoke: string | null = null;
+    if (request) {
+      if (request.headers?.authorization?.startsWith('Bearer ')) {
+        tokenToRevoke = request.headers.authorization.split(' ')[1];
+      } else if (request.cookies?.access_token) {
+        tokenToRevoke = request.cookies.access_token;
+      } else if (request.headers?.cookie) {
+        const match = request.headers.cookie.match(/access_token=([^;]+)/);
+        if (match) tokenToRevoke = match[1];
+      }
+    }
+
+    if (tokenToRevoke) {
+      AuthService.revokeToken(tokenToRevoke);
+    }
+
     if (this.supabaseService?.auth) {
       try {
         await this.supabaseService.auth.signOut();
@@ -213,20 +258,21 @@ export class AuthService {
   }
 
   /**
-   * Password Reset: Validates token expiration & single-use state, updates credentials across authorities
+   * Password Reset (H-02 Fix): Validates token expiration & single-use state.
+   * REQUIRES a valid, unexpired, single-use passwordResetToken.
+   * User IDs (UUIDs) are STRICTLY REJECTED to prevent password reset bypass vulnerabilities.
    */
-  async resetPassword(tokenOrUserId: string, newPass: string) {
-    if (!tokenOrUserId || typeof tokenOrUserId !== 'string' || !tokenOrUserId.trim()) {
+  async resetPassword(token: string, newPass: string) {
+    if (!token || typeof token !== 'string' || !token.trim()) {
       throw new BadRequestException('Invalid or missing password reset token.');
     }
 
-    // 1. Query user by password reset token or user ID
+    const cleanToken = token.trim();
+
+    // H-02 Security: Query user STRICTLY by passwordResetToken. Never allow raw userId lookup.
     const user = await this.prisma.user.findFirst({
       where: {
-        OR: [
-          { passwordResetToken: tokenOrUserId.trim() },
-          { id: tokenOrUserId.trim() },
-        ],
+        passwordResetToken: cleanToken,
       },
     });
 
