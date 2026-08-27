@@ -45,20 +45,16 @@ export class SmtpEmailProvider implements EmailProvider {
         });
       }
 
-      const isProd = process.env.NODE_ENV === 'production';
-      let fromAddress = options.from || process.env.SMTP_FROM || process.env.EMAIL_FROM;
+      let fromAddress =
+        options.from ||
+        process.env.SMTP_FROM ||
+        process.env.EMAIL_FROM ||
+        process.env.SMTP_USER ||
+        process.env.BOOTSTRAP_ADMIN_EMAIL ||
+        `"AnveshakHub Enterprise" <anveshakhub26@gmail.com>`;
 
-      if (isProd) {
-        if (!fromAddress || fromAddress.includes('anveshakhub26@gmail.com')) {
-          this.logger.error('Production SMTP_FROM environment variable missing: A valid sender address must be configured in production.');
-          return {
-            success: false,
-            provider: this.name,
-            error: 'Production SMTP_FROM configuration error: Sender email address must be configured in production.',
-          };
-        }
-      } else {
-        fromAddress = fromAddress || `"AnveshakHub ERP (Dev)" <no-reply@localhost>`;
+      if (!fromAddress || !fromAddress.trim()) {
+        fromAddress = `"AnveshakHub Enterprise" <anveshakhub26@gmail.com>`;
       }
 
       const info = await activeTransporter.sendMail({

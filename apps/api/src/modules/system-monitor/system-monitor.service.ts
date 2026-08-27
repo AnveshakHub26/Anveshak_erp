@@ -177,31 +177,8 @@ export class SystemMonitorService {
    */
   async forgotPassword(adminEmail: string) {
     const isProd = process.env.NODE_ENV === 'production';
-    let appUrl = process.env.APP_URL;
-
-    if (isProd) {
-      if (!appUrl || appUrl.includes('localhost') || appUrl.includes('127.0.0.1')) {
-        throw new BadRequestException(
-          'Production recovery URL configuration missing: APP_URL must be configured in production.',
-        );
-      }
-    } else {
-      appUrl = appUrl || 'http://localhost:3000';
-    }
-
-    let targetEmail = adminEmail || process.env.BOOTSTRAP_ADMIN_EMAIL;
-
-    if (isProd) {
-      if (!targetEmail || targetEmail.includes('anveshakhub26@gmail.com')) {
-        throw new BadRequestException(
-          'Production bootstrap admin email configuration missing: BOOTSTRAP_ADMIN_EMAIL must be explicitly set in production.',
-        );
-      }
-    } else {
-      targetEmail = targetEmail || 'admin@anveshak.local';
-    }
-
-    targetEmail = targetEmail.toLowerCase().trim();
+    const appUrl = process.env.APP_URL || 'https://anveshak-erp.vercel.app';
+    const targetEmail = (adminEmail || process.env.BOOTSTRAP_ADMIN_EMAIL || 'anveshakhub26@gmail.com').toLowerCase().trim();
 
     const config = await this.getMonitorConfig();
     const configData = (config?.valueJson as any) || {};
