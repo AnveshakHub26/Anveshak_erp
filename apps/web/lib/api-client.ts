@@ -16,7 +16,6 @@ async function executeApiRequest<T = any>(
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
-    'x-correlation-id': correlationId,
     ...(options.headers || {}),
   };
 
