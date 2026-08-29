@@ -17,6 +17,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/user.decorator';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
+import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import {
   UpdateEmployeeInput,
   RehireEmployeeInput,
@@ -134,7 +135,7 @@ export class HRController {
   async updateEmployee(
     @CurrentUser() user: any,
     @Param('id') id: string,
-    @Body() body: UpdateEmployeeInput,
+    @Body() body: UpdateEmployeeDto,
   ) {
     const data = await this.hrService.updateEmployee(user, id, body);
     return { success: true, data };

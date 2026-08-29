@@ -236,6 +236,8 @@ export default function HREmployeeDetailPage() {
 
       if (!payload.password || !payload.password.trim()) {
         delete payload.password;
+      } else if (payload.password.trim().length < 8) {
+        throw new Error('Password must be at least 8 characters long.');
       }
 
       await apiRequest(`/api/v1/hr/employees/${employeeId}`, {
@@ -1117,7 +1119,7 @@ export default function HREmployeeDetailPage() {
                     Admin Password Reset (Optional)
                   </h4>
                   <div>
-                    <label className="block text-[#94a3b8] mb-1">Reset Account Password (min 6 characters)</label>
+                    <label className="block text-[#94a3b8] mb-1">Reset Account Password (min 8 characters)</label>
                     <input
                       type="password"
                       placeholder="Leave blank to keep existing password"

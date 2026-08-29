@@ -7,15 +7,18 @@ import {
   MinLength,
 } from 'class-validator';
 
-export class CreateEmployeeDto {
+export class UpdateEmployeeDto {
+  @IsOptional()
   @IsString()
-  firstName: string;
+  firstName?: string;
 
+  @IsOptional()
   @IsString()
-  lastName: string;
+  lastName?: string;
 
+  @IsOptional()
   @IsEmail()
-  workEmail: string;
+  workEmail?: string;
 
   @IsOptional()
   @IsString()
@@ -37,14 +40,17 @@ export class CreateEmployeeDto {
   @IsString()
   address?: string;
 
+  @IsOptional()
   @IsString()
-  professionalRole: string;
+  professionalRole?: string;
 
+  @IsOptional()
   @IsString()
-  department: string;
+  department?: string;
 
+  @IsOptional()
   @IsString()
-  designation: string;
+  designation?: string;
 
   @IsOptional()
   @IsEnum(['EXPERT', 'INTERN', 'STAFF', 'EXECUTIVE'])
@@ -54,8 +60,13 @@ export class CreateEmployeeDto {
   @IsEnum(['PERMANENT', 'PROBATIONARY', 'TEMPORARY', 'CONTRACT', 'PART_TIME'])
   employmentType?: 'PERMANENT' | 'PROBATIONARY' | 'TEMPORARY' | 'CONTRACT' | 'PART_TIME';
 
+  @IsOptional()
+  @IsEnum(['ONBOARDING', 'PROBATION', 'ACTIVE', 'ON_LEAVE', 'RESIGNED', 'TERMINATED'])
+  status?: 'ONBOARDING' | 'PROBATION' | 'ACTIVE' | 'ON_LEAVE' | 'RESIGNED' | 'TERMINATED';
+
+  @IsOptional()
   @IsString()
-  joiningDate: string;
+  joiningDate?: string;
 
   @IsOptional()
   @IsArray()
@@ -79,4 +90,12 @@ export class CreateEmployeeDto {
   @IsOptional()
   @IsEnum(['PENDING', 'SIGNED_PHYSICAL', 'SIGNED_ELECTRONIC', 'EXPIRED'])
   ndaStatus?: 'PENDING' | 'SIGNED_PHYSICAL' | 'SIGNED_ELECTRONIC' | 'EXPIRED';
+
+  @IsOptional()
+  @IsString()
+  ndaSignedAt?: string;
+
+  @IsOptional()
+  @IsString()
+  remarks?: string;
 }

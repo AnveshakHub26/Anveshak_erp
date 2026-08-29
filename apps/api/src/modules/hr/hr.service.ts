@@ -12,6 +12,7 @@ import { SupabaseService } from '../../common/supabase/supabase.service';
 import { Prisma } from '@prisma/client';
 import { CreateEmployeeInput, UpdateEmployeeInput, RehireEmployeeInput } from '@anveshak/validation';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
+import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import * as crypto from 'crypto';
 import * as argon2 from 'argon2';
 
@@ -513,7 +514,7 @@ export class HRService {
   /**
    * PATCH /api/v1/hr/employees/:id — Update Employee Profile
    */
-  async updateEmployee(adminUser: any, id: string, data: UpdateEmployeeInput) {
+  async updateEmployee(adminUser: any, id: string, data: UpdateEmployeeDto) {
     const existing = await this.prisma.employee.findUnique({ where: { id } });
     if (!existing) {
       throw new NotFoundException(`Employee record with ID '${id}' not found.`);
@@ -560,7 +561,7 @@ export class HRService {
 
     // Handle Password update if provided
     let newPasswordHash: string | null = null;
-    if ((data as any).password && (data as any).password.trim().length >= 6) {
+    if ((data as any).password && (data as any).password.trim().length >= 8) {
       newPasswordHash = await argon2.hash((data as any).password.trim(), { type: argon2.argon2id });
     }
 
