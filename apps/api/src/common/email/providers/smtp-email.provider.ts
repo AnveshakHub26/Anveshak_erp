@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import * as dns from 'dns';
 import { EmailProvider, EmailOptions, SendEmailResult } from '../interfaces/email-provider.interface';
 
 @Injectable()
@@ -24,19 +25,24 @@ export class SmtpEmailProvider implements EmailProvider {
       isSecure = true;
     }
 
+    const ipv4Lookup = (hostname: string, options: any, callback: any) => {
+      return dns.lookup(hostname, { family: 4 }, callback);
+    };
+
     if (host && host !== 'localhost' && user && pass) {
       this.transporter = nodemailer.createTransport({
         host,
         port,
         secure: isSecure,
         auth: { user, pass },
+        lookup: ipv4Lookup,
         family: 4,
         connectionTimeout: 15000,
         greetingTimeout: 15000,
         socketTimeout: 15000,
         tls: { rejectUnauthorized: false },
       } as any);
-      this.logger.log(`📧 SmtpEmailProvider configured for ${host}:${port} (Direct SSL, IPv4 family: 4)`);
+      this.logger.log(`📧 SmtpEmailProvider configured for ${host}:${port} (Direct SSL, Custom IPv4 Resolver)`);
     } else {
       this.logger.warn(`⚠️ SmtpEmailProvider initialized without explicit SMTP credentials. Fallback enabled.`);
     }

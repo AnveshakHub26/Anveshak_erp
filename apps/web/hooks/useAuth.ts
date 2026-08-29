@@ -86,8 +86,40 @@ export const useAuthStore = create<AuthState>((set) => ({
    */
   logout: () => {
     if (typeof window !== 'undefined') {
+      const apiBase = (() => {
+        const defaultProdUrl = 'https://anveshak-erp.onrender.com/api/v1';
+        let rawEnv = process.env.NEXT_PUBLIC_API_URL;
+        if (!window.location.hostname.includes('localhost')) {
+          if (!rawEnv || rawEnv.startsWith('/') || rawEnv.includes('localhost')) {
+            rawEnv = defaultProdUrl;
+          }
+        }
+        let base = (rawEnv || '/api/v1').replace(/\/+$/, '');
+        if (!window.location.hostname.includes('localhost') && base.startsWith('http://')) {
+          base = base.replace('http://', 'https://');
+        }
+        if (base.startsWith('http') && !base.includes('/api/v1')) {
+          base = `${base}/api/v1`;
+        }
+        return base;
+      })();
+
+      // Call backend logout to clear HttpOnly auth cookie
+      fetch(`${apiBase}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      }).catch(() => {});
+
+      // Clear local memory & storage
       set({ user: null, isAuthenticated: false, isInitializing: false });
-      window.location.href = '/';
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+        document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      } catch {}
+
+      window.location.href = '/login';
     }
   },
 
