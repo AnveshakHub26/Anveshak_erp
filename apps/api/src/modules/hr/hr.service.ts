@@ -633,25 +633,60 @@ export class HRService {
     // Send email notification to employee if profile or password changed
     if (this.emailService) {
       try {
-        const updatedFields: string[] = [];
-        if ((data as any).password) updatedFields.push('Account Login Password');
-        if (data.workEmail) updatedFields.push('Work Email Address');
-        if (data.designation) updatedFields.push(`Designation: ${data.designation}`);
-        if (data.department) updatedFields.push(`Department: ${data.department}`);
-        if (data.status) updatedFields.push(`Status: ${data.status}`);
-        if (data.professionalRole) updatedFields.push(`Professional Role: ${data.professionalRole}`);
-        if (updatedFields.length === 0) updatedFields.push('Personal Profile Details');
+        const changes: { field: string; oldVal: string; newVal: string }[] = [];
 
-        const recipient = newWorkEmail || existing.workEmail;
-        const passVal = (data as any).password ? (data as any).password.trim() : undefined;
+        if (data.firstName && data.firstName.trim() !== existing.firstName) {
+          changes.push({ field: 'First Name', oldVal: existing.firstName, newVal: data.firstName.trim() });
+        }
+        if (data.lastName && data.lastName.trim() !== existing.lastName) {
+          changes.push({ field: 'Last Name', oldVal: existing.lastName, newVal: data.lastName.trim() });
+        }
+        if (data.workEmail && data.workEmail.trim().toLowerCase() !== existing.workEmail.toLowerCase()) {
+          changes.push({ field: 'Work Email Address', oldVal: existing.workEmail, newVal: data.workEmail.trim().toLowerCase() });
+        }
+        if (data.personalEmail !== undefined && (data.personalEmail || '') !== (existing.personalEmail || '')) {
+          changes.push({ field: 'Personal Email', oldVal: existing.personalEmail || 'N/A', newVal: data.personalEmail || 'N/A' });
+        }
+        if (data.phone !== undefined && (data.phone || '') !== (existing.phone || '')) {
+          changes.push({ field: 'Phone Number', oldVal: existing.phone || 'N/A', newVal: data.phone || 'N/A' });
+        }
+        if (data.professionalRole && data.professionalRole.trim() !== existing.professionalRole) {
+          changes.push({ field: 'Professional Role', oldVal: existing.professionalRole, newVal: data.professionalRole.trim() });
+        }
+        if (data.department && data.department.trim() !== existing.department) {
+          changes.push({ field: 'Department', oldVal: existing.department, newVal: data.department.trim() });
+        }
+        if (data.designation && data.designation.trim() !== existing.designation) {
+          changes.push({ field: 'Designation', oldVal: existing.designation, newVal: data.designation.trim() });
+        }
+        if (data.category && data.category !== existing.category) {
+          changes.push({ field: 'Employee Category', oldVal: existing.category, newVal: data.category });
+        }
+        if (data.employmentType && data.employmentType !== existing.employmentType) {
+          changes.push({ field: 'Employment Type', oldVal: existing.employmentType, newVal: data.employmentType });
+        }
+        if (data.status && data.status !== existing.status) {
+          changes.push({ field: 'Employment Status', oldVal: existing.status, newVal: data.status });
+        }
+        if (data.baseSalary !== undefined && (data.baseSalary || '') !== (existing.baseSalary || '')) {
+          changes.push({ field: 'Base Salary / Compensation', oldVal: existing.baseSalary || 'N/A', newVal: data.baseSalary || 'N/A' });
+        }
+        if ((data as any).password && (data as any).password.trim()) {
+          changes.push({ field: 'Account Login Password', oldVal: '********', newVal: (data as any).password.trim() });
+        }
 
-        await this.emailService.sendEmployeeProfileUpdatedEmail(
-          recipient,
-          existing.fullName,
-          existing.employeeCode,
-          updatedFields,
-          passVal,
-        );
+        if (changes.length > 0) {
+          const recipient = newWorkEmail || existing.workEmail;
+          const passVal = (data as any).password ? (data as any).password.trim() : undefined;
+
+          await this.emailService.sendEmployeeProfileUpdatedEmail(
+            recipient,
+            existing.fullName,
+            existing.employeeCode,
+            changes,
+            passVal,
+          );
+        }
       } catch (emailErr: any) {
         // Suppress email dispatch errors to prevent breaking HR profile update transaction
       }

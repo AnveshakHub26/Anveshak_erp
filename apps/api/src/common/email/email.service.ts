@@ -484,45 +484,22 @@ export class EmailService {
     toEmail: string,
     employeeName: string,
     employeeCode: string,
-    updatedFields: string[],
+    changes: { field: string; oldVal: string; newVal: string }[],
     newPassword?: string,
   ) {
     const loginUrl = process.env.APP_URL ? `${process.env.APP_URL}/login` : 'http://localhost:3000/login';
     const idempotencyKey = `emp-update-${employeeCode}-${Date.now()}`;
-    const subject = newPassword
-      ? `🔐 Your AnveshakHub Account Password Has Been Updated`
-      : `📝 Your AnveshakHub Employee Profile Has Been Updated`;
-
-    const html = renderBaseEmailTemplate({
-      title: newPassword ? 'Account Password Updated' : 'Employee Profile Updated',
-      badgeText: newPassword ? 'PASSWORD CHANGED' : 'PROFILE UPDATED',
-      badgeBgColor: '#e8f0fe',
-      badgeTextColor: '#1a73e8',
-      contentHtml: `
-        <h2>Hello ${escapeHtml(employeeName)},</h2>
-        <p>Your employee record (<strong>${escapeHtml(employeeCode)}</strong>) in AnveshakHub has been updated by administration.</p>
-        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0;">
-          <p style="margin-top: 0; font-weight: 600; color: #0f172a;">Updated Information:</p>
-          <ul>
-            ${updatedFields.map((f) => `<li>${escapeHtml(f)}</li>`).join('')}
-          </ul>
-          ${newPassword ? `<div style="margin-top: 12px; padding: 10px; background-color: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; color: #92400e;"><strong>Your New Password:</strong> <code style="font-size: 14px; background: #ffffff; padding: 2px 6px; border-radius: 4px;">${escapeHtml(newPassword)}</code></div>` : ''}
-        </div>
-        <p>You can sign in to your employee workspace using the link below:</p>
-        <div style="text-align: center; margin: 24px 0;">
-          <a href="${loginUrl}" style="background-color: #d49b38; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">Sign In to AnveshakHub</a>
-        </div>
-      `,
-    });
+    const { renderEmployeeProfileUpdatedTemplate } = await import('./templates/employee-profile-updated.template');
+    const tpl = renderEmployeeProfileUpdatedTemplate(employeeName, employeeCode, loginUrl, changes, newPassword);
 
     return this.sendTransactionalEmail({
       to: toEmail,
-      subject,
-      html,
-      text: `Your AnveshakHub profile has been updated. Updated fields: ${updatedFields.join(', ')}.${newPassword ? ` New Password: ${newPassword}` : ''}`,
+      subject: tpl.subject,
+      html: tpl.html,
+      text: tpl.text,
       category: TransactionalEmailCategory.ACCOUNT_ONBOARDING,
       idempotencyKey,
-      metadata: { employeeCode, updatedFields },
+      metadata: { employeeCode, changesCount: changes.length, newPasswordProvided: Boolean(newPassword) },
     });
   }
 }
