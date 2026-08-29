@@ -24,8 +24,12 @@ export class SmtpEmailProvider implements EmailProvider {
         port,
         secure: port === 465,
         auth: { user, pass },
+        family: 4,
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 15000,
         tls: { rejectUnauthorized: false },
-      });
+      } as any);
       this.logger.log(`📧 SmtpEmailProvider configured for ${host}:${port}`);
     } else {
       this.logger.warn(`⚠️ SmtpEmailProvider initialized without explicit SMTP credentials. Fallback enabled.`);
