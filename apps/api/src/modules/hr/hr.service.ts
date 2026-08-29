@@ -317,7 +317,7 @@ export class HRService {
 
     const customPass = (data as any).password;
     const initialPassword =
-      customPass && customPass.trim().length >= 8
+      customPass && customPass.trim().length > 0
         ? customPass.trim()
         : `Anveshak@${Math.floor(1000 + Math.random() * 9000)}`;
 
