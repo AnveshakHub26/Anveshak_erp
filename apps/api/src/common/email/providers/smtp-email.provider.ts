@@ -13,16 +13,22 @@ export class SmtpEmailProvider implements EmailProvider {
   }
 
   private initTransporter() {
-    const host = process.env.SMTP_HOST;
-    const port = parseInt(process.env.SMTP_PORT || '587', 10);
+    const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+    let port = parseInt(process.env.SMTP_PORT || '465', 10);
     const user = process.env.SMTP_USER;
     const pass = process.env.SMTP_PASS;
+
+    let isSecure = port === 465;
+    if (host.includes('gmail.com')) {
+      port = 465;
+      isSecure = true;
+    }
 
     if (host && host !== 'localhost' && user && pass) {
       this.transporter = nodemailer.createTransport({
         host,
         port,
-        secure: port === 465,
+        secure: isSecure,
         auth: { user, pass },
         family: 4,
         connectionTimeout: 15000,
@@ -30,7 +36,7 @@ export class SmtpEmailProvider implements EmailProvider {
         socketTimeout: 15000,
         tls: { rejectUnauthorized: false },
       } as any);
-      this.logger.log(`📧 SmtpEmailProvider configured for ${host}:${port}`);
+      this.logger.log(`📧 SmtpEmailProvider configured for ${host}:${port} (Direct SSL, IPv4 family: 4)`);
     } else {
       this.logger.warn(`⚠️ SmtpEmailProvider initialized without explicit SMTP credentials. Fallback enabled.`);
     }
