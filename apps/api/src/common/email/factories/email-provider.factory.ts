@@ -17,19 +17,23 @@ export class EmailProviderFactory {
   ) {}
 
   getProvider(): EmailProvider {
-    const providerName = (process.env.EMAIL_PROVIDER || 'console').toLowerCase().trim();
+    const providerName = (process.env.EMAIL_PROVIDER || 'auto').toLowerCase().trim();
+
+    if (process.env.RESEND_API_KEY && process.env.RESEND_API_KEY.trim()) {
+      return this.resendProvider;
+    }
 
     switch (providerName) {
       case 'none':
       case 'null':
         return this.nullProvider;
-      case 'smtp':
-        return this.smtpProvider;
       case 'resend':
         return this.resendProvider;
+      case 'smtp':
+        return this.smtpProvider;
       case 'console':
       default:
-        return this.consoleProvider;
+        return this.smtpProvider || this.consoleProvider;
     }
   }
 }

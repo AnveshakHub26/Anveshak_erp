@@ -17,21 +17,12 @@ export class ResendEmailProvider implements EmailProvider {
     }
 
     const isProd = process.env.NODE_ENV === 'production';
-    let defaultFrom = process.env.RESEND_FROM || process.env.SMTP_FROM;
-
-    if (isProd) {
-      if (!defaultFrom && !options.from) {
-        return {
-          success: false,
-          provider: this.name,
-          error: 'Production RESEND_FROM / SMTP_FROM environment variable missing.',
-        };
-      }
-    } else {
-      defaultFrom = defaultFrom || 'AnveshakHub ERP <onboarding@resend.dev>';
+    let defaultFrom = process.env.RESEND_FROM || process.env.SMTP_FROM || 'AnveshakHub ERP <onboarding@resend.dev>';
+    if (!defaultFrom || !defaultFrom.includes('@')) {
+      defaultFrom = 'AnveshakHub ERP <onboarding@resend.dev>';
     }
 
-    const sender = options.from || defaultFrom;
+    const sender = options.from && options.from.includes('@') ? options.from : defaultFrom;
     const recipients = Array.isArray(options.to) ? options.to : [options.to];
 
     try {
