@@ -307,10 +307,11 @@ export class HRService {
       throw new ConflictException(`Employee record with work email '${emailClean}' already exists.`);
     }
 
-    let systemRoleCode = 'STAFF';
+    let systemRoleCode = 'INTERN';
     if (data.category === 'EXPERT') systemRoleCode = 'EXPERT';
     else if (data.category === 'INTERN') systemRoleCode = 'INTERN';
-    else if (data.category === 'EXECUTIVE') systemRoleCode = 'ADMIN';
+    else if (data.category === 'EXECUTIVE') systemRoleCode = 'EXPERT';
+    else systemRoleCode = 'INTERN';
 
     const systemRole = await this.prisma.role.findFirst({
       where: { code: systemRoleCode },
@@ -933,10 +934,11 @@ export class HRService {
 
         const passwordHash = await argon2.hash(initialPassword, { type: argon2.argon2id });
 
-        let systemRoleCode = 'STAFF';
+        let systemRoleCode = 'INTERN';
         if (data.category === 'EXPERT') systemRoleCode = 'EXPERT';
         else if (data.category === 'INTERN') systemRoleCode = 'INTERN';
-        else if (data.category === 'EXECUTIVE') systemRoleCode = 'ADMIN';
+        else if (data.category === 'EXECUTIVE') systemRoleCode = 'EXPERT';
+        else systemRoleCode = 'INTERN';
 
         const systemRole = await tx.role.findFirst({ where: { code: systemRoleCode } });
 
