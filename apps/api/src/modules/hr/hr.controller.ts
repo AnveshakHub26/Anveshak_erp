@@ -16,8 +16,8 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/user.decorator';
+import { CreateEmployeeDto } from './dto/create-employee.dto';
 import {
-  CreateEmployeeInput,
   UpdateEmployeeInput,
   RehireEmployeeInput,
 } from '@anveshak/validation';
@@ -91,7 +91,7 @@ export class HRController {
   @ApiResponse({ status: 201, description: 'Employee onboarded and account provisioned.' })
   async onboardEmployee(
     @CurrentUser() user: any,
-    @Body() body: CreateEmployeeInput,
+    @Body() body: CreateEmployeeDto,
   ) {
     const data = await this.hrService.onboardEmployee(user, body);
     return { success: true, data };
@@ -103,7 +103,7 @@ export class HRController {
   @ApiOperation({ summary: 'POST /api/v1/hr/employees/bulk-onboard — Atomic bulk onboarding (up to 50 employees)' })
   async bulkOnboard(
     @CurrentUser() user: any,
-    @Body() body: { employees: CreateEmployeeInput[] },
+    @Body() body: { employees: CreateEmployeeDto[] },
   ) {
     const data = await this.hrService.bulkOnboard(user, body.employees);
     return { success: true, data };

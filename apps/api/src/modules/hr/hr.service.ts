@@ -11,6 +11,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { SupabaseService } from '../../common/supabase/supabase.service';
 import { Prisma } from '@prisma/client';
 import { CreateEmployeeInput, UpdateEmployeeInput, RehireEmployeeInput } from '@anveshak/validation';
+import { CreateEmployeeDto } from './dto/create-employee.dto';
 import * as crypto from 'crypto';
 import * as argon2 from 'argon2';
 
@@ -292,7 +293,7 @@ export class HRService {
   /**
    * POST /api/v1/hr/employees — Single employee onboarding & account provisioning
    */
-  async onboardEmployee(adminUser: any, data: CreateEmployeeInput) {
+  async onboardEmployee(adminUser: any, data: CreateEmployeeDto) {
     const emailClean = data.workEmail.trim().toLowerCase();
 
     const existingUser = await this.prisma.user.findUnique({ where: { email: emailClean } });
@@ -847,7 +848,7 @@ export class HRService {
   /**
    * POST /api/v1/hr/employees/bulk-onboard — Atomic bulk onboarding (up to 50 employees)
    */
-  async bulkOnboard(adminUser: any, employeesData: CreateEmployeeInput[]) {
+  async bulkOnboard(adminUser: any, employeesData: CreateEmployeeDto[]) {
     if (!employeesData || employeesData.length === 0) {
       throw new BadRequestException('Bulk onboarding payload must contain at least one employee.');
     }
