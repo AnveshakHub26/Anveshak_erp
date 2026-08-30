@@ -46,4 +46,8 @@ export class EmailProviderFactory {
         return this.smtpProvider || this.consoleProvider;
     }
   }
+
+  getFallbackProvider(): EmailProvider {
+    return this.smtpProvider || this.consoleProvider;
+  }
 }

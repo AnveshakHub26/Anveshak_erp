@@ -131,10 +131,10 @@ export class EmailQueueService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async dispatchJob(job: any) {
-    const provider = this.providerFactory.getProvider();
+    let provider = this.providerFactory.getProvider();
     const currentAttempt = job.attempts + 1;
 
-    const result = await provider.sendEmail({
+    let result = await provider.sendEmail({
       to: job.recipient,
       subject: job.subject,
       html: job.bodyHtml,
@@ -143,6 +143,26 @@ export class EmailQueueService implements OnModuleInit, OnModuleDestroy {
       idempotencyKey: job.idempotencyKey || undefined,
       metadata: job.metadata || undefined,
     });
+
+    // Fallback: If primary provider fails (e.g. invalid API key), try SMTP provider
+    if (!result.success && provider.name !== 'smtp') {
+      this.logger.warn(`[EmailQueueService] Primary provider [${provider.name}] failed: ${result.error}. Attempting fallback via SMTP provider...`);
+      const fallbackProvider = this.providerFactory.getFallbackProvider();
+      if (fallbackProvider && fallbackProvider.name !== provider.name) {
+        const fallbackResult = await fallbackProvider.sendEmail({
+          to: job.recipient,
+          subject: job.subject,
+          html: job.bodyHtml,
+          text: job.bodyText || undefined,
+          category: job.category,
+          idempotencyKey: job.idempotencyKey || undefined,
+          metadata: job.metadata || undefined,
+        });
+        if (fallbackResult.success) {
+          result = fallbackResult;
+        }
+      }
+    }
 
     if (result.success) {
       await this.prisma.emailLog.update({
@@ -158,7 +178,7 @@ export class EmailQueueService implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`[EmailQueueService] Successfully dispatched job ${job.id} via provider [${result.provider}]`);
     } else {
       const isFinalAttempt = currentAttempt >= job.maxAttempts;
-      const backoffMs = Math.pow(2, currentAttempt) * 1000; // Exponential backoff: 2s, 4s, 8s...
+      const backoffMs = Math.pow(2, currentAttempt) * 1000;
       const nextAttemptAt = isFinalAttempt ? null : new Date(Date.now() + backoffMs);
 
       await this.prisma.emailLog.update({
