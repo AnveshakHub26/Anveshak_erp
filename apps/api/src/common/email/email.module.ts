@@ -5,6 +5,7 @@ import { EmailProviderFactory } from './factories/email-provider.factory';
 import { ConsoleEmailProvider } from './providers/console-email.provider';
 import { SmtpEmailProvider } from './providers/smtp-email.provider';
 import { ResendEmailProvider } from './providers/resend-email.provider';
+import { BrevoEmailProvider } from './providers/brevo-email.provider';
 import { NullEmailProvider } from './providers/null-email.provider';
 
 @Global()
@@ -16,6 +17,7 @@ import { NullEmailProvider } from './providers/null-email.provider';
     ConsoleEmailProvider,
     SmtpEmailProvider,
     ResendEmailProvider,
+    BrevoEmailProvider,
     NullEmailProvider,
   ],
   exports: [EmailService, EmailQueueService, EmailProviderFactory],
